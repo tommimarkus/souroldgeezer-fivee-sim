@@ -126,8 +126,8 @@ map is written, because no flag grammar should try to spell one.
    journal. A direct export defaults to the same v2 contract: the seed, normalized
    roster, captured content, the captured map (including inline maps and every
    storey), timestamped events and attempts, authoritative state checkpoints, and
-   integrity hashes. Bundles land in the **replays root**, a sibling of the maps
-   directory, never inside it.
+   integrity hashes. Bundles land in the configured **replays root**, independently
+   of the maps root.
 
    Two ways to show a fight, and they answer different asks. If a server is
    running, a written bundle comes back with a `viewer_url` — hand that over and it
@@ -253,13 +253,21 @@ export carries — and a kind need not be on the map to be colored.
 
 ## Files
 
-Maps live at `$FIVEE_SIM_PROJECT_DIR/.fivee-sim/maps/` by default, with
-`$CLAUDE_PROJECT_DIR` as a compatibility fallback, or wherever `FIVEE_SIM_MAPS`
-points; replays are written under `replays/` beside them. `fivee serve` reports
-both directories, and so does `fivee server.ping` — read them rather than assuming.
-On a host without a project-root variable, pass an absolute path under the current
-workspace's `.fivee-sim/maps/` to any operation that takes a path; never resolve a
-relative path against the installed plugin directory.
+The CLI walks upward from the invocation workspace and uses the nearest
+`.fivee-sim/config.toml`; pass global `--config PATH` before the operation to
+select another one. `[storage].maps` and `[storage].replays` each take one path or
+an array of paths, while `scenes` and `encounters` take one path. Relative paths
+resolve against the `.fivee-sim/` directory containing the file. Omitted values
+default to its sibling `maps/`, `replays/`, `scenes/`, and `encounters/`
+directories.
+
+The first maps root receives map writes and the first replays root receives
+exports. `fivee content.status` names the configuration source and path;
+`fivee serve` and `fivee server.ping` report the resolved roots — read them rather
+than assuming. A selected file owns these settings. Legacy `FIVEE_SIM_PROJECT_DIR`,
+`FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, and
+`FIVEE_SIM_ENCOUNTERS` remain compatibility fallbacks only when no configuration
+file is selected.
 
 `fivee map.query` answers distance, line-of-sight, and path questions over a bare
 map without starting a fight.

@@ -251,20 +251,61 @@ state that has already moved on is refused with 409 rather than silently applied
 
 ## Where your files live
 
-By default everything sits under `.fivee-sim/` in your project directory:
+Project configuration lives in `.fivee-sim/config.toml`. The CLI walks upward
+from the invocation workspace and selects the nearest one; use the global
+`--config PATH` option to select a different file explicitly:
 
-| Directory | Holds |
+```bash
+fivee --config /abs/campaign/.fivee-sim/config.toml content.status
+```
+
+Paths in the file resolve against the directory containing it — normally the
+project's `.fivee-sim/` directory:
+
+```toml
+format_version = 1
+
+[content]
+builtin = "include"
+paths = ["content"]
+
+[storage]
+maps = "maps"
+replays = "replays"
+scenes = "scenes"
+encounters = "encounters"
+
+[development]
+reload = false
+```
+
+`content.builtin` is `include` or `exclude`. `storage.maps` and
+`storage.replays` may each be one string or an array of strings; `storage.scenes`
+and `storage.encounters` are one string each. Omitted settings default to the
+sibling `maps/`, `replays/`, `scenes/`, and `encounters/` directories, bundled
+content included, development reload off, and the sibling `content/` directory
+when it exists.
+
+The resulting project layout is:
+
+| Path | Holds |
 |---|---|
+| `.fivee-sim/config.toml` | project configuration |
 | `.fivee-sim/content/` | your own content packs |
 | `.fivee-sim/maps/` | saved map documents, one file per id |
 | `.fivee-sim/replays/` | exported replay bundles |
+| `.fivee-sim/scenes/` | saved scene documents |
 | `.fivee-sim/encounters/` | hash-chained encounter journals |
 
-The project directory comes from `FIVEE_SIM_PROJECT_DIR`, then the host-supplied
-`CLAUDE_PROJECT_DIR`. Each root can be overridden outright by `FIVEE_SIM_CONTENT`,
-`FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, and `FIVEE_SIM_ENCOUNTERS`. `fivee serve`
-and `fivee server.ping` both report the directories in use — read them rather than
-assuming.
+A selected configuration file owns all project-facing settings; environment
+variables are not merged over it. For compatibility, and only when no file is
+selected, `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, `FIVEE_SIM_BUILTIN`,
+`FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`,
+`FIVEE_SIM_ENCOUNTERS`, and `FIVEE_SIM_RELOAD` retain their previous meanings.
+Variables supplied by a plugin host for its own bootstrap are process plumbing,
+not project configuration. `fivee content.status` reports the selected
+configuration source and path; `fivee serve` and `fivee server.ping` report the
+directories in use. Read those rather than assuming.
 
 ## What is covered
 
@@ -325,20 +366,17 @@ source manifest.
 
 A campaign is not limited to what ships. Its creatures, spells, conditions,
 terrain and items go in a JSON **content pack** using the same format, parser and
-validation as the bundled data — there is one format, not a second dialect.
-Setting `FIVEE_SIM_BUILTIN=exclude` drops the bundled SRD content entirely, which
-is what lets you run this engine on material wholly your own. Validation is strict
-and names never collide silently: an unknown key is an error, because a mistyped
-`attack_bonus` would otherwise produce a creature that fights wrongly and looks
-fine.
+validation as the bundled data — there is one format, not a second dialect. Put
+a pack in the configured `content` directory; the default sibling
+`.fivee-sim/content/` is loaded when it exists. Set `builtin = "exclude"` under
+`[content]` to drop the bundled SRD content entirely, which is what lets you run
+this engine on material wholly your own. Validation is strict and names never
+collide silently: an unknown key is an error, because a mistyped `attack_bonus`
+would otherwise produce a creature that fights wrongly and looks fine.
 
-Put a pack in `.fivee-sim/content/` and the engine picks it up with no
-configuration, **provided the host exports a project directory** (see above). On a
-host that exports neither variable, name the directory once by absolute path:
-
-```bash
-fivee content.configure --add --json '{"paths": ["/abs/path/.fivee-sim/content"]}'
-```
+`fivee content.configure` remains available for a deliberate temporary overlay
+in the running server. It neither edits `config.toml` nor survives a restart; use
+the file for persistent project configuration.
 
 Encounters in progress keep the content they started with, so changing packs
 mid-fight cannot strip the creature currently taking its turn.

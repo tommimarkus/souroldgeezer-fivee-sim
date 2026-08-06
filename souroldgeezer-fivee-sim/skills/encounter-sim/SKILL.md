@@ -133,13 +133,13 @@ records that — with the reported seed — reproduce the fight exactly. Recap e
 rounds from it rather than from memory; `encounter.state` stays the view of *now*.
 
 The history survives the process. Creation, every attempt, and every result are
-fsynced into a hash-chained journal under `.fivee-sim/encounters/` (or
-`FIVEE_SIM_ENCOUNTERS`). Use **`fivee encounter.list`** to discover
-active/finalized fights, **`fivee encounter.resume <id>`** after a restart, and
-**`fivee encounter.finalize <id>`** when play is done; finalization writes replay
-v2 and retains the journal. If narration or an adjudication must be part of the
-record, use **`fivee encounter.note <id> --text "…"`** rather than leaving it only
-in prose.
+fsynced into a hash-chained journal under the configured encounters root (the
+sibling `.fivee-sim/encounters/` by default). Use **`fivee encounter.list`** to
+discover active/finalized fights, **`fivee encounter.resume <id>`** after a
+restart, and **`fivee encounter.finalize <id>`** when play is done; finalization
+writes replay v2 and retains the journal. If narration or an adjudication must be
+part of the record, use **`fivee encounter.note <id> --text "…"`** rather than
+leaving it only in prose.
 
 `dice.roll`, `dice.check`, and `dice.save` accept an `--encounter-id` and an
 `--idempotency-key`. A scoped check can name `--ability` and `--skill` (for
@@ -564,16 +564,21 @@ rule, and doing it by hand costs a combatant an action the current rules give it
 creatures, spells, conditions, and items as content packs, and can exclude the
 bundled SRD content entirely to run on its own material.
 
-At first use in a workspace, check whether `.fivee-sim/content/` exists under the
-workspace root. Call `fivee content.status`; if that resolved directory is not
-already represented in the loaded packs, call `fivee content.configure` with its
-**absolute** path and `--add` before looking up content or starting an encounter.
-This is the portable fallback for hosts that do not export a project-root
-variable; repeating an already loaded path is harmless but unnecessary.
+At first use in a workspace, call `fivee content.status`. It names the selected
+configuration source and path as well as the loaded packs. The CLI auto-discovers
+the nearest `.fivee-sim/config.toml` by walking upward from the invocation
+workspace. If another file should own this run, select it explicitly with the
+global option before the operation:
 
 ```bash
-fivee content.configure --add --json '{"paths": ["/abs/path/.fivee-sim/content"]}'
+fivee --config /abs/campaign/.fivee-sim/config.toml content.status
 ```
+
+Paths in the file resolve against the `.fivee-sim/` directory containing it. A
+sibling `content/` directory is loaded by default when it exists; use
+`[content].paths` for other roots and `[content].builtin = "exclude"` when the
+campaign must run without bundled content. Do not call `content.configure`
+merely to compensate for an absent host project-root variable.
 
 - **`content.status`** — what is loaded, from where, under which mode. Call this
   before telling anyone what the engine supports, and whenever a name you expected
@@ -582,8 +587,9 @@ fivee content.configure --add --json '{"paths": ["/abs/path/.fivee-sim/content"]
 - **`content.validate`** — check a pack without loading it. The diagnostics name
   the pack, section, record, and field, so use them verbatim when helping an author
   fix their JSON.
-- **`content.configure`** — load packs, or switch the bundled slice in or out with
-  `--builtin include|exclude`.
+- **`content.configure`** — temporarily overlay packs or switch the bundled slice
+  in the running server. It does not edit `config.toml` and the overlay is lost on
+  restart; use it only when that temporary scope is intended.
 
 Encounters in progress keep the content they started with; only new ones use
 freshly loaded content. A failed `content.configure` changes nothing.

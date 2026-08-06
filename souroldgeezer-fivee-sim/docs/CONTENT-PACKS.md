@@ -38,18 +38,35 @@ Put a file in `.fivee-sim/content/` at the root of your campaign repository:
 }
 ```
 
-That is enough in an installed plugin. Claude Code exports `CLAUDE_PROJECT_DIR`;
-on hosts without a project-root variable, the bundled skill detects the workspace
-directory and loads it with `content.configure`. For a direct server launch, set
-`FIVEE_SIM_PROJECT_DIR` to the campaign repository root.
+That is enough with the default project layout: the CLI discovers the nearest
+`.fivee-sim/config.toml` from the invocation workspace, and a sibling `content/`
+directory is the default when it exists. To choose the pack roots or exclude the
+bundled slice, put the choice in that file:
+
+```toml
+format_version = 1
+
+[content]
+builtin = "exclude"
+paths = ["content", "../shared-content"]
+```
+
+Relative paths resolve against the directory containing `config.toml`, not the
+shell's current directory. Use the global `--config PATH` option when the file to
+use is not the nearest one:
+
+```bash
+fivee --config /abs/campaign/.fivee-sim/config.toml content.status
+```
 
 Then, from a shell or an assistant driving `fivee`:
 
-- **`fivee content.status`** — what is loaded, from where, and under which mode.
+- **`fivee content.status`** — what is loaded, from where, under which mode, and
+  which configuration source and path selected it.
 - **`fivee content.validate --paths '["…"]'`** — check a pack without loading it.
   Use this while writing.
-- **`fivee content.configure`** — load packs, or switch whether the bundled slice
-  is included.
+- **`fivee content.configure`** — temporarily overlay packs or the bundled mode
+  in the running server. It does not edit `config.toml`.
 - **`fivee catalog.search`**, **`fivee catalog.get`**, **`fivee catalog.table`** —
   bounded discovery, one structured record, and one paged printed table.
 
@@ -57,19 +74,28 @@ Then, from a shell or an assistant driving `fivee`:
 
 ## Where content comes from
 
-In precedence order, lowest first:
+The global `--config PATH` option selects one file explicitly. Otherwise the CLI
+walks upward from the invocation workspace and selects the nearest
+`.fivee-sim/config.toml`. A selected file owns the project-facing settings; no
+environment variable is merged over it.
 
-1. **the bundled SRD 5.2.1 slice**, unless the mode is `exclude`;
-2. **`FIVEE_SIM_CONTENT`** — an `os.pathsep`-separated list of files or
-   directories. A directory is scanned for `*.json`, in sorted order;
-3. **`$FIVEE_SIM_PROJECT_DIR/.fivee-sim/content/`**, with
-   `$CLAUDE_PROJECT_DIR/.fivee-sim/content/` as a compatibility fallback, used
-   only when `FIVEE_SIM_CONTENT` is unset — so exporting the variable does not
-   silently also load whatever sits in the repository you happen to be standing
-   in;
-4. **paths given to `content.configure`** during the session.
+Within that configuration, content is layered in this order, lowest first:
 
-`FIVEE_SIM_BUILTIN` is `include` (the default) or `exclude`.
+1. **the bundled SRD 5.2.1 slice**, unless `[content].builtin` is `exclude`;
+2. **the paths in `[content].paths`**, in order. A directory is scanned for
+   `*.json`, in sorted order. If `paths` is omitted, the sibling `content/`
+   directory is used when it exists;
+3. **paths given to `content.configure`** as a temporary in-memory overlay for
+   the running server.
+
+`format_version` must be `1`; `[content].builtin` is `include` (the default) or
+`exclude`. Every relative path is resolved against the `.fivee-sim/` directory
+that contains the selected file.
+
+For compatibility, and only when no configuration file is selected, the legacy
+`FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, and `FIVEE_SIM_BUILTIN` variables
+retain their previous meanings. Host bootstrap variables are not user
+configuration. Prefer the file for a durable project setup.
 
 ### Excluding the bundled content
 
@@ -649,8 +675,8 @@ Precisely:
   `overrides`*, because packs at one level load in path order and the winner would
   be an accident of filenames.
 - **Across levels** — the later level wins. That ordering is declared, so a
-  `content.configure` pack may override a project pack, which may override a
-  built-in.
+  temporary `content.configure` pack may override a configured project pack,
+  which may override a built-in.
 - **`overrides` with nothing to override** is a *warning*, not an error. In
   `exclude` mode it is the normal case, but it also catches a misspelled name.
 
@@ -674,7 +700,10 @@ session start.
 
 ## Reloading during a session
 
-`content.configure` builds a **new** registry; it never mutates the one in use.
+`content.configure` builds a **new** registry; it never mutates the one in use or
+edits the selected TOML file. The overlay is in-memory state for the running
+server and is lost when that server restarts. Put persistent paths and bundled
+mode in `config.toml` instead.
 
 **Encounters already in progress keep the content they started with.** This is not
 laziness — switching to `exclude` mid-fight would otherwise strip the very creature

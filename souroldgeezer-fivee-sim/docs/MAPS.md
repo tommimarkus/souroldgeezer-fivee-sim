@@ -49,18 +49,35 @@ operation can name it by id, or hand the object inline as the `document` of a
 
 ## Where maps live
 
-In precedence order:
+The CLI auto-discovers the nearest `.fivee-sim/config.toml` by walking upward
+from the invocation workspace. The global `--config PATH` option selects a file
+explicitly instead. Storage roots are declared in that file:
 
-1. **`FIVEE_SIM_MAPS`** — an `os.pathsep`-separated list of files or
-   directories. When set, it wins outright.
-2. **`$FIVEE_SIM_PROJECT_DIR/.fivee-sim/maps/`**, with
-   `$CLAUDE_PROJECT_DIR/.fivee-sim/maps/` as a compatibility fallback, used only
-   when the variable is unset — the maps analogue of the content-pack convention.
-3. The same `.fivee-sim/maps/` under the current directory, as a last resort.
+```toml
+format_version = 1
 
-The first configured root is where `map.put` and `map.generate --save-as` write
-(`<id>.json`), and its sibling `replays/` is where `encounter.replay` puts its
-files.
+[storage]
+maps = ["maps", "../shared-maps"]
+replays = "replays"
+scenes = "scenes"
+encounters = "encounters"
+```
+
+Relative paths resolve against the directory containing `config.toml` — normally
+`.fivee-sim/`. `maps` and `replays` may each be a string or an array of strings;
+`scenes` and `encounters` take one string each. When omitted, all four default to
+the sibling `maps/`, `replays/`, `scenes/`, and `encounters/` directories.
+
+The first configured maps root is where `map.put` and
+`map.generate --save-as` write (`<id>.json`); reads and `map.list` cover all map
+roots. Replay writes use the first configured replays root, independently of the
+maps roots.
+
+A selected file owns these project-facing settings. For compatibility, and only
+when no file is selected, `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_MAPS`,
+`FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, and `FIVEE_SIM_ENCOUNTERS` retain their
+previous meanings. `fivee content.status` names the configuration source and
+path; `fivee serve` and `fivee server.ping` report the resolved storage roots.
 
 ## The document, field by field
 
@@ -649,14 +666,14 @@ evident; they are not signatures and do not authenticate an author. Pass
 `format_version=1` only when a legacy consumer needs the old seven-field bundle;
 the viewer continues to accept both versions.
 
-Encounters are journaled under `.fivee-sim/encounters/` (or
-`FIVEE_SIM_ENCOUNTERS`). Creation, attempt, and result records are append-only,
-fsynced, and hash-chained. `request_id` makes creation, actions, advances, and
-encounter-scoped primitives safe to retry. `encounter_list` discovers active or
-finalized journals, `encounter_resume` recovers one after a restart, and
-`encounter_finalize` writes its replay v2 file and marks it finalized without
-deleting the journal. A partial crash tail is preserved beside the journal;
-hash-chain tampering is refused.
+Encounters are journaled under the configured encounters root (the sibling
+`.fivee-sim/encounters/` by default). Creation, attempt, and result records are
+append-only, fsynced, and hash-chained. `request_id` makes creation, actions,
+advances, and encounter-scoped primitives safe to retry. `encounter_list`
+discovers active or finalized journals, `encounter_resume` recovers one after a
+restart, and `encounter_finalize` writes its replay v2 file and marks it
+finalized without deleting the journal. A partial crash tail is preserved beside
+the journal; hash-chain tampering is refused.
 
 The viewer replays what the fixtures did. `initial.map_open_features` says
 which stood open when the fight began — for every fixture, not only doors — and
@@ -674,8 +691,8 @@ combatant resources and conditions, and
 places checks, notes, and refusals in the timestamped audit timeline.
 
 Small bundles come back inline; larger ones (or any call with `path`) are
-written to `<maps root>/replays/<name>-<seed>.json`. With `embed` true the
-bundle is baked into the replay viewer instead, yielding a single
+written to the configured replays root as `<name>-<seed>.json`. With `embed`
+true the bundle is baked into the replay viewer instead, yielding a single
 self-contained `.html` — open it in any browser, no server required. The
 viewer is also served live at `/viewer` by the engine process, where it takes
 a dropped bundle file. JSON and HTML results both report the SHA-256 of the
