@@ -305,19 +305,31 @@ def test_the_survey_covers_nothing_it_should_not() -> None:
     )
 
 
-def test_the_survey_does_not_ship() -> None:
+def test_the_survey_never_sits_inside_the_packaged_plugin() -> None:
     """The licence split this artifact exists to keep.
 
     The register carries our own classification and no third-party name; the
-    survey carries the sources and stays out of the packaged plugin.
+    survey carries the sources and stays out of the plugin directory, which is
+    what each host packages.
+
+    **Stated as a search rather than a path comparison, and that is the whole
+    point.** The obvious spelling — assert ``RESEARCH`` is outside the plugin
+    root — reads the repo-relative constant, which still points outside it
+    however the file was actually moved. So the one misuse this exists to catch
+    (someone moves the survey into ``souroldgeezer-fivee-sim/docs/``) made the
+    content checks below *skip* on a missing file and the suite stayed green.
+    A control that cannot fail against its own target scenario is not a control.
+
+    Searching the plugin tree fails on the move and needs no file to be present,
+    so unlike the two below it is also meaningful in an installed copy.
     """
-    _research_text()
     plugin_root = Path(__file__).resolve().parents[2]
-    assert RESEARCH.parent != plugin_root / "docs", (
-        "the survey must not sit in the shipped docs directory"
+    strays = sorted(
+        path.relative_to(plugin_root) for path in plugin_root.rglob(RESEARCH.name)
     )
-    assert plugin_root not in RESEARCH.parents, (
-        f"{RESEARCH} is inside the packaged plugin at {plugin_root}"
+    assert not strays, (
+        f"the outside-readings survey names third-party sources and must stay out "
+        f"of the packaged plugin; found: {', '.join(str(p) for p in strays)}"
     )
 
 
