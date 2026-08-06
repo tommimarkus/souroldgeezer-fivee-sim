@@ -20,16 +20,29 @@ from fivee_sim.map_document import (
     DEFAULT_LEGEND,
     MAX_MAP_BYTES,
     MAX_MAP_DIM,
+    RESERVED_GLYPHS,
     MapColor,
+    MapDocument,
     MapElevation,
     MapError,
+    MapFeatureRecord,
     MapOverlayRecord,
+    allocate_legend,
+    as_payload,
     parse_document,
     serialize,
     to_grid,
     validate_document,
 )
-from fivee_sim.model.battlemap import FeatureCheck, FeatureOverlay, HeightPair, TerrainPair
+from fivee_sim.model.battlemap import (
+    BattleMap,
+    FeatureCheck,
+    FeatureOverlay,
+    FeatureTrigger,
+    HeightPair,
+    TerrainPair,
+    TriggerMode,
+)
 from fivee_sim.validation import Diagnostic, Severity
 
 
@@ -1785,3 +1798,181 @@ class TestFixtureStateDiagnostics:
         payload["features"][1]["terrain"]["open"] = "lava"
         payload["features"][1]["affects"][0]["cells"] = [[9, 9]]
         assert len(errors_of(payload)) == 4
+
+
+class TestAllocateLegend:
+    """Glyphs for terrain kinds, chosen so the document that carries them parses.
+
+    The allocator is the document format's own, not a caller's convenience: a
+    legend that claimed a renderer's overlay mark would be refused by the parser
+    that has to read it back, so the one rule it may never break is
+    :data:`RESERVED_GLYPHS`.
+    """
+
+    def test_every_kind_gets_a_distinct_single_character(self) -> None:
+        legend = allocate_legend(["wall", "floor", "water", "difficult"])
+
+        assert sorted(legend.values()) == ["difficult", "floor", "wall", "water"]
+        assert all(len(glyph) == 1 for glyph in legend)
+
+    def test_no_allocated_glyph_is_one_the_renderers_reserve(self) -> None:
+        # The whole reason this is the format's function rather than a caller's.
+        legend = allocate_legend([f"kind-{index}" for index in range(120)])
+
+        assert not RESERVED_GLYPHS & set(legend)
+        assert len(legend) == 120
+
+    def test_an_authors_glyph_is_kept_where_it_stands(self) -> None:
+        # A legend somebody wrote is not rewritten for tidiness: only a glyph
+        # the format refuses is moved.
+        legend = allocate_legend(
+            ["wall", "water"], prefer={"W": "wall", "~": "water"}
+        )
+
+        assert legend == {"W": "wall", "~": "water"}
+
+    def test_a_reserved_glyph_an_author_wrote_is_the_one_thing_reallocated(self) -> None:
+        legend = allocate_legend(["wall", "water"], prefer={"+": "wall", "~": "water"})
+
+        assert legend["~"] == "water"
+        assert "+" not in legend
+        assert "wall" in legend.values()
+
+    def test_a_preference_for_a_kind_that_is_not_in_play_is_simply_unused(self) -> None:
+        legend = allocate_legend(["wall"], prefer={"~": "water", "W": "wall"})
+
+        assert legend == {"W": "wall"}
+
+    def test_the_shared_default_legend_is_the_next_preference_after_the_author(
+        self,
+    ) -> None:
+        # Readability, and consistency with a generated map: a document written
+        # for a fight should spell floor '.' and wall '#' like every other one.
+        legend = allocate_legend(["floor", "wall"])
+
+        assert legend == {".": "floor", "#": "wall"}
+        assert all(DEFAULT_LEGEND[glyph] == kind for glyph, kind in legend.items())
+
+
+class TestMapDocumentFlat:
+    """``MapDocument.flat``: the document twin of ``BattleMap.flat``.
+
+    One plane, built from what a caller already has — dimensions, a default
+    kind, the squares that differ from it — and the format's own concerns
+    (glyphs, dense tiles, provenance) filled in. The property every case here
+    turns on is that the result is a document the parser accepts: a builder that
+    can produce one it does not would put an unrecoverable map in a journal,
+    which is the exact defect an inline spec's missing door orientation caused.
+    """
+
+    @staticmethod
+    def _parsed(document_object: MapDocument) -> MapDocument:
+        return parse_document(as_payload(document_object), source="flat", terrain=TERRAIN)
+
+    def test_a_sparse_terrain_mapping_densifies_into_rows(self) -> None:
+        built = MapDocument.flat(
+            name="strip", width=4, height=2,
+            default_terrain="floor", terrain={(1, 0): "wall", (3, 1): "water"},
+        )
+
+        glyph = {kind: char for char, kind in built.legend.items()}
+        assert built.tiles == (
+            f"{glyph['floor']}{glyph['wall']}{glyph['floor']}{glyph['floor']}",
+            f"{glyph['floor']}{glyph['floor']}{glyph['floor']}{glyph['water']}",
+        )
+
+    def test_what_it_builds_is_a_document_the_parser_accepts(self) -> None:
+        built = MapDocument.flat(
+            name="strip", width=4, height=2,
+            default_terrain="floor", terrain={(1, 0): "wall"},
+        )
+
+        assert as_payload(self._parsed(built)) == as_payload(built)
+
+    def test_it_answers_the_same_square_by_square_as_the_battle_map_twin(self) -> None:
+        # The two ``flat`` constructors are one shape authored twice; if they
+        # disagreed about what a square is, collapsing map production onto the
+        # document would silently move a fight's terrain.
+        terrain = {(1, 0): "wall", (3, 1): "water", (0, 1): "difficult"}
+        built = MapDocument.flat(
+            name="strip", width=4, height=2, default_terrain="floor", terrain=terrain
+        )
+        twin = BattleMap.flat(
+            name="strip", width=4, height=2, default_terrain="floor", terrain=terrain
+        )
+
+        bridged = to_grid(built)
+        for y in range(2):
+            for x in range(4):
+                assert bridged.ground.terrain.get(
+                    (x, y), bridged.default_terrain
+                ) == twin.ground.terrain.get((x, y), twin.default_terrain)
+
+    def test_a_reserved_glyph_in_the_authors_legend_moves_and_the_tiles_follow(
+        self,
+    ) -> None:
+        # The tiles are written from the allocation, never from the preference,
+        # so a reallocated glyph cannot leave a row pointing at a legend entry
+        # that is no longer there.
+        built = MapDocument.flat(
+            name="strip", width=2, height=1,
+            default_terrain="floor", terrain={(1, 0): "wall"},
+            legend={"@": "wall", ".": "floor"},
+        )
+
+        assert "@" not in built.tiles[0]
+        assert self._parsed(built).tiles == built.tiles
+
+    def test_features_cross_whole_and_survive_the_round_trip(self) -> None:
+        built = MapDocument.flat(
+            name="hall", width=3, height=1, default_terrain="floor",
+            features=(
+                MapFeatureRecord(
+                    id="lever", kind="lever", at=(0, 0), state="closed",
+                    terrain=TerrainPair(closed="floor", open="floor"),
+                ),
+                MapFeatureRecord(
+                    id="gate", kind="gate", at=(2, 0), state="closed",
+                    terrain=TerrainPair(closed="floor", open="floor"),
+                    trigger=FeatureTrigger(
+                        when=(("lever", True),), set_open=True,
+                        mode=TriggerMode.MAINTAINED,
+                    ),
+                ),
+            ),
+        )
+
+        gate = next(one for one in self._parsed(built).features if one.id == "gate")
+        assert gate.trigger == FeatureTrigger(
+            when=(("lever", True),), set_open=True, mode=TriggerMode.MAINTAINED
+        )
+
+    def test_heights_cross_as_a_datum_and_the_squares_that_depart_from_it(self) -> None:
+        built = MapDocument.flat(
+            name="ledge", width=3, height=1, default_terrain="floor",
+            default_elevation=10, elevation={(2, 0): 25},
+        )
+
+        assert built.elevation == MapElevation(default=10, squares={(2, 0): 25})
+        assert self._parsed(built).elevation.at((2, 0)) == 25
+
+    def test_a_square_outside_the_grid_is_not_drawn_and_not_recorded(self) -> None:
+        # ``BattleMap.flat`` never consults such a square; a document would write
+        # it out and the parser would refuse the file. Dropped, so the builder
+        # cannot make a document nothing can read.
+        built = MapDocument.flat(
+            name="strip", width=2, height=1, default_terrain="floor",
+            terrain={(9, 9): "wall"}, elevation={(9, 9): 30},
+        )
+
+        assert "wall" not in built.legend.values()
+        assert built.elevation.squares == {}
+        assert as_payload(self._parsed(built)) == as_payload(built)
+
+    def test_the_default_provenance_is_one_the_format_accepts(self) -> None:
+        built = MapDocument.flat(name="strip", width=1, height=1)
+
+        assert built.provenance.source
+        assert as_payload(self._parsed(built))["provenance"] == as_payload(built)[
+            "provenance"
+        ]

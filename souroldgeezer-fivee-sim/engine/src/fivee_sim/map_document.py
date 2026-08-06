@@ -76,7 +76,7 @@ import dataclasses
 import json
 import re
 from collections import Counter, deque
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
@@ -118,6 +118,7 @@ __all__ = [
     "MapLevel",
     "MapOverlayRecord",
     "MapProvenance",
+    "allocate_legend",
     "as_payload",
     "document_from",
     "feature_payload",
@@ -158,6 +159,20 @@ DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
         "^": "mountain",
         "%": "difficult",
     }
+)
+
+#: What :func:`allocate_legend` draws from once the author's own glyphs and
+#: :data:`DEFAULT_LEGEND` are exhausted, with the renderer's overlay marks
+#: filtered out rather than merely absent — the pool is a literal and the
+#: reservation is the rule, so the rule does the removing.
+_GLYPH_POOL: tuple[str, ...] = tuple(
+    char
+    for char in ".#~,:;!?$&*abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    if char not in RESERVED_GLYPHS
+)
+#: :data:`DEFAULT_LEGEND` read the way an allocator wants it.
+_DEFAULT_GLYPH_OF: Mapping[str, str] = MappingProxyType(
+    {kind: glyph for glyph, kind in DEFAULT_LEGEND.items()}
 )
 
 _DOCUMENT_KEYS = frozenset(
@@ -220,6 +235,55 @@ _DOOR_SWINGS = {
     "horizontal": ("north", "south"),
     "vertical": ("west", "east"),
 }
+
+
+def allocate_legend(
+    kinds: Iterable[str], *, prefer: Mapping[str, str] | None = None
+) -> dict[str, str]:
+    """A glyph for every kind in ``kinds``, as the document writes a legend.
+
+    ``prefer`` is a legend somebody already wrote — glyph to kind, the format's
+    own direction — and it is honoured wherever it is legal, because rewriting
+    an author's ``#`` for wall into an allocator's ``b`` helps nobody reading
+    the file afterwards. Exactly one thing overrides it: a glyph in
+    :data:`RESERVED_GLYPHS`, which the renderers draw *over* the terrain and
+    which :func:`parse_document` refuses in a legend. A caller that hands one
+    over gets that kind moved and nothing else.
+
+    Below the author come :data:`DEFAULT_LEGEND`'s glyphs, so a document built
+    here spells floor ``.`` and wall ``#`` like a generated one, and below that
+    :data:`_GLYPH_POOL` in sorted-kind order, which makes the result a function
+    of the kinds and not of the order they were discovered in. A map with more
+    terrain kinds than the pool has glyphs falls back to the private-use plane:
+    unreadable, but single characters the format accepts, which beats refusing a
+    document over a legend nobody has to read.
+    """
+    chosen: dict[str, str] = {}  # kind -> glyph
+    if prefer:
+        for glyph in sorted(prefer):
+            if len(glyph) == 1 and glyph not in RESERVED_GLYPHS:
+                chosen.setdefault(prefer[glyph], glyph)
+
+    legend: dict[str, str] = {}
+    taken: set[str] = set()
+    unplaced = sorted(set(kinds))
+    for tier in (chosen, _DEFAULT_GLYPH_OF):
+        still: list[str] = []
+        for kind in unplaced:
+            preferred = tier.get(kind)
+            if preferred is None or preferred in taken:
+                still.append(kind)
+                continue
+            legend[preferred] = kind
+            taken.add(preferred)
+        unplaced = still
+
+    pool = (char for char in _GLYPH_POOL if char not in taken)
+    for index, kind in enumerate(unplaced):
+        glyph = next(pool, None) or chr(0xE000 + index)
+        legend[glyph] = kind
+        taken.add(glyph)
+    return legend
 
 
 class MapError(ValueError):
@@ -422,6 +486,98 @@ class MapDocument:
     @property
     def elevation(self) -> MapElevation:
         return self.ground.elevation
+
+    @classmethod
+    def flat(
+        cls,
+        *,
+        name: str,
+        width: int,
+        height: int,
+        default_terrain: str = "normal",
+        terrain: Mapping[Square, str] | None = None,
+        default_elevation: int = 0,
+        elevation: Mapping[Square, int] | None = None,
+        features: Sequence[MapFeatureRecord] = (),
+        legend: Mapping[str, str] | None = None,
+        ambient_light: str = LightLevel.BRIGHT.value,
+        provenance: MapProvenance | None = None,
+    ) -> MapDocument:
+        """A one-plane document, built from the shape a caller already has.
+
+        The document twin of :meth:`~fivee_sim.model.battlemap.BattleMap.flat`,
+        and deliberately the same shape: a default terrain kind and the squares
+        that differ from it, a default height and the squares that differ from
+        that, and the fixtures. What it adds is the three things the *format*
+        wants and a battle map does not — a legend, dense ``tiles``, and a
+        provenance — none of which a caller should have to spell to say "a
+        20x20 room with a wall down one side".
+
+        ``legend`` is a preference, not a requirement: see
+        :func:`allocate_legend` for what is honoured and what is moved. The
+        tiles are written from the *allocation*, so a reallocated glyph cannot
+        leave a row pointing at a legend entry that no longer exists.
+
+        A square outside the grid is dropped from both layers rather than
+        recorded. ``BattleMap.flat`` can hold one harmlessly because nothing
+        ever looks it up; a document would write it into the file and
+        :func:`parse_document` would refuse to read the file back.
+
+        Terrain *kinds* are not resolved here — this builds a document, it does
+        not validate one against a content table — so the caller that knows
+        which terrain table is active is the one that owes the refusal.
+        """
+        squares = {
+            square: kind
+            for square, kind in (terrain or {}).items()
+            if 0 <= square[0] < width and 0 <= square[1] < height
+        }
+        allocated = allocate_legend({default_terrain, *squares.values()}, prefer=legend)
+        glyph_of = {kind: glyph for glyph, kind in allocated.items()}
+        tiles = tuple(
+            "".join(glyph_of[squares.get((x, y), default_terrain)] for x in range(width))
+            for y in range(height)
+        )
+        return cls(
+            name=name,
+            grid=MapGrid(width=width, height=height),
+            legend=MappingProxyType(allocated),
+            provenance=provenance if provenance is not None else _CALLER_PROVENANCE,
+            levels=MappingProxyType(
+                {
+                    GROUND_LEVEL: MapLevel(
+                        index=GROUND_LEVEL,
+                        name="ground",
+                        tiles=tiles,
+                        features=tuple(features),
+                        elevation=MapElevation(
+                            default=default_elevation,
+                            squares=MappingProxyType(
+                                {
+                                    square: feet
+                                    for square, feet in (elevation or {}).items()
+                                    if 0 <= square[0] < width and 0 <= square[1] < height
+                                }
+                            ),
+                        ),
+                        ambient_light=ambient_light,
+                    )
+                }
+            ),
+        )
+
+
+#: What :meth:`MapDocument.flat` records when the caller says nothing. A map
+#: built in memory came from whoever built it, and the format still insists on
+#: being told: ``seed`` and ``params`` are empty because there is no generator
+#: run to reproduce, and ``edited`` is false because nobody has touched it since.
+_CALLER_PROVENANCE = MapProvenance(
+    generator="flat",
+    seed=0,
+    params=MappingProxyType({}),
+    edited=False,
+    source="Caller-supplied map",
+)
 
 
 # --- parsing ---------------------------------------------------------------
