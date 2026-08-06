@@ -11,6 +11,7 @@ import json
 import os
 import re
 from collections.abc import Mapping
+from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from threading import RLock
@@ -24,10 +25,12 @@ __all__ = [
     "ENCOUNTERS_ENV",
     "ENCOUNTERS_SUBDIR",
     "JournalError",
+    "JournalSummary",
     "StaleWriteError",
     "append",
     "claim",
     "encounters_root",
+    "head_and_tail",
     "journal_path",
     "list_journals",
     "read",
@@ -118,6 +121,83 @@ def _fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
+def _decoded_record(path: Path, line: bytes, line_number: int) -> dict[str, Any]:
+    """One line of a journal as an object, or the refusal naming where it is.
+
+    Shared by the two readers below so that a malformed line is described in one
+    sentence rather than two: a summary and a full read disagree about how much
+    of a file they look at, and must not disagree about what they call a line
+    that is not a record.
+    """
+    try:
+        record = json.loads(line)
+    except json.JSONDecodeError as error:
+        raise JournalError(
+            f"{path} line {line_number} is not valid JSON: {error.msg}"
+        ) from error
+    if not isinstance(record, dict):
+        raise JournalError(f"{path} line {line_number} must be an object")
+    return record
+
+
+@dataclass(frozen=True)
+class JournalSummary:
+    """What a journal says about itself without being replayed."""
+
+    #: The creation record: the fight's id, its inputs, its ``request_id``.
+    first: dict[str, Any]
+    #: The most recent complete record — the same object as :attr:`first` when
+    #: a fight has been created and nobody has acted in it yet.
+    last: dict[str, Any]
+    #: Complete records in the file. A partial final line is not one.
+    records: int
+
+
+def head_and_tail(encounter_id: str) -> JournalSummary | None:
+    """The first record, the last record, and the count — nothing else read.
+
+    ``read`` parses and hash-verifies every line to answer anything at all,
+    which is the right price to pay before *trusting* a journal and the wrong
+    one to answer questions line 1 already holds. ``encounter.list`` wants two
+    timestamps and a count; ``creation_request`` wants one field off the
+    creation record. Both used to buy the whole file, for every journal on the
+    disk, to get them.
+
+    ``None`` means the file exists and holds no complete record — the empty
+    journal ``claim`` leaves behind, which is an id taken rather than a fight.
+
+    **What it gives up, stated because it is the whole trade.** It does not
+    verify the hash chain and does not parse the records between the two ends,
+    so a journal broken in the middle summarises cleanly and is refused later,
+    by ``read``, at recovery — which is where the refusal was always going to
+    matter. It also never repairs: a partial final line is ignored rather than
+    preserved and truncated, because a listing must not rewrite the thing it is
+    listing.
+    """
+    with _JOURNAL_LOCK:
+        path = journal_path(encounter_id)
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError:
+            raise JournalError(f"unknown encounter {encounter_id!r}") from None
+        except OSError as error:
+            raise JournalError(f"cannot read {path}: {error}") from error
+
+    # Everything up to and including the final newline. A crash tail lives past
+    # it and is not a record yet, so it is neither counted nor read.
+    end = raw.rfind(b"\n") + 1
+    if end == 0:
+        return None
+    count = raw.count(b"\n", 0, end)
+    first = _decoded_record(path, raw[: raw.index(b"\n")], 1)
+    if count == 1:
+        return JournalSummary(first=first, last=first, records=1)
+    last_line = raw[raw.rindex(b"\n", 0, end - 1) + 1 : end - 1]
+    return JournalSummary(
+        first=first, last=_decoded_record(path, last_line, count), records=count
+    )
+
+
 def read(
     encounter_id: str, *, repair_partial: bool = False
 ) -> tuple[list[dict[str, Any]], dict[str, str] | None]:
@@ -166,14 +246,7 @@ def _read_unlocked(
     records: list[dict[str, Any]] = []
     previous = ""
     for line_number, line in enumerate(valid_raw.splitlines(), start=1):
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError as error:
-            raise JournalError(
-                f"{path} line {line_number} is not valid JSON: {error.msg}"
-            ) from error
-        if not isinstance(record, dict):
-            raise JournalError(f"{path} line {line_number} must be an object")
+        record = _decoded_record(path, line, line_number)
         if record.get("previous_sha256") != previous:
             raise JournalError(f"{path} line {line_number} breaks the hash chain")
         actual = _record_hash(record)

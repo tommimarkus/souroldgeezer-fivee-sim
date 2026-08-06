@@ -200,11 +200,15 @@ def creation_request(
     for path in journal_service.list_journals():
         encounter_id = path.stem
         try:
-            records, _ = journal_service.read(encounter_id)
+            summary = journal_service.head_and_tail(encounter_id)
         except journal_service.JournalError:
             continue
-        if records and records[0].get("request_id") == request_id:
-            return encounter_id, sessions.session_for(state, encounter_id)
+        if summary is None or summary.first.get("request_id") != request_id:
+            continue
+        # Only now, and only for the one that matched: recovering a session
+        # replays the fight, which is what the scan was buying for every
+        # journal on the disk to read one field off each creation record.
+        return encounter_id, sessions.session_for(state, encounter_id)
     return None
 
 
@@ -821,12 +825,15 @@ def act(
         # came back would disagree with the one the caller was told about.
         "natural": list(specs.parse_natural(natural)),
     }
+    # Refused before the attempt is written, on the terms ``audited_primitive``
+    # states: nothing was rolled, so nothing happened to record, and the journal
+    # keeps ``finalized`` as its last word.
+    if session.finalized:
+        raise RequestError(f"encounter {encounter_id!r} is finalized")
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, "encounter_act", arguments, request_id
     )
     try:
-        if session.finalized:
-            raise RequestError(f"encounter {encounter_id!r} is finalized")
         result = execute_act(
             state,
             encounter_id,
@@ -919,12 +926,13 @@ def advance(
     # rolled is an input, and a resume that re-rolled it would recover a fight
     # where somebody died who did not.
     arguments: dict[str, Any] = {"natural": list(specs.parse_natural(natural))}
+    # Before the attempt is written, on ``act``'s terms and for its reasons.
+    if session.finalized:
+        raise RequestError(f"encounter {encounter_id!r} is finalized")
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, "encounter_advance", arguments, request_id
     )
     try:
-        if session.finalized:
-            raise RequestError(f"encounter {encounter_id!r} is finalized")
         result = execute_advance(state, encounter_id, natural)
     except (RequestError, EncounterError, DiceError) as error:
         sessions.attempt_finished(
@@ -993,13 +1001,35 @@ def resume(
 
 
 def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any]:
+    """Every journal on the disk, summarised — two lines apiece, never replayed.
+
+    A listing reports an id, two timestamps, a count and whether the fight is
+    over, and every one of those is answered by the ends of the file. It used to
+    parse and hash-verify each journal whole to get them, which cost the most on
+    exactly the fights that had the most in them.
+
+    Two things follow from reading only the ends, and both are deliberate.
+
+    A journal broken in its *middle* is now listed as ``active`` rather than
+    ``corrupt``; only an unreadable file or a malformed first or last line still
+    earns that word. Nothing is trusted on the strength of it — ``read`` still
+    stands in front of recovery and refuses there, which is where a caller is
+    about to act on what the journal says.
+
+    And the status comes from the last record rather than a search for a
+    ``finalized`` one, which is sound because finalization is terminal: every
+    write refuses a finished fight *before* it journals the attempt. A journal
+    this build cannot replay is still listed — see ``_unreplayable`` — so a
+    file written by an older one is described on that assumption, which is the
+    same best effort as the timestamps beside it.
+    """
     if status not in {"active", "finalized", "all"}:
         raise RequestError("status must be active, finalized, or all")
     entries: list[dict[str, Any]] = []
     for path in journal_service.list_journals():
         encounter_id = path.stem
         try:
-            records, _ = journal_service.read(encounter_id)
+            summary = journal_service.head_and_tail(encounter_id)
         except journal_service.JournalError as error:
             if status == "all":
                 entries.append(
@@ -1011,9 +1041,9 @@ def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any
                     }
                 )
             continue
-        if not records:
+        if summary is None:
             continue
-        finalized = any(record.get("kind") == "finalized" for record in records)
+        finalized = summary.last.get("kind") == "finalized"
         actual_status = "finalized" if finalized else "active"
         if status != "all" and status != actual_status:
             continue
@@ -1021,9 +1051,9 @@ def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any
             {
                 "encounter_id": encounter_id,
                 "status": actual_status,
-                "created_at": records[0].get("timestamp"),
-                "updated_at": records[-1].get("timestamp"),
-                "records": len(records),
+                "created_at": summary.first.get("timestamp"),
+                "updated_at": summary.last.get("timestamp"),
+                "records": summary.records,
                 "journal_path": str(path),
             }
         )

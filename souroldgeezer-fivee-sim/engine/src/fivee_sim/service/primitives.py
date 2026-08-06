@@ -66,12 +66,17 @@ def audited_primitive(
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
         return cached
+    # Ahead of the journal, beside the cache hit above and for the same reason:
+    # this refusal rolls nothing and changes nothing, so a record of it is a
+    # record of the caller's mistake rather than of the fight. Keeping it here
+    # is also what makes ``finalized`` the last thing a journal can say, which
+    # is what lets ``list_encounters`` read a fight's status off one line.
+    if session.finalized:
+        raise RequestError(f"encounter {encounter_id!r} is finalized")
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, operation, arguments, request_id
     )
     try:
-        if session.finalized:
-            raise RequestError(f"encounter {encounter_id!r} is finalized")
         result = execute()
         result["encounter_id"] = encounter_id
     except ValueError as error:

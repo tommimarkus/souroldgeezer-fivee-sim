@@ -2275,3 +2275,262 @@ def test_the_format_before_this_one_is_refused_by_name_like_every_other(
         ),
     ):
         api.encounter_resume(recorded)
+
+
+# --- Cheap reads -------------------------------------------------------------
+#
+# What a journal says about itself without being replayed. ``read`` parses and
+# hash-verifies every line to answer anything at all, which is the right price
+# for recovery and the wrong one for a listing: ``encounter.list`` wants two
+# timestamps and a count, and ``creation_request`` wants one field off line 1.
+
+
+def _journal_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    return root
+
+
+def test_a_summary_names_the_first_and_last_records_and_counts_them(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=151)
+    api.encounter_advance(encounter_id)
+    written = records(journal_path(root, encounter_id))
+    assert len(written) > 2, "a head and a tail say nothing about a two-line file"
+
+    summary = encounter_journal.head_and_tail(encounter_id)
+
+    assert summary is not None
+    assert summary.first == written[0]
+    assert summary.last == written[-1]
+    assert summary.records == len(written)
+
+
+def test_a_summary_of_a_claimed_but_unwritten_journal_is_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The empty file ``claim`` leaves behind has no first record to name."""
+    _journal_root(tmp_path, monkeypatch)
+    assert encounter_journal.claim("enc-claimed") is True
+
+    assert encounter_journal.head_and_tail("enc-claimed") is None
+
+
+def test_a_summary_of_an_unknown_encounter_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _journal_root(tmp_path, monkeypatch)
+
+    with pytest.raises(
+        encounter_journal.JournalError, match="unknown encounter 'enc-nobody'"
+    ):
+        encounter_journal.head_and_tail("enc-nobody")
+
+
+def test_a_summary_answers_a_journal_whose_middle_read_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The whole of what makes it cheap, and the whole of what it gives up.
+
+    A summary reads two lines and counts newlines for the rest, so a record
+    between them that is neither parseable nor correctly chained costs it
+    nothing — and buys it nothing either. That trade is only sound because
+    ``read`` still stands in front of every path that acts on what a journal
+    says, which is the half this asserts second.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=157)
+    api.encounter_advance(encounter_id)
+    path = journal_path(root, encounter_id)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 2
+    lines[1] = "this line is not a record at all"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(
+        encounter_journal.JournalError, match="line 2 is not valid JSON"
+    ):
+        encounter_journal.read(encounter_id)
+
+    summary = encounter_journal.head_and_tail(encounter_id)
+
+    assert summary is not None
+    assert summary.records == len(lines)
+    assert summary.first["kind"] == "creation"
+
+
+def test_a_summary_stops_at_the_last_complete_record_and_repairs_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A look is not a repair. ``read`` preserves a crash tail and rewrites the
+    file; a summary may do neither, because a listing must not mutate the thing
+    it is listing.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=163)
+    api.encounter_advance(encounter_id)
+    path = journal_path(root, encounter_id)
+    written = records(path)
+    with path.open("ab") as handle:
+        handle.write(b'{"partial"')
+    before = path.read_bytes()
+
+    summary = encounter_journal.head_and_tail(encounter_id)
+
+    assert summary is not None
+    assert summary.last == written[-1]
+    assert summary.records == len(written)
+    assert path.read_bytes() == before
+    assert not path.with_suffix(".corrupt-tail").exists()
+
+
+def test_a_summary_refuses_a_first_record_it_cannot_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two lines it does read are the two it cannot shrug off."""
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=167)
+    path = journal_path(root, encounter_id)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    lines[0] = "{"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(
+        encounter_journal.JournalError, match="line 1 is not valid JSON"
+    ):
+        encounter_journal.head_and_tail(encounter_id)
+
+
+def test_a_summary_refuses_a_record_that_is_not_an_object(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=173)
+    path = journal_path(root, encounter_id)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    lines[-1] = "[1, 2, 3]"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(
+        encounter_journal.JournalError,
+        match=rf"line {len(lines)} must be an object",
+    ):
+        encounter_journal.head_and_tail(encounter_id)
+
+
+def test_a_one_record_journal_is_its_own_head_and_tail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The boundary a two-pointer read gets wrong: nothing before the tail."""
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=179)
+    written = records(journal_path(root, encounter_id))
+    assert len(written) == 1, "creation alone, before anybody acts"
+
+    summary = encounter_journal.head_and_tail(encounter_id)
+
+    assert summary is not None
+    assert summary.first == summary.last == written[0]
+    assert summary.records == 1
+
+
+def test_listing_encounters_summarises_rather_than_replays(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The cost this phase is about: a listing answers from two lines a file.
+
+    Before this, ``encounter.list`` parsed and hash-verified *every* journal on
+    the disk to report an id and two timestamps.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    active = mapless_fight(seed=181)
+    api.encounter_advance(active)
+    over = mapless_fight(seed=191)
+    api.encounter_finalize(over)
+    counts = {
+        active: len(records(journal_path(root, active))),
+        over: len(records(journal_path(root, over))),
+    }
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError("encounter.list must not replay a journal to list it")
+
+    monkeypatch.setattr(encounter_journal, "read", refuse)
+    listed = api.encounter_list(status="all")
+
+    entries = {entry["encounter_id"]: entry for entry in listed["encounters"]}
+    assert entries.keys() == {active, over}
+    assert entries[active]["status"] == "active"
+    assert entries[over]["status"] == "finalized"
+    assert entries[active]["records"] == counts[active]
+    assert entries[over]["records"] == counts[over]
+
+
+def test_matching_a_creation_request_replays_only_the_journal_it_matched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``request_id`` lives on line 1, so finding it never needed line 40."""
+    _journal_root(tmp_path, monkeypatch)
+    # Sorted first, so the scan has to look at it and decline before it matches.
+    decoy = mapless_fight(seed=193)
+    api.encounter_advance(decoy)
+    target = api.encounter_create(
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=197, request_id="one-fight"
+    )["encounter_id"]
+    api.STATE.sessions.clear()
+
+    replayed: list[str] = []
+    verbatim = encounter_journal.read
+
+    def counted(
+        encounter_id: str, **kwargs: Any
+    ) -> tuple[list[dict[str, Any]], dict[str, str] | None]:
+        replayed.append(encounter_id)
+        return verbatim(encounter_id, **kwargs)
+
+    monkeypatch.setattr(encounter_journal, "read", counted)
+    again = api.encounter_create(
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=999, request_id="one-fight"
+    )
+
+    assert again["encounter_id"] == target
+    assert again["seed"] == 197
+    assert replayed == [target], (
+        f"only the matched journal may be replayed; {decoy!r} was summarised "
+        f"and declined, and this read {replayed}"
+    )
+
+
+def test_a_finalized_fight_refuses_a_write_before_it_journals_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """What makes ``finalized`` the last thing a journal can say.
+
+    The refusal used to arrive *after* ``attempt_started`` had appended, so a
+    finished fight collected an ``attempt`` and a ``result`` record for every
+    call that bounced off it — and a listing could not then read a fight's
+    status off its last line, which is what this phase needs it to do.
+
+    Nothing is lost by moving it. A refusal here rolled no dice and changed no
+    state, so the record was of the caller's mistake rather than of the fight.
+    A refusal the *rules* make is still audited in full — see
+    ``test_a_refused_action_is_part_of_the_audit_record``.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=199)
+    api.encounter_finalize(encounter_id)
+    path = journal_path(root, encounter_id)
+    closed = records(path)
+    assert closed[-1]["kind"] == "finalized"
+
+    refusal = rf"encounter {encounter_id!r} is finalized"
+    with pytest.raises(RequestError, match=refusal):
+        api.encounter_advance(encounter_id)
+    with pytest.raises(RequestError, match=refusal):
+        api.encounter_act(encounter_id, "attack", target="Goblin")
+    with pytest.raises(RequestError, match=refusal):
+        api.roll("1d20", encounter_id=encounter_id)
+
+    assert records(path) == closed

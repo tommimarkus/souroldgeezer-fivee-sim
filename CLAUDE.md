@@ -441,6 +441,27 @@ an older format, a v1 journal is refused by name at recovery, and
 `encounter.list` still lists it anyway, because a hash-valid file that this
 build cannot replay is not a corrupt one.
 
+**Verification is priced where it is needed, and a look is not a read.**
+`read` parses and hash-verifies every line, which is the right price to pay
+before *trusting* a journal and the wrong one for the two callers that only ever
+wanted its ends — `encounter.list` reports an id, two timestamps, a count and
+whether the fight is over, and `creation_request` matches one field off the
+creation record. Both used to buy every journal on the disk whole to get them.
+`head_and_tail` reads the bytes once, counts newlines, and parses exactly the
+first and last complete records; full verification stays in `recover_session`,
+which is where a caller is about to act on what the journal says.
+
+Two properties make that sound rather than merely cheap. A journal broken in the
+**middle** now lists as `active` rather than `corrupt` — nothing is trusted on
+the strength of a summary, and the refusal still arrives, in full, at recovery.
+And **finalization is terminal**: `act`, `advance` and `audited_primitive` all
+refuse a finished fight *before* `attempt_started` writes anything, so
+`finalized` is the last word a journal can hold and a listing can read a status
+off one line. That refusal rolled no dice and changed no state, which is what
+makes dropping its record a saving rather than a deletion — the same test
+`REPLAYED_OPERATIONS` applies, and the same reason `cached_request` short-circuits
+above it. A refusal the *rules* make is still audited in full.
+
 **A blob is the fourth storage kind, and it is defined entirely by its name.**
 `service/blobs.py` writes a payload to a file named for the SHA-256 of its own
 canonical bytes, and everything else follows without machinery: publishing is a
