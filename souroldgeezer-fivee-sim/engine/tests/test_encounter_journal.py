@@ -561,6 +561,305 @@ class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
         ):
             api.encounter_resume(recorded)
 
+    # -- the replay loop, which is the other half of recovery ----------------
+
+    def test_an_act_this_build_refuses_names_the_record_it_stopped_at(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The reported case, and an ``EncounterError`` like the two above.
+
+        Rebuilding the encounter is only the first thing recovery does; it then
+        replays every recorded result through the same ``Encounter``. A rules
+        change that makes a recorded action illegal lands here rather than in
+        ``__init__``, and it used to escape the same way — untranslated, and
+        out of the adapter as a 500.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=157)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError,
+            match=rf"cannot recover 'enc-9001''s fight: record "
+            rf"{saved[position]['index']} \(encounter_act, .+\) will not replay "
+            rf"under this build: EncounterError: this action needs a target",
+        ):
+            api.encounter_resume(recorded)
+
+    def test_a_condition_the_content_no_longer_defines_arrives_as_a_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The escape no ``ValueError`` clause catches.
+
+        ``UnknownCondition`` is a ``KeyError``, so a handler written around the
+        ``ValueError`` family — which is every other refusal the service layer
+        raises — lets it straight through. ``encounters.condition`` names it
+        explicitly for exactly that reason; the replay loop did not, and a pack
+        that has since dropped a condition is the ordinary way to arrive here.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=163)
+        position = result_position(saved, "encounter_condition")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        arguments["condition"] = "bewildered"
+
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError,
+            match=rf"cannot recover 'enc-9001''s fight: record "
+            rf"{saved[position]['index']} \(encounter_condition, .+\) will not "
+            rf"replay under this build: UnknownCondition: no condition named "
+            rf"'bewildered'",
+        ):
+            api.encounter_resume(recorded)
+
+    def test_an_advance_whose_recorded_faces_are_not_a_list_arrives_as_a_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The third replayed operation, and the ``TypeError`` route into it.
+
+        Nothing that fails here is the engine call itself: the failure is in
+        reading the recorded arguments back, which is where a journal written
+        against a different argument shape breaks first. It is the same
+        unrecoverable fight to a caller, so it is the same refusal.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=167)
+        position = result_position(saved, "encounter_advance")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        arguments["natural"] = 19
+
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError,
+            match=rf"cannot recover 'enc-9001''s fight: record "
+            rf"{saved[position]['index']} \(encounter_advance, .+\) will not "
+            rf"replay under this build: TypeError: 'int' object is not iterable",
+        ):
+            api.encounter_resume(recorded)
+
+    def test_an_action_kind_this_build_does_not_define_arrives_as_a_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A plain ``ValueError``, raised before the encounter is even asked.
+
+        ``specs.action_from_journal`` builds an ``ActionKind`` out of the
+        recorded string, and an engine that has renamed or dropped one refuses
+        there. That is a build difference rather than a rules difference, and
+        the caller needs to be told the same thing either way.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=173)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        arguments["kind"] = "parley"
+
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError,
+            match=rf"cannot recover 'enc-9001''s fight: record "
+            rf"{saved[position]['index']} \(encounter_act, .+\) will not replay "
+            rf"under this build: ValueError: 'parley' is not a valid ActionKind",
+        ):
+            api.encounter_resume(recorded)
+
+    def test_a_record_missing_an_argument_the_replay_reads_arrives_as_a_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The bare ``KeyError``, which is the shape a hand-repaired record has."""
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=179)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["kind"]
+
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError,
+            match=rf"cannot recover 'enc-9001''s fight: record "
+            rf"{saved[position]['index']} \(encounter_act, .+\) will not replay "
+            rf"under this build: KeyError: kind",
+        ):
+            api.encounter_resume(recorded)
+
+    def test_the_refusal_says_the_journal_is_intact_and_names_both_remedies(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The half of the sentence that exists to prevent the next failure.
+
+        A caller told only "cannot replay past record 4" reaches for the
+        journal and edits it, which is strictly worse than what was reported:
+        every record after the edit fails its hash, ``encounter.list`` drops
+        the fight to ``corrupt``, and nothing is preserved the way
+        ``repair_partial`` preserves a crash tail. So the refusal has to say
+        the file is intact, say not to edit it, and name the two things that
+        do work — the build that wrote it, and reading the record out of the
+        ``journal_path`` the listing already reports.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=181)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError, match="will not replay under this build"
+        ) as refused:
+            api.encounter_resume(recorded)
+
+        refusal = str(refused.value)
+        assert "The journal is intact and hash-valid; do not edit it" in refusal
+        assert "Run the build that wrote it" in refusal
+        assert "journal_path that encounter.list reports" in refusal
+
+    def test_nothing_is_published_by_the_attempt_that_refused(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The refusal is clean and repeatable, which is what makes it safe.
+
+        Recovery neither installs a partial session nor appends to the journal,
+        so a second attempt fails exactly like the first rather than reporting a
+        different record, and a caller that fixes its build gets the whole fight
+        rather than whatever the first attempt left behind.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        saved = self.a_recorded_fight(root, seed=191)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+
+        recorded = self.replayed(root, saved)
+        before = journal_path(root, recorded).read_bytes()
+
+        with pytest.raises(RequestError, match="will not replay under this build"):
+            api.encounter_resume(recorded)
+        with pytest.raises(RequestError, match="will not replay under this build"):
+            api.encounter_resume(recorded)
+
+        assert recorded not in api.STATE.sessions
+        assert journal_path(root, recorded).read_bytes() == before
+
+    def test_the_refusal_reaches_an_adventure_that_would_carry_the_fight_forward(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The case that forbids ever falling back to a partial session.
+
+        ``adventures._carried_specs`` reaches ``session_for`` on the default
+        carry path and writes what it finds into the *next* chapter's creation
+        journal. A recovery that stopped at the last replayable record and
+        served what it had would put a fight that never happened on disk, under
+        a fresh hash chain, indistinguishable from one that did — which is the
+        durable lie ``adventures`` already refuses to compose a replay out of.
+        So the chapter boundary is refused too, and it is refused with the same
+        sentence rather than a second one.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        adventure_id = str(api.adventure_create("The Broken Build")["id"])
+        first = api.adventure_encounter(
+            adventure_id, combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=197
+        )
+        encounter_id = str(first["encounter_id"])
+        advance_encounter_to(encounter_id, "Thora")
+        api.encounter_act(encounter_id, "attack", target="Goblin", attack="Longsword")
+
+        # Amended in place, because it is the adventure's own member: the
+        # chapter that has to be carried out of is the one on the document.
+        saved = deepcopy(records(journal_path(root, encounter_id)))
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+        journal_path(root, encounter_id).unlink()
+        rechained(encounter_id, saved)
+        api.STATE.sessions.clear()
+
+        with pytest.raises(
+            RequestError,
+            match=rf"cannot recover {encounter_id!r}'s fight: record "
+            rf"{saved[position]['index']} \(encounter_act, .+\) will not replay "
+            rf"under this build: EncounterError: this action needs a target",
+        ):
+            api.adventure_encounter(adventure_id, seed=199)
+
+    # -- fixtures -----------------------------------------------------------
+
+    def a_recorded_fight(self, root: Path, seed: int) -> list[dict[str, Any]]:
+        """One fight's journal, holding a result of each replayed operation.
+
+        The replay loop has three engine calls in it and a refusal from any of
+        them escaped identically, so a fixture that recorded only an attack
+        would leave two thirds of the loop unpinned.
+
+        The closing advance is not the one ``advance_encounter_to`` may have
+        taken: at some seeds Thora already holds the first turn and that helper
+        records nothing at all, which left this fixture's third operation a
+        property of the seed rather than of the fixture.
+        """
+        encounter_id = mapless_fight(seed=seed)
+        advance_encounter_to(encounter_id, "Thora")
+        api.encounter_act(encounter_id, "attack", target="Goblin", attack="Longsword")
+        api.encounter_condition(encounter_id, "Goblin", "poisoned")
+        api.encounter_advance(encounter_id)
+        return deepcopy(records(journal_path(root, encounter_id)))
+
+    def replayed(self, root: Path, saved: list[dict[str, Any]]) -> str:
+        """These records as a journal of their own, re-chained around the edit.
+
+        Re-chained rather than rewritten in place, because a hand-edited record
+        fails its own hash and would be refused by ``read`` long before the
+        replay loop saw it — a different refusal, with a different owner. What
+        arrives here is a journal that is internally perfect and simply cannot
+        be replayed by this build.
+        """
+        recorded = "enc-9001"
+        for entry in saved:
+            if entry["kind"] == "creation":
+                entry["encounter_id"] = recorded
+        rechained(recorded, saved)
+        assert journal_path(root, recorded).exists()
+        return recorded
+
+
+def result_position(saved: list[dict[str, Any]], operation: str) -> int:
+    """Where in the journal the one recorded ``result`` for ``operation`` sits."""
+    for position, entry in enumerate(saved):
+        if entry["kind"] == "result" and entry["operation"] == operation:
+            return position
+    raise AssertionError(f"no recorded {operation!r} result to amend")
+
+
+def rechained(encounter_id: str, saved: list[dict[str, Any]]) -> None:
+    """Append these records under ``encounter_id``, letting ``append`` re-hash."""
+    for entry in saved:
+        entry.pop("previous_sha256", None)
+        entry.pop("sha256", None)
+        encounter_journal.append(encounter_id, entry)
+
 
 #: An interlude's roster: two of the party, nobody opposing them. What makes it
 #: a chapter rather than a fight is the mode, and the mode is the thing every

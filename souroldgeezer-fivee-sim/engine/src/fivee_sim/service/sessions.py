@@ -522,6 +522,48 @@ def attempt_finished(
 
 
 # --- recovery --------------------------------------------------------------
+def _unreplayable(
+    encounter_id: str,
+    index: int,
+    operation: str,
+    record: Mapping[str, Any],
+    error: BaseException,
+) -> str:
+    """Why the whole fight is refused, and what to do instead of editing it.
+
+    Recovery refuses the fight rather than serving the prefix that did replay,
+    and the two sentences here are that decision written down. A truncated
+    session is not a smaller answer, it is a *wrong* one: ``adventures``
+    carries the previous chapter's cast into the next chapter's creation
+    journal, and ``encounter.replay`` stamps an integrity block over whatever
+    it is handed — so a fight that stopped early becomes durable, hash-valid,
+    and indistinguishable from a fight that ended there.
+
+    The second half exists to prevent the failure this refusal would otherwise
+    cause. Told only which record it stopped at, a caller reaches for the file;
+    a hand-edited record breaks every hash after it, and the fight drops to
+    ``list_encounters``' ``corrupt`` with nothing preserved the way a crash
+    tail is preserved by ``repair_partial``. That is strictly worse than what
+    was reported, so the sentence says the journal is intact, says not to edit
+    it, and names the two remedies that work.
+    """
+    # ``KeyError.__str__`` is the ``repr`` of its argument, so a missing key
+    # prints as ``'kind'`` and ``UnknownCondition``'s whole sentence arrives
+    # wrapped in quotes. The type is named beside it either way, so the quoting
+    # buys nothing.
+    reason = str(error.args[0]) if isinstance(error, KeyError) and error.args else str(error)
+    timestamp = record.get("timestamp", "no timestamp")
+    return (
+        f"cannot recover {encounter_id!r}'s fight: record {index} "
+        f"({operation}, {timestamp}) will not replay under this build: "
+        f"{type(error).__name__}: {reason}. "
+        f"The journal is intact and hash-valid; do not edit it — a changed record "
+        f"invalidates every hash after it, and the fight is then refused as corrupt "
+        f"with nothing preserved. Run the build that wrote it, or read the record "
+        f"with the journal_path that encounter.list reports."
+    )
+
+
 def recover_session(
     state: EngineState, encounter_id: str
 ) -> tuple[Session, dict[str, str] | None]:
@@ -639,46 +681,89 @@ def recover_session(
         }
         operation = str(record.get("operation"))
         status = str(record.get("status"))
-        if status == "success" and operation == "encounter_act":
-            before = len(encounter.log)
-            # The actor is an *input* to the act, exactly as a supplied d20 face
-            # is: an interlude has no initiative to re-derive it from, so a
-            # replay that dropped it would be refused rather than resolving the
-            # wrong creature. ``None`` for a fight, and for every act recorded
-            # before this key existed — which is the same value they ran with.
-            acted = record["arguments"]
-            actor = acted.get("actor")
-            encounter.act(
-                specs.action_from_journal(acted),
-                rng,
-                actor=str(actor) if actor is not None else None,
-            )
-            timestamp = str(record["timestamp"])
-            session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
-            capture_checkpoint(session, timestamp)
-        elif status == "success" and operation == "encounter_condition":
-            # A ruling changes the fight, so recovery has to replay it like an
-            # action. It consumes no randomness and emits into the log, so the
-            # timestamps and checkpoint follow the same shape as the two below.
-            before = len(encounter.log)
-            arguments = record.get("arguments", {})
-            encounter.set_condition(
-                str(arguments["target"]),
-                str(arguments["condition"]),
-                applied=bool(arguments.get("applied", True)),
-                levels=int(arguments.get("levels", 1)),
-            )
-            timestamp = str(record["timestamp"])
-            session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
-            capture_checkpoint(session, timestamp)
-        elif status == "success" and operation == "encounter_advance":
-            before = len(encounter.log)
-            encounter.advance(
-                rng, tuple(int(f) for f in record.get("arguments", {}).get("natural") or ())
-            )
-            timestamp = str(record["timestamp"])
-            session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
-            capture_checkpoint(session, timestamp)
+        # Rebuilding the encounter above is only half of recovery; replaying
+        # these is the other half, and it was the untranslated half. Each call
+        # re-runs a rules path over a record this process did not necessarily
+        # write, so an action the current build refuses — or an argument dict
+        # written to a shape it no longer reads — raises straight past
+        # ``service/`` into the adapter's last resort as a 500.
+        #
+        # The whole fight is refused, not the prefix that replayed: see
+        # ``_unreplayable``. Nothing is published on the way out — no session
+        # in ``state.sessions``, no append, no ``journal_head`` — so the
+        # refusal is repeatable and a caller that fixes its build gets the
+        # whole fight rather than what an earlier attempt left behind.
+        try:
+            if status == "success" and operation == "encounter_act":
+                before = len(encounter.log)
+                # The actor is an *input* to the act, exactly as a supplied d20
+                # face is: an interlude has no initiative to re-derive it from,
+                # so a replay that dropped it would be refused rather than
+                # resolving the wrong creature. ``None`` for a fight, and for
+                # every act recorded before this key existed — which is the
+                # same value they ran with.
+                acted = record["arguments"]
+                actor = acted.get("actor")
+                encounter.act(
+                    specs.action_from_journal(acted),
+                    rng,
+                    actor=str(actor) if actor is not None else None,
+                )
+                timestamp = str(record["timestamp"])
+                session.event_timestamps.extend(
+                    [timestamp] * (len(encounter.log) - before)
+                )
+                capture_checkpoint(session, timestamp)
+            elif status == "success" and operation == "encounter_condition":
+                # A ruling changes the fight, so recovery has to replay it like
+                # an action. It consumes no randomness and emits into the log,
+                # so the timestamps and checkpoint follow the same shape as the
+                # two below.
+                before = len(encounter.log)
+                arguments = record.get("arguments", {})
+                encounter.set_condition(
+                    str(arguments["target"]),
+                    str(arguments["condition"]),
+                    applied=bool(arguments.get("applied", True)),
+                    levels=int(arguments.get("levels", 1)),
+                )
+                timestamp = str(record["timestamp"])
+                session.event_timestamps.extend(
+                    [timestamp] * (len(encounter.log) - before)
+                )
+                capture_checkpoint(session, timestamp)
+            elif status == "success" and operation == "encounter_advance":
+                before = len(encounter.log)
+                encounter.advance(
+                    rng,
+                    tuple(int(f) for f in record.get("arguments", {}).get("natural") or ()),
+                )
+                timestamp = str(record["timestamp"])
+                session.event_timestamps.extend(
+                    [timestamp] * (len(encounter.log) - before)
+                )
+                capture_checkpoint(session, timestamp)
+        except RequestError:
+            # First, and load-bearing. ``RequestError`` is a ``ValueError``, so
+            # the clause below would take one raised *inside* the replay and
+            # wrap this journal's sentence around a refusal that already named
+            # its own subject. Nothing in the three calls raises one today;
+            # this is what keeps that from becoming a silent mistranslation the
+            # day something does.
+            raise
+        except (IndexError, KeyError, TypeError, ValueError) as error:
+            # Four families rather than ``EncounterError`` alone, and each has
+            # a route in. The rules refuse the recorded action:
+            # ``EncounterError``, a ``ValueError``. The content no longer
+            # defines a recorded condition: ``UnknownCondition``, a *KeyError*,
+            # which no ``ValueError`` clause catches — ``encounters.condition``
+            # names it explicitly for exactly this reason. And the argument
+            # dicts themselves are read here: an absent key, a renamed
+            # ``ActionKind``, a value of the wrong type or a short sequence all
+            # arrive from a journal whose writer disagrees with this reader.
+            raise RequestError(
+                _unreplayable(encounter_id, index, operation, record, error)
+            ) from error
         session.attempts.append(audit)
         request_id = record.get("request_id")
         if isinstance(request_id, str):
