@@ -70,15 +70,18 @@ __all__ = ["StaleWriteError", "atomic_write", "file_lock", "guarded_write", "loc
 def lock_path(path: Path) -> Path:
     """The sibling lock guarding ``path``.
 
-    A sibling rather than the file itself: the guarded file may not exist yet,
-    and a journal's own directory listing must not grow a phantom entry — the
-    ``.lock`` suffix keeps it outside the ``enc-*.jsonl`` glob.
+    A sibling rather than the file itself, because the guarded file may not
+    exist yet. The ``.lock`` suffix is what keeps it out of the listings that
+    scan these directories — a maps root globs ``*.json``, and a fight's own
+    directory is recognised by the names it holds.
 
-    These files accumulate and are **never reaped**, which is deliberate rather
-    than neglected. Mutual exclusion here is a property of the inode: unlinking
-    a lock another process is holding lets the next arrival create a fresh one
-    and take a lock that excludes nobody. An empty file per map and per
-    encounter is the cheaper end of that trade.
+    These files accumulate and are **never reaped by the lock machinery**, which
+    is deliberate rather than neglected. Mutual exclusion here is a property of
+    the inode: unlinking a lock another process is holding lets the next arrival
+    create a fresh one and take a lock that excludes nobody. An empty file per
+    map and per encounter is the cheaper end of that trade.
+    ``encounter.prune`` removes one only as part of removing the fight it
+    guarded, having established under that very lock that there is no fight.
     """
     return path.parent / f"{path.name}.lock"
 

@@ -756,6 +756,18 @@ ROUTES: tuple[Route, ...] = (
         example={"combatants": _COMBATANTS_EXAMPLE, "seed": 20260805},
         handler="encounter_create", success=201,
     ),
+    # Declared above the ``{id}`` routes on purpose: ``find`` takes the first
+    # template that matches, so a literal segment that could also read as an id
+    # has to come first to stay unambiguous.
+    Route(
+        "POST", f"{API_PREFIX}/encounters/prune", "encounter.prune",
+        "Reclaim ids claimed by a creation that never wrote a fight. Lists by default.",
+        body_schema={
+            "type": "object",
+            "properties": {"apply": {"type": "boolean", "default": False}},
+        },
+        handler="encounter_prune",
+    ),
     Route(
         "GET", f"{API_PREFIX}/encounters/{{id}}", "encounter.state",
         "The authoritative state of one encounter. Narrate from this.",

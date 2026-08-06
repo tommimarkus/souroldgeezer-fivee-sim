@@ -37,7 +37,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.paths import encounters_root, replays_root
+from fivee_sim.paths import adventures_root, encounters_root, replays_root
 from fivee_sim.service import adventures
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, ReplayError, RequestError
@@ -60,6 +60,19 @@ UNHASHED_KEYS: frozenset[str] = frozenset({
     # The block itself; it cannot hash its own hashes.
     "integrity",
 })
+
+
+def artifact_of(encounter_id: str) -> Path:
+    """The frozen replay ``encounter.finalize`` wrote for one fight.
+
+    Spelled once here rather than at each of the four cases below that reach
+    for one, and spelled out rather than imported from
+    ``encounters.replay_path``: these tests want the file on disk, and a helper
+    that asked the subject where it put things would still find it after a move
+    nobody meant to make. Where the layout itself is the claim is
+    ``test_encounter_journal``'s own siblings case.
+    """
+    return encounters_root() / encounter_id / "replay.json"
 
 
 def run_of(chapters: int, name: str = "The Sunless Citadel") -> str:
@@ -292,7 +305,7 @@ class TestWhatCompositionRefuses:
         # must refuse, and it must write nothing.
         adventure_id = run_of(1)
         member = api.adventure_state(adventure_id)["members"][0]
-        artifact = encounters_root() / f"{member['encounter_id']}.replay.json"
+        artifact = artifact_of(str(member["encounter_id"]))
         assert artifact.is_file()
         artifact.unlink()
 
@@ -304,7 +317,7 @@ class TestWhatCompositionRefuses:
     def test_a_member_artifact_that_is_not_json_is_refused_not_embedded(self) -> None:
         adventure_id = run_of(1)
         member = api.adventure_state(adventure_id)["members"][0]
-        artifact = encounters_root() / f"{member['encounter_id']}.replay.json"
+        artifact = artifact_of(str(member["encounter_id"]))
         artifact.write_text("{ this is not json", encoding="utf-8")
 
         with pytest.raises(RequestError, match="is not valid JSON"):
@@ -335,7 +348,7 @@ class TestWhatCompositionRefuses:
         # corrupted member artifact cannot reach disk inside a run's replay.
         adventure_id = run_of(1)
         member = api.adventure_state(adventure_id)["members"][0]
-        artifact = encounters_root() / f"{member['encounter_id']}.replay.json"
+        artifact = artifact_of(str(member["encounter_id"]))
         broken = json.loads(artifact.read_text(encoding="utf-8"))
         del broken["events"]
         artifact.write_text(json.dumps(broken), encoding="utf-8")
@@ -492,9 +505,7 @@ class TestTheValidateRouteDispatches:
         adventure_id = run_of(1)
         member = api.adventure_state(adventure_id)["members"][0]
         bundle = json.loads(
-            (encounters_root() / f"{member['encounter_id']}.replay.json").read_text(
-                encoding="utf-8"
-            )
+            artifact_of(str(member["encounter_id"])).read_text(encoding="utf-8")
         )
 
         assert api.replay_validate(bundle)["valid"] is True
@@ -502,8 +513,14 @@ class TestTheValidateRouteDispatches:
         assert api.replay_validate(bundle)["valid"] is False
 
 
-class TestTheGlobBesideTheJournals:
-    """``adv-*.json`` is a wider net than an adventure id, and an envelope is not one."""
+class TestTheGlobInTheAdventuresRoot:
+    """``adv-*.json`` is a wider net than an adventure id, and an envelope is not one.
+
+    A root of their own settled the other half of this — a journal cannot be
+    mistaken for an adventure because no listing reaches both — and settled
+    none of this one: ``adventure.replay`` writes wherever the caller names,
+    and this directory is a perfectly reasonable place to name.
+    """
 
     def test_composing_leaves_no_corrupt_adventure_in_the_listing(self) -> None:
         adventure_id = run_of(1)
@@ -514,7 +531,7 @@ class TestTheGlobBesideTheJournals:
         assert [entry["adventure_id"] for entry in listed] == [adventure_id]
         assert [entry["status"] for entry in listed] == ["active"]
 
-    def test_an_envelope_written_beside_the_journals_is_not_read_as_an_adventure(
+    def test_an_envelope_written_among_the_adventures_is_not_read_as_one(
         self,
     ) -> None:
         # The trap the default output location sidesteps and an explicit path
@@ -524,7 +541,7 @@ class TestTheGlobBesideTheJournals:
         adventure_id = run_of(1)
 
         api.adventure_replay(
-            adventure_id, path=str(encounters_root() / f"{adventure_id}.replay.json")
+            adventure_id, path=str(adventures_root() / f"{adventure_id}.replay.json")
         )
 
         listed = api.adventure_list("all")["adventures"]
@@ -540,7 +557,7 @@ class TestTheGlobBesideTheJournals:
         # meets the listing, and a count would pass against a name it invented.
         adventure_id = run_of(1)
         api.adventure_replay(
-            adventure_id, path=str(encounters_root() / f"{adventure_id}.replay.json")
+            adventure_id, path=str(adventures_root() / f"{adventure_id}.replay.json")
         )
 
         with pytest.raises(

@@ -462,6 +462,38 @@ makes dropping its record a saving rather than a deletion — the same test
 `REPLAYED_OPERATIONS` applies, and the same reason `cached_request` short-circuits
 above it. A refusal the *rules* make is still audited in full.
 
+**Each fight owns a directory, and the id is the directory's name.**
+`<encounters_root>/enc-7/` holds `journal.jsonl`, the lock guarding it, a
+quarantined corrupt tail if there ever was one, and the frozen `replay.json`
+`encounter.finalize` writes — every artifact addressed by encounter id in one
+place, each named for what it is rather than for which fight it belongs to. The
+**empty file is still the claim**, not the directory: `claim` creates
+`journal.jsonl` with `O_EXCL`, which is what makes handing out an id atomic
+across processes, and a directory that exists proves nothing about who made it.
+
+**Adventures moved to a root of their own in the same step**, and that is the
+point rather than tidiness. One root used to hold both kinds, kept apart by an
+`enc-`/`adv-` id grammar in one module and an `enc-*.jsonl` glob in another —
+two facts in two places obliged to stay true together, where a saved adventure
+named `enc-1` would have collided with a fight. `FIVEE_SIM_ADVENTURES` /
+`.fivee-sim/adventures` is the same guarantee with nothing to keep in step. The
+grammar survives the move doing narrower work: `adv-` now refuses `..`, a
+separator and an absolute path, because `adventure.replay` writes wherever the
+caller names it to.
+
+**`encounter.prune` gives an id back, and it is a dry run unless asked
+otherwise.** `create` claims its id before the durable work, so a failed blob
+write or a dead process spends a name and leaves an empty journal behind, and
+until now nothing ever reclaimed one. A dry run reads and writes nothing at all
+— not even the lock file `durable.file_lock` would create on the way to taking
+one — and `apply` re-checks emptiness under that lock before removing the
+journal, then the lock and the directory outside it. What the lock cannot
+exclude is a creation *currently* between its claim and its first append: that
+id is legitimately empty for the width of that window, and reaping it there
+would hand the same name out twice. So this is an operator's decision on a quiet
+engine rather than a reaper on a timer, and the default answer is a list to look
+at.
+
 **A blob is the fourth storage kind, and it is defined entirely by its name.**
 `service/blobs.py` writes a payload to a file named for the SHA-256 of its own
 canonical bytes, and everything else follows without machinery: publishing is a
@@ -485,8 +517,12 @@ and one shared file. What is left is almost entirely `combatants`, which is an
 **Blobs are never deleted, and that is a decision rather than an omission.** A
 journal names one for as long as the journal exists, and no process can know
 which other one is mid-recovery on a fight it has not been told about — the same
-reasoning that retains old launcher source copies. Reaping them is
-`encounter.prune`'s question, alongside the journals that would license it.
+reasoning that retains old launcher source copies. `encounter.prune` reclaims
+ids and deliberately does not answer this: a journal names its blobs on the
+creation record, so an id with no creation record named none, and an empty
+journal holds nothing that could license removing one. Retiring a blob needs a
+survey of the journals that *do* name them — a different operation against a
+different hazard.
 
 The cost is paid where it is visible: the blobs are a **sibling** root of the
 journals, not a child, because the point of one is to be shared by every journal

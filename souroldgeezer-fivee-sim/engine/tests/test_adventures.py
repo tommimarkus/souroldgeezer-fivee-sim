@@ -25,6 +25,7 @@ from typing import Any
 
 import pytest
 
+from fivee_sim.paths import adventures_root, encounters_root
 from fivee_sim.service import adventures, specs
 from fivee_sim.service.errors import NotFoundError, RequestError, StaleWriteError
 
@@ -333,7 +334,7 @@ class TestCarryForward:
 class TestTheAdventureDocument:
     """A guarded document, not a journal: one small write per encounter."""
 
-    def test_a_new_adventure_is_an_empty_run_written_where_encounters_live(self) -> None:
+    def test_a_new_adventure_is_an_empty_run_written_in_its_own_root(self) -> None:
         created = api.adventure_create("The Sunless Citadel")
 
         assert created["format"] == "fivee-sim-adventure"
@@ -345,17 +346,25 @@ class TestTheAdventureDocument:
         assert created["version"]
 
         path = adventures.adventure_path("adv-1")
+        assert path.parent == adventures_root()
         assert json.loads(path.read_text(encoding="utf-8"))["id"] == "adv-1"
 
-    def test_the_ids_do_not_collide_with_the_journals_beside_them(self) -> None:
-        # `adventures` and `encounter_journal` share a directory on purpose, and
-        # this is the property that makes that safe: `list_journals` globs
-        # `enc-*.jsonl` and an adventure is `adv-<n>.json`, so neither listing
-        # can ever report the other's files.
-        adventure = api.adventure_create("Shared Roots")
+    def test_an_adventure_and_a_fight_do_not_share_a_root_at_all(self) -> None:
+        # `adventures` and `encounter_journal` used to share a directory, kept
+        # apart by two id grammars and two globs — a scheme that had to stay
+        # true in four places at once. They are two roots now, so a listing
+        # cannot report the other's files because it cannot reach them.
+        adventure = api.adventure_create("Separate Roots")
         api.adventure_encounter(
             str(adventure["id"]), combatants=[BRAWLER, RUFFIAN], seed=52
         )
+
+        assert adventures_root() != encounters_root()
+        # The document and the lock guarding it, and nothing a fight left here.
+        assert {path.name for path in adventures_root().iterdir()} == {
+            "adv-1.json", "adv-1.json.lock",
+        }
+        assert [path.name for path in encounters_root().iterdir()] == ["enc-1"]
 
         listed = {entry["encounter_id"] for entry in api.encounter_list("all")["encounters"]}
         assert listed == {"enc-1"}

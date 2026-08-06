@@ -684,8 +684,8 @@ class TestHelp:
         rendered = capsys.readouterr().out
         missing = sorted(name for name in served if f"  {name} " not in rendered)
         assert not missing, f"the operations index lists these and help does not: {missing}"
-        assert len(served) == 52, (
-            f"the contract now has {len(served)} operations, not 52; this number is "
+        assert len(served) == 53, (
+            f"the contract now has {len(served)} operations, not 53; this number is "
             f"here so a route silently disappearing is a failure, not a shorter list"
         )
 

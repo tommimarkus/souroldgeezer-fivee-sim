@@ -53,6 +53,7 @@ maps = ["maps", "/opt/shared/maps"]
 replays = "replays"
 scenes = "scenes"
 encounters = "/opt/shared/encounters"
+adventures = "adventures"
 blobs = "blobs"
 
 [development]
@@ -76,6 +77,7 @@ reload = true
     assert config.replay_paths == ((config_path.parent / "replays").resolve(),)
     assert config.scenes_dir == (config_path.parent / "scenes").resolve()
     assert config.encounters_dir == Path("/opt/shared/encounters")
+    assert config.adventures_dir == (config_path.parent / "adventures").resolve()
     assert config.blobs_dir == (config_path.parent / "blobs").resolve()
     assert config.reload is True
 
@@ -94,6 +96,7 @@ def test_load_config_uses_defaults_beside_the_config_file(tmp_path: Path) -> Non
     assert without_content.replay_paths == (config_dir / "replays",)
     assert without_content.scenes_dir == config_dir / "scenes"
     assert without_content.encounters_dir == config_dir / "encounters"
+    assert without_content.adventures_dir == config_dir / "adventures"
     assert without_content.blobs_dir == config_dir / "blobs"
     assert without_content.reload is False
 
@@ -240,6 +243,7 @@ maps = ["maps-a", "maps-b"]
 replays = ["replays-a", "replays-b"]
 scenes = "scenes"
 encounters = "encounters"
+adventures = "adventures"
 blobs = "blobs"
 [development]
 reload = true
@@ -254,6 +258,7 @@ reload = true
         "FIVEE_SIM_REPLAYS",
         "FIVEE_SIM_SCENES",
         "FIVEE_SIM_ENCOUNTERS",
+        "FIVEE_SIM_ADVENTURES",
         "FIVEE_SIM_BLOBS",
         "FIVEE_SIM_RELOAD",
     }
@@ -274,6 +279,7 @@ reload = true
         "FIVEE_SIM_REPLAYS": os.pathsep.join(str(path) for path in config.replay_paths),
         "FIVEE_SIM_SCENES": str(config.scenes_dir),
         "FIVEE_SIM_ENCOUNTERS": str(config.encounters_dir),
+        "FIVEE_SIM_ADVENTURES": str(config.adventures_dir),
         "FIVEE_SIM_BLOBS": str(config.blobs_dir),
         "FIVEE_SIM_RELOAD": "1",
     }

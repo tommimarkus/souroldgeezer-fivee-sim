@@ -12,11 +12,14 @@ you read is the precondition you write under, and a second writer is refused
 rather than merged. ``finalized`` is a field here rather than a record to scan
 for, for the same reason.
 
-**It lives beside the journals rather than in a fourth root.** ``adv-<n>.json``
-in :func:`~fivee_sim.paths.encounters_root`, which cannot collide with anything
-``encounter_journal`` owns: its ``_SAFE_ID`` is anchored on ``enc-`` and
-``list_journals`` globs ``enc-*.jsonl``. Widening either would make
-``encounter.list`` report adventures as fights in progress.
+**It has its own root.** ``adv-<n>.json`` in
+:func:`~fivee_sim.paths.adventures_root`. It used to live beside the journals,
+kept apart from them by an id grammar anchored on ``enc-`` and a glob that
+matched ``enc-*.jsonl`` — two facts in two modules that had to stay true
+together, where widening either would have had ``encounter.list`` reporting
+adventures as fights in progress. A separate root is the same guarantee with
+nothing to keep in step: a listing cannot report the other kind's files because
+it cannot reach them.
 
 **This module imports :mod:`~fivee_sim.service.encounters`, and never the
 reverse.** An ``adventure_id`` argument on ``encounter.create`` would invert
@@ -63,7 +66,7 @@ from typing import Any
 
 from .. import __version__
 from ..model.encounter import EncounterMode
-from ..paths import encounters_root
+from ..paths import adventures_root
 from . import durable, encounters, sessions
 from . import encounter_journal as journal_service
 from . import replay as replay_service
@@ -108,9 +111,11 @@ DOCUMENT_FIELDS: tuple[str, ...] = ("id", "name", "created_at", "status")
 #: exemption ``encounter.list.status`` still carries.
 LIST_STATUSES: tuple[str, ...] = ("active", "finalized", "all")
 
-#: Anchored on ``adv-`` for the reason ``encounter_journal._SAFE_ID`` is
-#: anchored on ``enc-``: the two share a directory, and an id that could match
-#: both grammars is an id that could name either file.
+#: Still anchored on ``adv-``, but no longer for the reason it was: the two
+#: kinds have separate roots now and cannot name each other's files whatever the
+#: grammars say. What the anchor is left doing is what a path-safety pattern is
+#: actually for — refusing ``..``, a separator, or an absolute path in an id
+#: that becomes a filename.
 _SAFE_ID = re.compile(r"^adv-[A-Za-z0-9_-]+$")
 
 #: The version a file that is not there reports. A sentinel rather than ``None``
@@ -213,7 +218,7 @@ def adventure_path(adventure_id: str) -> Path:
     """
     if _SAFE_ID.fullmatch(adventure_id) is None:
         raise NotFoundError(f"no adventure {adventure_id!r}")
-    return encounters_root() / f"{adventure_id}.json"
+    return adventures_root() / f"{adventure_id}.json"
 
 
 def _files() -> list[Path]:
@@ -228,11 +233,13 @@ def _files() -> list[Path]:
     file is decided in one place, and a stem with a dot in it is not an id this
     module could ever have produced.
 
-    Encounter journals escape the equivalent trap by extension rather than by
-    grammar: ``list_journals`` globs ``enc-*.jsonl``, which no ``.json`` can
-    match.
+    A separate root does not answer this one, which is why the filter survived
+    the move: ``adventure.replay`` writes wherever the caller names, and a
+    caller may perfectly reasonably name this directory. What the root settled
+    is only that a *journal* can no longer be mistaken for an adventure, because
+    the two kinds are no longer in reach of one listing.
     """
-    root = encounters_root()
+    root = adventures_root()
     if not root.is_dir():
         return []
     return sorted(

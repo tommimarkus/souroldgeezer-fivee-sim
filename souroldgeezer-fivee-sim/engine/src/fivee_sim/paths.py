@@ -31,6 +31,8 @@ from typing import Any
 from .content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 
 __all__ = [
+    "ADVENTURES_ENV",
+    "ADVENTURES_SUBDIR",
     "BLOBS_ENV",
     "BLOBS_SUBDIR",
     "ENCOUNTERS_ENV",
@@ -43,6 +45,7 @@ __all__ = [
     "SCENES_SUBDIR",
     "SOURCE_ID_ENV",
     "STATE_FILENAME",
+    "adventures_root",
     "blobs_root",
     "encounters_root",
     "environment_replay_roots",
@@ -79,7 +82,19 @@ SCENES_SUBDIR = Path(".fivee-sim") / "scenes"
 #: Environment variable naming the directory encounter journals are kept in.
 ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
 #: Where encounter journals live inside a project when nothing else is configured.
+#: One directory per fight underneath it: a journal, the lock guarding it, its
+#: crash tail and its frozen replay are one fight's artifacts and belong
+#: together, which is also what gives ``encounter.prune`` something to remove.
 ENCOUNTERS_SUBDIR = Path(".fivee-sim") / "encounters"
+
+#: Environment variable naming the directory adventure documents are kept in.
+ADVENTURES_ENV = "FIVEE_SIM_ADVENTURES"
+#: Where adventure documents live inside a project when nothing else is
+#: configured. Its own root rather than a corner of the encounters one: an
+#: adventure used to sit beside the journals, kept apart from them by two id
+#: grammars and two globs that had to agree in four places, and a separate root
+#: is the same guarantee with nothing to keep in step.
+ADVENTURES_SUBDIR = Path(".fivee-sim") / "adventures"
 
 #: Environment variable naming the directory content-addressed blobs are kept
 #: in. One directory, like the two above: a blob is addressed by its own digest,
@@ -219,6 +234,14 @@ def encounters_root(env: Mapping[str, str] | None = None) -> Path:
     project's ``.fivee-sim/encounters``, else the same under the current
     directory. Unlike maps and replays this names one directory, not a list."""
     return _single_root(ENCOUNTERS_ENV, ENCOUNTERS_SUBDIR, env)
+
+
+def adventures_root(env: Mapping[str, str] | None = None) -> Path:
+    """Where adventure documents live: ``FIVEE_SIM_ADVENTURES``, else the
+    project's ``.fivee-sim/adventures``, else the same under the current
+    directory. One directory, not a list, for the reason
+    :data:`ADVENTURES_ENV` gives."""
+    return _single_root(ADVENTURES_ENV, ADVENTURES_SUBDIR, env)
 
 
 def blobs_root(env: Mapping[str, str] | None = None) -> Path:

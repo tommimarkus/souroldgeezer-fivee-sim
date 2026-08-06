@@ -18,7 +18,7 @@ from fivee_sim.content import BuiltinMode, ContentRegistry
 from fivee_sim.kernel.grid import MovementMode
 from fivee_sim.model.encounter import Action, ActionKind, ActionRecord
 from fivee_sim.paths import SOURCE_ID_ENV
-from fivee_sim.service import blobs, encounter_journal, specs
+from fivee_sim.service import blobs, durable, encounter_journal, specs
 from fivee_sim.service import sessions as sessions_service
 from fivee_sim.service.errors import RequestError
 
@@ -32,7 +32,7 @@ from .conftest import (
 
 
 def journal_path(root: Path, encounter_id: str) -> Path:
-    return root / f"{encounter_id}.jsonl"
+    return root / encounter_id / "journal.jsonl"
 
 
 def records(path: Path) -> list[dict[str, object]]:
@@ -1444,7 +1444,7 @@ def test_a_journal_this_build_cannot_read_is_still_listed_rather_than_hidden(
     assert listed[recorded]["status"] == "active"
     # And the field the refusal tells the caller to use, which a ``corrupt``
     # entry would still carry but an omitted one would not.
-    assert listed[recorded]["journal_path"].endswith(f"{recorded}.jsonl")
+    assert listed[recorded]["journal_path"].endswith(f"{recorded}/journal.jsonl")
 
 
 def test_a_journal_this_build_writes_declares_the_format_it_is_in(
@@ -2534,3 +2534,151 @@ def test_a_finalized_fight_refuses_a_write_before_it_journals_one(
         api.roll("1d20", encounter_id=encounter_id)
 
     assert records(path) == closed
+
+
+# --- Layout and lifecycle ----------------------------------------------------
+#
+# One directory per encounter. A fight's journal, the lock guarding it, its
+# crash tail and its frozen replay are one thing on disk rather than four
+# files sharing a root with everybody else's — and the empty journal a claim
+# leaves behind now has somewhere to be reaped from.
+
+
+def test_a_fights_artifacts_are_siblings_in_a_directory_named_for_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=211)
+    advance_encounter_to(encounter_id, "Thora")
+    api.encounter_act(encounter_id, "dodge")
+    api.encounter_finalize(encounter_id)
+
+    directory = root / encounter_id
+    assert directory.is_dir()
+    assert {path.name for path in directory.iterdir()} == {
+        "journal.jsonl",
+        "journal.jsonl.lock",
+        "replay.json",
+    }
+    # And nothing of this fight is left loose beside everybody else's.
+    assert [path.name for path in root.iterdir()] == [encounter_id]
+
+
+def test_a_crash_tail_is_preserved_inside_the_fights_own_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=223)
+    path = journal_path(root, encounter_id)
+    with path.open("ab") as handle:
+        handle.write(b'{"partial"')
+
+    records_read, warning = encounter_journal.read(encounter_id, repair_partial=True)
+
+    assert warning is not None
+    tail = Path(warning["preserved_tail"])
+    assert tail.parent == root / encounter_id
+    assert tail.read_bytes() == b'{"partial"'
+    assert len(records_read) == 1
+
+
+def test_a_journal_left_flat_in_the_root_is_not_a_fight_this_build_knows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The clean break, at the layout rather than the format.
+
+    ``journal_version`` already refuses an older record shape by name; a file
+    written *where* an older build put it is not found at all, which is the
+    honest answer — there is no id whose directory it is.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "enc-1.jsonl").write_text('{"kind": "creation"}\n', encoding="utf-8")
+
+    assert api.encounter_list(status="all")["encounters"] == []
+    with pytest.raises(
+        encounter_journal.JournalError, match="unknown encounter 'enc-1'"
+    ):
+        encounter_journal.read("enc-1")
+
+
+def test_pruning_reports_the_ids_it_would_reap_and_removes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dry run is the default because the alternative is a deletion by typo."""
+    root = _journal_root(tmp_path, monkeypatch)
+    kept = mapless_fight(seed=227)
+    assert encounter_journal.claim("enc-9001") is True
+
+    reported = api.encounter_prune()
+
+    assert reported["applied"] is False
+    assert reported["encounters"] == ["enc-9001"]
+    assert (root / "enc-9001").is_dir()
+    assert (root / kept).is_dir()
+
+
+def test_pruning_removes_a_claimed_id_nobody_ever_wrote_a_fight_into(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``claim`` takes an id with an empty file and nothing has ever reaped one.
+
+    The lock goes with it, because a lock is mutual exclusion over an inode and
+    the inode it guarded is going: leaving one behind would be leaving a file
+    that excludes nobody.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    kept = mapless_fight(seed=229)
+    assert encounter_journal.claim("enc-9001") is True
+    durable.lock_path(journal_path(root, "enc-9001")).touch()
+
+    reported = api.encounter_prune(apply=True)
+
+    assert reported["applied"] is True
+    assert reported["encounters"] == ["enc-9001"]
+    assert not (root / "enc-9001").exists()
+    assert journal_path(root, kept).is_file()
+
+
+def test_pruning_leaves_a_fight_that_has_a_creation_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One record is a fight somebody started. Only *nothing* is reapable."""
+    root = _journal_root(tmp_path, monkeypatch)
+    untouched = mapless_fight(seed=233)
+    finished = mapless_fight(seed=239)
+    api.encounter_finalize(finished)
+
+    reported = api.encounter_prune(apply=True)
+
+    assert reported["encounters"] == []
+    assert journal_path(root, untouched).is_file()
+    assert journal_path(root, finished).is_file()
+
+
+def test_pruning_leaves_a_directory_holding_anything_it_did_not_expect(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reaping is defined by what is *there*, never by what the name suggests.
+
+    An empty journal beside a file this build does not recognise is not a
+    reclaimed id — it is somebody else's business in a directory that happens to
+    be named like one, and deleting the directory would take it with them.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    assert encounter_journal.claim("enc-9001") is True
+    (root / "enc-9001" / "notes.txt").write_text("mine", encoding="utf-8")
+
+    reported = api.encounter_prune(apply=True)
+
+    assert reported["encounters"] == []
+    assert (root / "enc-9001" / "notes.txt").is_file()
+
+
+def test_pruning_an_empty_root_is_not_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nothing on disk yet is the state every first run is in."""
+    _journal_root(tmp_path, monkeypatch)
+
+    assert api.encounter_prune(apply=True) == {"applied": True, "encounters": []}

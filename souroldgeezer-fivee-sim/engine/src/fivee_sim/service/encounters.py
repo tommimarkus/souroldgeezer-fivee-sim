@@ -49,6 +49,7 @@ __all__ = [
     "finalize",
     "list_encounters",
     "note",
+    "prune",
     "replay_path",
     "require_seat",
     "resume",
@@ -173,9 +174,11 @@ def replay_path(encounter_id: str) -> Path:
 
     It sits beside the journal rather than under the replays directory on
     purpose: this file is the *record* of a finished fight, addressed by
-    encounter id, not a shareable export somebody chose a name for.
+    encounter id, not a shareable export somebody chose a name for. Literally
+    beside it now — the fight's own directory holds both — so the id lives in
+    the directory name and the file is just ``replay.json``.
     """
-    return journal_service.encounters_root() / f"{encounter_id}.replay.json"
+    return journal_service.encounter_dir(encounter_id) / "replay.json"
 
 
 def creation_response(
@@ -198,7 +201,7 @@ def creation_request(
     state: EngineState, request_id: str
 ) -> tuple[str, Session] | None:
     for path in journal_service.list_journals():
-        encounter_id = path.stem
+        encounter_id = path.parent.name
         try:
             summary = journal_service.head_and_tail(encounter_id)
         except journal_service.JournalError:
@@ -1027,7 +1030,7 @@ def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any
         raise RequestError("status must be active, finalized, or all")
     entries: list[dict[str, Any]] = []
     for path in journal_service.list_journals():
-        encounter_id = path.stem
+        encounter_id = path.parent.name
         try:
             summary = journal_service.head_and_tail(encounter_id)
         except journal_service.JournalError as error:
@@ -1058,6 +1061,31 @@ def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any
             }
         )
     return {"status": status, "encounters": entries}
+
+
+def prune(apply: bool = False) -> dict[str, Any]:
+    """Reclaim the ids a fight was claimed for and never written into.
+
+    ``encounter.create`` claims its id by creating the journal, and every path
+    between that claim and the first append can fail — a combatant spec the
+    rules refuse, a map that will not parse, a process that dies. The name is
+    spent either way, and until now nothing ever gave one back: the reason this
+    exists is that a checkout accumulates them silently, one per refused
+    creation, for ever.
+
+    A dry run by default because the one thing it cannot see is a creation
+    *currently* between its claim and its first append — that id is empty and
+    legitimately in use, and reaping it would hand the same name out twice. So
+    this is an operator's decision on a quiet engine rather than a reaper on a
+    timer, and the default answer is a list to look at.
+
+    It does not reap blobs, and that is not an omission. A journal names a blob
+    on its creation record, so an id with no creation record named none; there
+    is nothing here that could license removing one. Retiring blobs needs a
+    survey of the journals that *do* name them, which is a different operation
+    against a different hazard.
+    """
+    return {"applied": apply, "encounters": journal_service.prune(apply=apply)}
 
 
 def finalize(

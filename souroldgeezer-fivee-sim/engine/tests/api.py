@@ -263,6 +263,10 @@ def encounter_finalize(encounter_id: str) -> dict[str, Any]:
     return _encounters.finalize(STATE, encounter_id)
 
 
+def encounter_prune(apply: bool = False) -> dict[str, Any]:
+    return _encounters.prune(apply)
+
+
 # --- adventures ---------------------------------------------------------------
 def adventure_create(name: str, request_id: str | None = None) -> dict[str, Any]:
     return _adventures.create(name, request_id)

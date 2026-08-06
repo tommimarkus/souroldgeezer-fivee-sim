@@ -3,6 +3,17 @@
 Each JSON line is hash-chained to the one before it and fsynced before return.
 A final unterminated line is treated as a crash tail: it is preserved byte for
 byte beside the journal, then the valid prefix is restored for recovery.
+
+**One directory per fight, named for it.** ``<root>/enc-7/journal.jsonl``, with
+the lock guarding it, its crash tail and its frozen replay as siblings inside
+``enc-7/``. Flat files in one shared root is what this used to be, and the
+layout was doing work it should not have been: what kept an adventure document
+apart from a journal was that ``adv-`` did not match ``enc-*.jsonl``, so an id
+grammar and a glob had to agree across two modules to keep two artifact kinds
+from reading each other's files. A directory answers that structurally, and it
+gives :func:`prune` something to remove — a claimed id that never became a
+fight was previously an empty file with a lock beside it and no way to tell the
+pair apart from everybody else's.
 """
 
 from __future__ import annotations
@@ -24,30 +35,43 @@ from .errors import StaleWriteError
 __all__ = [
     "ENCOUNTERS_ENV",
     "ENCOUNTERS_SUBDIR",
+    "JOURNAL_FILENAME",
     "JournalError",
     "JournalSummary",
     "StaleWriteError",
     "append",
     "claim",
+    "encounter_dir",
     "encounters_root",
     "head_and_tail",
     "journal_path",
     "list_journals",
+    "prune",
     "read",
 ]
 
 _SAFE_ID = re.compile(r"^enc-[A-Za-z0-9_-]+$")
 _JOURNAL_LOCK = RLock()
 
+#: The journal's own name inside a fight's directory. A constant rather than a
+#: literal in four places because :func:`list_journals` globs it, :func:`prune`
+#: recognises it, and both have to mean the same file as :func:`journal_path`.
+JOURNAL_FILENAME = "journal.jsonl"
+
 
 class JournalError(ValueError):
     """A journal cannot be trusted or written."""
 
 
-def journal_path(encounter_id: str) -> Path:
+def encounter_dir(encounter_id: str) -> Path:
+    """Where everything belonging to ``encounter_id`` lives, existing or not."""
     if not _SAFE_ID.fullmatch(encounter_id):
         raise JournalError(f"invalid encounter id {encounter_id!r}")
-    return encounters_root() / f"{encounter_id}.jsonl"
+    return encounters_root() / encounter_id
+
+
+def journal_path(encounter_id: str) -> Path:
+    return encounter_dir(encounter_id) / JOURNAL_FILENAME
 
 
 def claim(encounter_id: str) -> bool:
@@ -313,7 +337,104 @@ def _append_unlocked(
 
 
 def list_journals() -> list[Path]:
+    """Every fight's journal here, as ``<root>/enc-<n>/journal.jsonl``.
+
+    Callers want the id, and it is ``path.parent.name`` rather than
+    ``path.stem`` — every journal is named ``journal.jsonl`` now, and the
+    directory is what carries the identity.
+    """
     root = encounters_root()
     if not root.is_dir():
         return []
-    return sorted(root.glob("enc-*.jsonl"))
+    return sorted(root.glob(f"enc-*/{JOURNAL_FILENAME}"))
+
+
+#: What a fight's directory may hold and still count as *never used*: the empty
+#: journal ``claim`` created and the lock ``append`` would have taken. Anything
+#: else — a crash tail, a frozen replay, a file this build has never heard of —
+#: is somebody's content, and :func:`prune` leaves the directory alone.
+_RECLAIMABLE_NAMES = frozenset({JOURNAL_FILENAME, f"{JOURNAL_FILENAME}.lock"})
+
+
+def prune(*, apply: bool) -> list[str]:
+    """Ids that were claimed and never written into, optionally removed.
+
+    ``claim`` takes an id by creating its journal with ``O_EXCL``, and the empty
+    file it leaves behind is the claim itself — so a process that died between
+    allocating an id and writing its creation record leaves one, and until now
+    nothing ever reaped one. They accumulate silently: a directory holding an
+    empty journal reports nothing on ``encounter.list`` and refuses recovery by
+    name, which is correct in both cases and invisible in both cases too.
+
+    Reapable means *nothing was ever recorded* and the directory holds only what
+    a claim leaves. Both halves are load-bearing. A journal with one record is a
+    fight somebody started, however briefly. And a directory carrying anything
+    outside :data:`_RECLAIMABLE_NAMES` — a preserved crash tail above all — is
+    not a reclaimed id but somebody's business in a directory that happens to be
+    named like one; removing it would take that with it. So the decision is made
+    from what is *there*, never from what the name suggests.
+
+    A dry run reads and writes nothing at all — not even the lock file
+    ``durable.file_lock`` would create on the way to taking one. An ``apply``
+    re-checks emptiness under that lock, which is what excludes a concurrent
+    ``append`` in this process or another. What the lock does **not** exclude is
+    a creation still between its ``claim`` and its first append: that id is
+    legitimately empty for the width of that window, and reaping it there would
+    hand the same name out twice. This is an operator action rather than a
+    background reaper for exactly that reason, and it is a dry run unless asked
+    otherwise.
+    """
+    root = encounters_root()
+    if not root.is_dir():
+        return []
+    reaped: list[str] = []
+    for directory in sorted(root.glob("enc-*")):
+        if not directory.is_dir() or not _SAFE_ID.fullmatch(directory.name):
+            continue
+        if {path.name for path in directory.iterdir()} - _RECLAIMABLE_NAMES:
+            continue
+        path = directory / JOURNAL_FILENAME
+        if not _unwritten(path):
+            continue
+        if not apply:
+            reaped.append(directory.name)
+            continue
+        with _JOURNAL_LOCK, durable.file_lock(path):
+            if not _unwritten(path):
+                continue
+            _remove(path)
+        # The lock and the directory go outside the critical section, because
+        # the lock file is the one being removed: unlinking a file whose
+        # descriptor is still open is a POSIX courtesy this module does not need
+        # to depend on, and there is nothing left inside to protect.
+        _remove(durable.lock_path(path))
+        _remove(directory)
+        reaped.append(directory.name)
+    return reaped
+
+
+def _unwritten(path: Path) -> bool:
+    """Whether ``path`` holds no bytes — an absent file counts, an empty one is
+    the claim ``claim`` leaves behind, and a partial line is neither."""
+    try:
+        return path.stat().st_size == 0
+    except FileNotFoundError:
+        return True
+    except OSError as error:
+        raise JournalError(f"cannot read {path}: {error}") from error
+
+
+def _remove(path: Path) -> None:
+    """Unlink a file or remove an empty directory, naming it if it will not go.
+
+    Named paths only — never a recursive delete — because :func:`prune` has
+    already established that this directory holds nothing else, and a walk that
+    removed whatever it found would be a wider promise than the caller made.
+    """
+    try:
+        if path.is_dir():
+            path.rmdir()
+        else:
+            path.unlink(missing_ok=True)
+    except OSError as error:
+        raise JournalError(f"cannot prune {path}: {error}") from error

@@ -199,18 +199,19 @@ export carries — and a kind need not be on the map to be colored.
 The CLI walks upward from the invocation workspace and uses the nearest
 `.fivee-sim/config.toml`; pass global `--config PATH` before the operation to
 select another one. `[storage].maps` and `[storage].replays` each take one path or
-an array of paths, while `scenes`, `encounters` and `blobs` take one path.
+an array of paths, while `scenes`, `encounters`, `adventures` and `blobs` take
+one path.
 Relative paths resolve against the `.fivee-sim/` directory containing the file.
 Omitted values default to its sibling `maps/`, `replays/`, `scenes/`,
-`encounters/`, and `blobs/` directories.
+`encounters/`, `adventures/` and `blobs/` directories.
 
 The first maps root receives map writes and the first replays root receives
 exports. `fivee content.status` names the configuration source and path;
 `fivee serve` and `fivee server.ping` report the resolved roots — read them rather
 than assuming. A selected file owns these settings. Deprecated legacy `FIVEE_SIM_PROJECT_DIR`,
 `FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, `FIVEE_SIM_ENCOUNTERS`,
-and `FIVEE_SIM_BLOBS` remain compatibility fallbacks only when no configuration
-file is selected.
+`FIVEE_SIM_ADVENTURES`, and `FIVEE_SIM_BLOBS` remain compatibility fallbacks only
+when no configuration file is selected.
 
 `fivee map.query` answers distance, line-of-sight, and path questions over a bare
 map without starting a fight.

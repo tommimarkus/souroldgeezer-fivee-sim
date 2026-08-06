@@ -970,6 +970,11 @@ class _Handler(BaseHTTPRequestHandler):
             encounter_service.list_encounters(self.state, request.query["status"]),
         )
 
+    def _h_encounter_prune(self, request: _Request) -> None:
+        self._send_json(
+            HTTPStatus.OK, encounter_service.prune(request.body["apply"])
+        )
+
     def _h_encounter_create(self, request: _Request) -> None:
         body = request.body
         result = encounter_service.create(
@@ -1419,6 +1424,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "analytics_dpr": _Handler._h_analytics_dpr,
     "analytics_scenario_timing": _Handler._h_analytics_scenario_timing,
     "encounter_list": _Handler._h_encounter_list,
+    "encounter_prune": _Handler._h_encounter_prune,
     "encounter_create": _Handler._h_encounter_create,
     "encounter_state": _Handler._h_encounter_state,
     "encounter_log": _Handler._h_encounter_log,

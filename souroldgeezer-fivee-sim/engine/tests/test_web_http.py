@@ -32,7 +32,9 @@ from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
 from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
+from fivee_sim.paths import encounters_root
 from fivee_sim.service import adventures as adventure_service
+from fivee_sim.service import encounter_journal as journal_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
 from fivee_sim.service import replay as replay_service
@@ -2389,6 +2391,35 @@ class TestEncountersOverHttp:
         listed = editor.request("GET", "/api/v1/encounters").json()
         assert [entry["encounter_id"] for entry in listed["encounters"]] == [encounter_id]
         assert listed["encounters"][0]["status"] == "active"
+
+    def test_pruning_lists_the_stranded_ids_and_then_reclaims_them(
+        self, editor: Editor
+    ) -> None:
+        """The route and its handler, which nothing else exercises.
+
+        Every other case for ``encounter.prune`` calls the service body, and
+        ``tests/api.py`` reaches that without a transport — so a path nothing
+        routes to, a body key spelled one way in the schema and another in the
+        handler, or a handler nobody registered would all ship green. The id is
+        stranded by hand because no *request* can strand one:
+        ``create`` claims after the roster is built and refuses before that, so
+        what leaves a claim behind is a failed blob write or a dead process.
+        """
+        kept = self.create(editor).json()["encounter_id"]
+        assert journal_service.claim("enc-9001") is True
+
+        listed = editor.request("POST", "/api/v1/encounters/prune")
+        assert listed.status == 200
+        assert listed.json() == {"applied": False, "encounters": ["enc-9001"]}
+        assert (encounters_root() / "enc-9001").is_dir()
+
+        applied = editor.request(
+            "POST", "/api/v1/encounters/prune", json_body={"apply": True}
+        )
+        assert applied.status == 200
+        assert applied.json() == {"applied": True, "encounters": ["enc-9001"]}
+        assert not (encounters_root() / "enc-9001").exists()
+        assert (encounters_root() / kept).is_dir()
 
     def test_an_unknown_status_filter_names_the_three_that_work(
         self, editor: Editor
