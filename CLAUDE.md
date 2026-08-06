@@ -364,19 +364,52 @@ also why a stale writer is refused rather than merged, and why the refusal is
 session the bytes it last saw on disk, so both supply their own precondition and
 a caller has to pass `"*"` to deliberately take a file over.
 
-**Six modules sit beside the packages, and that tier is deliberate.**
-`catalog.py`, `content.py`, `map_document.py`, `validation.py`, `coverage.py`,
-and `rulings.py`
+**Seven modules sit beside the packages, and that tier is deliberate.**
+`catalog.py`, `content.py`, `map_document.py`, `map_types.py`, `validation.py`,
+`coverage.py`, and `rulings.py`
 live directly in `src/fivee_sim/`. What belongs there
 is a cross-cutting concern that is neither a rules primitive nor creature state:
 the immutable catalog model, how content enters the engine and how any file it
-reads is validated, the on-disk map document format, the generated coverage
-report, and the register of adjudications below. Nothing in `kernel/`,
-`model/`, or `analytics/` imports any of them, and that is the property to keep —
-a module only the rules layers need is not a root module, it is a `kernel/` or
-`model/` one. `rulings.py` is the sharpest case: the rules layers are exactly
-what it describes, and they reference it through a `# ruling:` **comment** so
-the dependency never becomes an import.
+reads is validated, the on-disk map document's parser and the map's own types,
+the generated coverage report, and the register of adjudications below. Nothing
+in `kernel/`, `model/`, or `analytics/` imports any of them **but one**, and that
+is the property to keep — a module only the rules layers need is not a root
+module, it is a `kernel/` or `model/` one. `rulings.py` is the sharpest case: the
+rules layers are exactly what it describes, and they reference it through a
+`# ruling:` **comment** so the dependency never becomes an import.
+
+`map_types.py` is the one exception, and it is an exception the other way —
+`model/` imports it directly, not by comment — because a fight has to hold a
+`MapDocument`, and `MapDocument` has to be a type before it can be anything
+else. What `model/` may not import is `map_document.py`, the parser built on
+top of those types: `Reader`, the diagnostic passes, `validate_document`. A
+fight that could reach the parser could re-decide what a legal map is, which is
+the second-owner defect the rest of this section keeps refusing everywhere
+else. So the map's types and its parser are two modules rather than one
+precisely so the allowlist can say "the shape, never the file" — `model/` names
+`MapDocument` without dragging the machinery that reads one in behind it, and
+`tests/test_layering.py` pins the boundary at exactly that width, with a
+vacuity guard so it cannot pass by nobody using the carve-out.
+
+**A fight holds a `MapDocument`, and one function builds every one of them.**
+`Encounter` takes the document itself rather than a runtime projection of it;
+the encounter's own mutable fact about its battlefield is `MapState`, which
+records only which fixtures currently stand open and layers over a document
+that can be frozen and shared across any number of fights. Three producers reach
+it and every one of them ends at a document — a generated map through
+`document_from`, a saved file through `parse_document`, and an inline spec on
+`encounter.create` through `service/specs.py`'s `document_from_spec` — so there
+is one shape for a fight to hold and one writer, `as_payload`, that puts it back
+on the wire. Before this, a fourth producer built a runtime map directly and an
+unofficial inverse re-synthesised a document out of it, which could not express
+everything the format could: that is why a spec-created door survived to the
+day's play but not to its own journal recovery. The map's
+rules follow the same one-function discipline from the other direction: each
+is stated once in `map_types.py` as a predicate yielding a finding, and rendered
+twice — `map_document.py` accumulates every finding a file fails as one
+diagnostic, because an author fixing a document wants the whole list, while
+`Encounter._adopt_map` raises the first as a fail-fast `EncounterError`, because
+a fight either starts or it does not.
 
 **Where the SRD does not decide, the decision is declared rather than
 described.** `rulings.py` holds one entry per adjudication — the question, what
