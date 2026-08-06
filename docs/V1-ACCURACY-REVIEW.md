@@ -1,5 +1,10 @@
 # v1 accuracy review
 
+> **Point-in-time record.** For the engine's *current* adjudications — where the
+> SRD does not decide, what was decided, and what would overturn it — read the
+> generated `souroldgeezer-fivee-sim/docs/RULINGS.md`, which is pinned to the
+> code it describes. This review is kept as the state of things at `2dff680`.
+
 A review of whether the simulator's implemented behaviour is *correct* — that its
 numbers mean what they claim to mean — against the v1 goal of a bedrock-solid
 foundation.
