@@ -35,6 +35,7 @@ from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
+from fivee_sim.service import replay as replay_service
 from fivee_sim.service import views as views_service
 from fivee_sim.service.common import sha256_of
 from fivee_sim.web import openapi, routes
@@ -1643,6 +1644,56 @@ class TestDeclaredBounds:
         assert unbounded == [], (
             "these journalled string arguments reach the durable journal before "
             f"any length check: {unbounded}"
+        )
+
+
+class TestDeclaredDefaults:
+    """A default in the table is an answer the service never gets asked for.
+
+    Third sibling to ``TestDeclaredBounds`` above and ``TestDeclaredEnums``
+    below, and a separate class because a default is neither a bound nor a
+    closed set — it is the value a caller receives for *saying nothing*. The
+    trade is the same one both of those make: the route table may not import
+    ``service/``, so the number is written in both places and held equal here
+    rather than derived, and neither number appears in this file.
+
+    This one is easy to mistake for decoration, which is why it is worth a
+    class of its own. ``map_ops.replay_export``'s signature default is
+    ``LATEST_FORMAT_VERSION`` and looks authoritative, but no HTTP caller ever
+    reaches it: ``_checked_body`` fills an absent key from the schema, so the
+    literal in the table is what arrives. A phase bumping the writer without
+    touching the table would leave ``encounter.finalize`` — which passes the
+    constant explicitly — writing one version while ``encounter.replay``
+    quietly kept writing the old one, with the whole suite green.
+    """
+
+    def declared_default(self, method: str, path: str, field: str) -> Any:
+        """The default a caller gets, reached through the table's own structure.
+
+        Navigated rather than eyeballed, and every step that can come back
+        empty says which one did: a reshaped declaration must fail this loudly
+        instead of quietly finding nothing left to disagree with.
+        """
+        found = routes.find(method, path)
+        assert found is not None, f"no route answers {method} {path} any more"
+        properties = (found[0].body_schema or {}).get("properties", {})
+        assert field in properties, (
+            f"{found[0].operation} no longer declares a {field!r} body field; "
+            "this test can no longer reach the default it exists to pin"
+        )
+        schema = properties[field]
+        assert "default" in schema, (
+            f"{found[0].operation}.{field} declares no default any more, so a "
+            "caller who omits it gets whatever the handler does — decide which"
+        )
+        return schema["default"]
+
+    def test_the_replay_export_default_is_the_version_the_engine_writes(self) -> None:
+        assert (
+            self.declared_default(
+                "POST", f"{routes.API_PREFIX}/encounters/enc-1/replay", "format_version"
+            )
+            == replay_service.LATEST_FORMAT_VERSION
         )
 
 
