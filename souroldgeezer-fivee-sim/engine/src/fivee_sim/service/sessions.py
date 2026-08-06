@@ -43,7 +43,7 @@ from ..kernel.grid import DiagonalRule, as_point
 from ..map_document import MapDocument
 from ..map_document import serialize as serialize_map
 from ..model.creature import Creature
-from ..model.encounter import Encounter, EncounterMode
+from ..model.encounter import Encounter, EncounterError, EncounterMode
 from . import encounter_journal as journal_service
 from . import maps as map_service
 from . import specs
@@ -568,16 +568,29 @@ def recover_session(
     # further down names its actor, which a chapter recovered as a fight would
     # refuse outright.
     mode = specs.parse_mode(str(created.get("mode", EncounterMode.COMBAT.value)))
-    encounter = new_encounter(
-        specs.combatants_from_specs(
-            [dict(entry) for entry in normalized], registry, mode=mode
-        ),
-        rng,
-        registry,
-        movement_rule=specs.parse_movement_rule(str(created["movement_rule"])),
-        map_document=map_document,
-        mode=mode,
-    )
+    # Translated exactly as ``encounters.create`` translates the same call, and
+    # for a sharper reason: this is a re-run of the whole of
+    # ``Encounter.__init__`` — the roster rules and every map rule
+    # ``_adopt_map`` asks — over a record this process did not necessarily
+    # write. A journal repaired by hand, or written by a build whose rules have
+    # since moved, refuses here; bare, that refusal is not a ``RequestError``
+    # and reaches the adapter's last resort as a 500. The three refusals above
+    # already name the encounter, so this one does too.
+    try:
+        encounter = new_encounter(
+            specs.combatants_from_specs(
+                [dict(entry) for entry in normalized], registry, mode=mode
+            ),
+            rng,
+            registry,
+            movement_rule=specs.parse_movement_rule(str(created["movement_rule"])),
+            map_document=map_document,
+            mode=mode,
+        )
+    except EncounterError as error:
+        raise RequestError(
+            f"cannot recover {encounter_id!r}'s fight: {error}"
+        ) from error
     session = Session(
         encounter=encounter,
         rng=rng,

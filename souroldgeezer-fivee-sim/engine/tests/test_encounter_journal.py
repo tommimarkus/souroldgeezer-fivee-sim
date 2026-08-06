@@ -484,6 +484,84 @@ def test_hash_chain_tampering_is_refused_instead_of_silently_replayed(
         api.encounter_resume(encounter_id)
 
 
+class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
+    """Recovery re-runs the whole of ``Encounter.__init__``, refusals included.
+
+    ``create`` wraps that same call and translates its ``EncounterError`` into a
+    ``RequestError``; ``recover_session`` called it bare, so the identical
+    refusal arrived at ``web/http_server.py``'s final ``except Exception`` as a
+    500 with a traceback in the log instead of problem+json. It is reached from
+    ``sessions.session_for``, which every operation on an encounter goes
+    through, so the fight becomes unopenable rather than merely unrecoverable.
+
+    **What this is not.** No single well-formed API call reaches it today:
+    ``create`` refuses both of these documents before a journal exists, and a
+    journal written by this build recovers under the rules that wrote it. What
+    reaches it is a journal this build did not write — one repaired by hand,
+    one written by a different build whose rules have since moved (the
+    documented ``FIVEE_SIM_RELOAD`` workflow re-derives a fight under new
+    code), or one shared with another engine on the same encounters root. The
+    journals below are built the way those arrive: a real creation record,
+    amended, appended under an id of its own.
+    """
+
+    def rebuilt(
+        self, root: Path, encounter_id: str, amended: dict[str, Any]
+    ) -> str:
+        """A second journal holding one real creation record, amended."""
+        recorded = "enc-9001"
+        amended["encounter_id"] = recorded
+        encounter_journal.append(recorded, amended)
+        assert journal_path(root, recorded).exists()
+        return recorded
+
+    def test_a_roster_the_fight_refuses_arrives_as_a_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        source = mapless_fight(seed=131)
+        creation = deepcopy(records(journal_path(root, source))[0])
+        combatants = creation["combatants"]
+        assert isinstance(combatants, list) and len(combatants) == 2
+        combatants[1]["name"] = combatants[0]["name"]
+
+        recorded = self.rebuilt(root, source, creation)
+
+        with pytest.raises(
+            RequestError,
+            match=r"cannot recover 'enc-9001''s fight: combatant names must be "
+            r"unique; duplicated: Thora",
+        ):
+            api.encounter_resume(recorded)
+
+    def test_a_map_rule_broken_by_the_roster_arrives_as_a_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # The other half of ``__init__``'s validation, and the half a roster
+        # alone cannot express: placement is checked against the map, so this
+        # refusal comes out of ``_adopt_map`` rather than the name check.
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        source = str(
+            api.encounter_create(
+                [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=151, map=spec_map()
+            )["encounter_id"]
+        )
+        creation = deepcopy(records(journal_path(root, source))[0])
+        combatants = creation["combatants"]
+        assert isinstance(combatants, list) and len(combatants) == 2
+        combatants[1]["position"] = list(combatants[0]["position"])
+
+        recorded = self.rebuilt(root, source, creation)
+
+        with pytest.raises(
+            RequestError,
+            match=r"cannot recover 'enc-9001''s fight: .* both start in square",
+        ):
+            api.encounter_resume(recorded)
+
+
 #: An interlude's roster: two of the party, nobody opposing them. What makes it
 #: a chapter rather than a fight is the mode, and the mode is the thing every
 #: case below is really about — it is written in exactly one place, the creation
