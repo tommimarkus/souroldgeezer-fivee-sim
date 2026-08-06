@@ -227,6 +227,18 @@ fight.
 An exported replay can also be `--embed`ed into a single self-contained HTML file
 that plays in any browser, with no server and no install.
 
+To see the whole-run viewer without preparing an adventure first, generate the
+checked-in showcase:
+
+```bash
+fivee-sim-adventure-replay-sample
+```
+
+It writes `.fivee-sim/replays/adventure-replay-showcase.html`: a deterministic,
+self-contained exploration → combat → aftermath run with forty-plus events and
+continuous playback across both chapter boundaries. The existing
+`fivee-sim-replay-sample` remains the focused single-fight animation showcase.
+
 ## Operations
 
 One versioned surface under `/api/v1`, every operation reachable as

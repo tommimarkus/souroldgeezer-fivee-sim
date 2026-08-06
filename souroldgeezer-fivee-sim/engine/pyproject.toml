@@ -13,6 +13,7 @@ dependencies = []
 fivee = "fivee_sim.client.cli:main"
 fivee-sim-server = "fivee_sim.web.cli:main"
 fivee-sim-replay-sample = "fivee_sim.replay_sample:main"
+fivee-sim-adventure-replay-sample = "fivee_sim.adventure_replay_sample:main"
 
 [build-system]
 requires = ["hatchling"]
