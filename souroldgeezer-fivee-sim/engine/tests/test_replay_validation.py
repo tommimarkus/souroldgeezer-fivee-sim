@@ -11,8 +11,8 @@ from typing import Any
 import pytest
 
 from fivee_sim.model.encounter import EncounterMode
+from fivee_sim.service.map_ops import WRITABLE_FORMAT_VERSIONS
 from fivee_sim.service.replay import (
-    FORMAT_VERSION,
     LATEST_FORMAT_VERSION,
     READABLE_FORMAT_VERSIONS,
     canonical_sha256,
@@ -86,11 +86,25 @@ def test_the_canonical_validator_accepts_every_readable_version() -> None:
 
 def test_every_version_this_build_writes_is_a_version_it_can_read() -> None:
     """The property that makes the writer-moves-without-the-reader defect
-    impossible rather than merely unlikely: a phase that bumps
-    ``LATEST_FORMAT_VERSION`` and forgets ``READABLE_FORMAT_VERSIONS`` fails
-    this before it fails a user's disk.
+    impossible rather than merely unlikely: a phase that bumps the writer and
+    forgets ``READABLE_FORMAT_VERSIONS`` fails this before it fails a user's
+    disk.
+
+    ``WRITABLE_FORMAT_VERSIONS`` is the real writable set — every key of the
+    dispatch table ``replay_export`` calls through — rather than the
+    ``{FORMAT_VERSION, LATEST_FORMAT_VERSION}`` approximation this assertion
+    started as. Those two constants are the *bundle builders'* stamps, and a
+    build could grow a writer for a version neither of them names; the
+    dispatch cannot, because a version with no function in it is a version
+    ``replay_export`` refuses.
     """
-    assert {FORMAT_VERSION, LATEST_FORMAT_VERSION} <= READABLE_FORMAT_VERSIONS
+    assert WRITABLE_FORMAT_VERSIONS, "this build declares no writable versions at all"
+    assert LATEST_FORMAT_VERSION in WRITABLE_FORMAT_VERSIONS, (
+        "the version every default export writes is not one the dispatch can write"
+    )
+    assert WRITABLE_FORMAT_VERSIONS <= READABLE_FORMAT_VERSIONS, sorted(
+        WRITABLE_FORMAT_VERSIONS - READABLE_FORMAT_VERSIONS
+    )
 
 
 def test_replay_validate_reports_all_diagnostics_without_loading_a_session() -> None:

@@ -398,7 +398,22 @@ class TestBundleV2:
         assert captured["attacks"][0]["detach_after_damage"] == 10
 
     def test_unknown_replay_versions_are_refused(self) -> None:
-        with pytest.raises(RequestError, match="format_version must be 1 or 2"):
+        """The refusal names the writable set, and names it by reading it.
+
+        The expected text is derived from ``WRITABLE_FORMAT_VERSIONS`` rather
+        than spelled out here, for the reason ``TestDeclaredEnums`` gives: a
+        literal in this file would pin the message against a second copy of
+        the same fact, and a phase adding v3 could then leave the refusal
+        still saying "1 or 2" with the suite green. ``99`` stays a literal
+        because it is not a version — it is the *absence* of one, and it must
+        not be a member of the set for this to test anything.
+        """
+        assert 99 not in map_ops.WRITABLE_FORMAT_VERSIONS, (
+            "99 is now a writable version; pick an unwritable one to be refused"
+        )
+        allowed = " or ".join(str(one) for one in sorted(map_ops.WRITABLE_FORMAT_VERSIONS))
+
+        with pytest.raises(RequestError, match=f"format_version must be {allowed}, got 99"):
             api.replay_export(mapless_fight(), format_version=99)
 
     def test_v2_state_checkpoints_include_transient_turn_and_effect_state(self) -> None:

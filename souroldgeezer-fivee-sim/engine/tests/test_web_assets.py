@@ -46,6 +46,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.model.encounter import ActionKind, EncounterMode, TurnState
+from fivee_sim.service.replay import READABLE_FORMAT_VERSIONS, validate_replay
 from fivee_sim.web.http_server import CONFIG_MARKER
 from fivee_sim.web.routes import API_PREFIX, api_routes, operation_id
 from fivee_sim.web.routes import PAGES as SERVED_PAGES
@@ -305,6 +306,82 @@ class TestViewerAdventureChapters:
         source = read("viewer.html")
         assert "openPayload(payload, file.name);" in source
         assert 'openPayload(embedded, "embedded replay");' in source
+
+
+class TestViewerReadableVersions:
+    """The one rule this repository states twice in two languages.
+
+    ``service/replay.py`` decides which ``format_version`` the engine can read
+    and ``READABLE_FORMAT_VERSIONS`` is the declaration; the viewer grades a
+    dropped file itself, offline, with no engine to ask, so it must carry its
+    own copy of the same set. No constant crosses that boundary, so the two are
+    pinned against each other here instead — add v3 to Python without touching
+    the page and this fails, and the reverse fails too.
+
+    That direction matters more than it looks. The page is what somebody opens
+    when a bundle is *shared* with them, so a viewer whose set lags Python's
+    refuses a file the engine wrote, on a stranger's machine, with no test
+    anywhere between the two.
+    """
+
+    #: Anchored to the declaration's name, which is why the page declares one
+    #: array rather than testing two literals inline: ``version !== 1 &&
+    #: version !== 2`` cannot be extracted from source without parsing JS, and
+    #: a regex loose enough to try would be the kind that quietly matches
+    #: nothing. Non-greedy is unnecessary — ``[^\]]*`` cannot cross the
+    #: closing bracket.
+    DECLARATION = re.compile(r"var READABLE_FORMAT_VERSIONS = \[([^\]]*)\];")
+
+    def declared_in_the_page(self) -> list[int]:
+        source = read("viewer.html")
+        found = self.DECLARATION.search(source)
+        # The vacuity guard, and the whole difference between this test and no
+        # test: a renamed or reformatted declaration must fail loudly here
+        # rather than yield an empty set that agrees with everything.
+        assert found is not None, (
+            "viewer.html no longer declares READABLE_FORMAT_VERSIONS as a single "
+            "array literal; this test cannot read the page's set and so cannot "
+            "hold it against Python's — restore the declaration or reanchor it"
+        )
+        named = [one.strip() for one in found.group(1).split(",") if one.strip()]
+        assert named, "READABLE_FORMAT_VERSIONS is declared empty in viewer.html"
+        return [int(one) for one in named]
+
+    def test_the_viewer_reads_the_versions_python_declares(self) -> None:
+        assert self.declared_in_the_page() == sorted(READABLE_FORMAT_VERSIONS)
+
+    def test_the_page_grades_a_bundle_through_that_declaration(self) -> None:
+        """A declared array the validator ignores would pin nothing.
+
+        The test above proves the two sets agree. This one proves the set the
+        page declares is the set the page *enforces* — without it, the
+        declaration could sit at the top of the file as decoration while the
+        refusal below went on comparing against two literals.
+        """
+        source = read("viewer.html")
+        assert "READABLE_FORMAT_VERSIONS.indexOf(version) === -1" in source
+        # And the refusal is rendered from the same array, so the page and
+        # ``validate_replay`` word it identically without either being told.
+        assert (
+            '"format_version must be " + READABLE_FORMAT_VERSIONS.join(" or ")' in source
+        )
+        assert "version !== 1" not in source, (
+            "the literal membership test is back beside the declaration"
+        )
+
+    def test_the_two_languages_word_the_refusal_the_same_way(self) -> None:
+        # Python builds its diagnostic by joining the sorted set with " or ";
+        # the page joins its own array the same way. Nothing here spells "1 or
+        # 2" — both halves are derived, so the day a third version lands the
+        # two messages move together or this fails.
+        joined = " or ".join(str(one) for one in sorted(READABLE_FORMAT_VERSIONS))
+        refusals = [
+            one["problem"]
+            for one in validate_replay({"format_version": 999})
+            if one["path"] == "format_version"
+        ]
+        assert refusals == [f"must be {joined}"]
+        assert self.declared_in_the_page() == sorted(READABLE_FORMAT_VERSIONS)
 
 
 class TestViewerInterludeChapters:

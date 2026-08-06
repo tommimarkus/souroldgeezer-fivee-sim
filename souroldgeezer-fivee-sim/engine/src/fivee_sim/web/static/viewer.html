@@ -198,6 +198,19 @@ if (typeof FiveeRenderer === "undefined") {
      the server have to agree about per chapter. */
   var ENCOUNTER_MODES = ["combat", "exploration"];
 
+  /* Every bundle format_version this page can play, and the same set
+     service/replay.py declares as READABLE_FORMAT_VERSIONS. It is spelled here
+     because this page grades a dropped file offline, with no engine to ask, and
+     no constant crosses the language boundary; tests/test_web_assets.py holds
+     the two against each other so the copy cannot lag the original. It was two
+     literals in an `if` until that test needed something it could read.
+
+     This is the *readable* set, not the writable one. The engine writes only
+     its latest version and keeps reading every version it ever wrote, because a
+     bundle already on somebody's disk outlives the writer that made it — which
+     is exactly the file this page is usually opened on. */
+  var READABLE_FORMAT_VERSIONS = [1, 2];
+
   /* Mirrors service/replay.py's `_declared_mode`, fallback included. Null
      covers two different documents and reads them the same deliberate way: a
      bundle frozen before interludes existed carries no mode, and a bundle whose
@@ -1407,7 +1420,9 @@ if (typeof FiveeRenderer === "undefined") {
       errors.push("format must be fivee-sim-replay");
     }
     var version = payload.format_version;
-    if (version !== 1 && version !== 2) { errors.push("format_version must be 1 or 2"); }
+    if (READABLE_FORMAT_VERSIONS.indexOf(version) === -1) {
+      errors.push("format_version must be " + READABLE_FORMAT_VERSIONS.join(" or "));
+    }
     if (!Number.isInteger(payload.seed)) {
       errors.push("seed must be an integer");
     } else if (!Number.isSafeInteger(payload.seed)) {

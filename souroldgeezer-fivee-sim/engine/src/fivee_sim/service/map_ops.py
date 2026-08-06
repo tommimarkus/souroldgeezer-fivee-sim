@@ -44,6 +44,7 @@ from .sessions import EngineState
 __all__ = [
     "INLINE_BUNDLE_BYTES",
     "INLINE_RENDER_CELLS",
+    "WRITABLE_FORMAT_VERSIONS",
     "document_of",
     "edit",
     "edit_render",
@@ -599,57 +600,59 @@ def replay_validate(bundle: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def replay_export(
-    state: EngineState,
-    encounter_id: str,
-    path: str | None = None,
-    embed: bool = False,
-    format_version: int = replay_service.LATEST_FORMAT_VERSION,
-    viewer_link: Callable[[Path], str | None] | None = None,
-) -> dict[str, Any]:
-    """Serialise a fight as a replay bundle, inline or on disk.
+def _bundle_v1(
+    state: EngineState, session: sessions.Session, encounter_id: str
+) -> tuple[dict[str, Any], str]:
+    """The original seven-field bundle: a roster, a map, and a list of events.
 
-    ``viewer_link`` is how a *running* viewer gets named without this layer
-    knowing what a URL is: the adapter passes a callable that answers a link
-    for a written file, or ``None`` for one it cannot play. Omitting it exports
-    the bundle and says nothing about where it might be watched.
+    ``state`` is unused and stays in the signature on purpose: every writer in
+    ``_BUNDLE_WRITERS`` takes the same three arguments, which is what lets the
+    mapping be the declaration of what this build can write. A v1 bundle simply
+    predates needing the engine's own state to compose one.
     """
-    session = sessions.session_for(state, encounter_id)
-    if format_version == 1:
-        name = (
-            str(session.map_payload["name"])
-            if session.map_payload is not None
-            else encounter_id
-        )
-        bundle = replay_service.replay_bundle(
+    name = (
+        str(session.map_payload["name"])
+        if session.map_payload is not None
+        else encounter_id
+    )
+    return (
+        replay_service.replay_bundle(
             name=name,
             seed=session.seed,
             map_payload=session.map_payload,
             initial_creatures=session.initial_creatures,
             map_open_features=session.initial_open_features,
             events=[event.as_dict() for event in session.encounter.log],
+        ),
+        name,
+    )
+
+
+def _bundle_v2(
+    state: EngineState, session: sessions.Session, encounter_id: str
+) -> tuple[dict[str, Any], str]:
+    """The scrubbable bundle: actions, timestamps, checkpoints and integrity."""
+    captured_map = session.map_payload or session.inline_map_payload
+    name = str(captured_map["name"]) if captured_map is not None else encounter_id
+    latest_state = session.encounter.state()
+    latest_state["map_source"] = sessions.map_source_of(state, session)
+    initial_state = deepcopy(session.initial_state)
+    initial_state["map_source"] = sessions.map_source_of(state, session)
+    checkpoints = []
+    for index, captured_state in enumerate(session.state_history):
+        checkpoint_state = deepcopy(captured_state)
+        checkpoint_state["map_source"] = sessions.map_source_of(state, session)
+        checkpoints.append(
+            {
+                "index": index,
+                "timestamp": session.checkpoint_timestamps[index],
+                "event_count": session.checkpoint_event_counts[index],
+                "state_hash": replay_service.canonical_sha256(checkpoint_state),
+                "state": checkpoint_state,
+            }
         )
-    elif format_version == 2:
-        captured_map = session.map_payload or session.inline_map_payload
-        name = str(captured_map["name"]) if captured_map is not None else encounter_id
-        latest_state = session.encounter.state()
-        latest_state["map_source"] = sessions.map_source_of(state, session)
-        initial_state = deepcopy(session.initial_state)
-        initial_state["map_source"] = sessions.map_source_of(state, session)
-        checkpoints = []
-        for index, captured_state in enumerate(session.state_history):
-            checkpoint_state = deepcopy(captured_state)
-            checkpoint_state["map_source"] = sessions.map_source_of(state, session)
-            checkpoints.append(
-                {
-                    "index": index,
-                    "timestamp": session.checkpoint_timestamps[index],
-                    "event_count": session.checkpoint_event_counts[index],
-                    "state_hash": replay_service.canonical_sha256(checkpoint_state),
-                    "state": checkpoint_state,
-                }
-            )
-        bundle = replay_service.replay_bundle_v2(
+    return (
+        replay_service.replay_bundle_v2(
             name=name,
             engine_version=__version__,
             encounter_id=encounter_id,
@@ -668,9 +671,58 @@ def replay_export(
             checkpoints=checkpoints,
             attempts=session.attempts,
             content_snapshot=session.content_snapshot,
-        )
-    else:
-        raise RequestError(f"format_version must be 1 or 2, got {format_version}")
+        ),
+        name,
+    )
+
+
+#: Which ``format_version`` this build can *produce*, and the thing that
+#: produces each — one declaration, because the dispatch cannot claim a version
+#: it has no function for and cannot hide a function nothing dispatches to.
+#:
+#: This is deliberately **not** ``replay.READABLE_FORMAT_VERSIONS``, and the two
+#: sets answer different questions. A bundle is an export that leaves the
+#: machine, so the engine keeps reading every version it has ever written long
+#: after it stops writing one — a build that could read v1, v2 and v3 while
+#: writing only v3 is the normal end state of that policy, not a defect.
+#: Pointing the writer at the reader's set would let a build advertise a version
+#: it only knows how to *parse*, which is the failure this separation exists to
+#: prevent. What must hold is one direction only, ``writable <= readable``, and
+#: ``tests/test_replay_validation.py`` pins it.
+_BUNDLE_WRITERS: Mapping[
+    int, Callable[[EngineState, sessions.Session, str], tuple[dict[str, Any], str]]
+] = {
+    1: _bundle_v1,
+    2: _bundle_v2,
+}
+
+#: The writable set, read off the dispatch above rather than restated. A phase
+#: adding v3 writes one entry and this, the refusal message, and the
+#: reader-superset test all follow from it.
+WRITABLE_FORMAT_VERSIONS: frozenset[int] = frozenset(_BUNDLE_WRITERS)
+
+
+def replay_export(
+    state: EngineState,
+    encounter_id: str,
+    path: str | None = None,
+    embed: bool = False,
+    format_version: int = replay_service.LATEST_FORMAT_VERSION,
+    viewer_link: Callable[[Path], str | None] | None = None,
+) -> dict[str, Any]:
+    """Serialise a fight as a replay bundle, inline or on disk.
+
+    ``viewer_link`` is how a *running* viewer gets named without this layer
+    knowing what a URL is: the adapter passes a callable that answers a link
+    for a written file, or ``None`` for one it cannot play. Omitting it exports
+    the bundle and says nothing about where it might be watched.
+    """
+    session = sessions.session_for(state, encounter_id)
+    writer = _BUNDLE_WRITERS.get(format_version)
+    if writer is None:
+        allowed = " or ".join(str(one) for one in sorted(WRITABLE_FORMAT_VERSIONS))
+        raise RequestError(f"format_version must be {allowed}, got {format_version}")
+    bundle, name = writer(state, session, encounter_id)
     serialized = replay_service.serialize_bundle(bundle)
     slug = slugify(name)
     result: dict[str, Any] = {

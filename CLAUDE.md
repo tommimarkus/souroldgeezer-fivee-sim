@@ -451,6 +451,19 @@ is the declaration `validate_replay` reads instead of a literal, and it always
 contains `LATEST_FORMAT_VERSION`; a phase that bumps the writer and forgets the
 reader is what would falsify that invariant, and a test pins it.
 
+**There are three coordinated declarations, not one**, because *readable* and
+*writable* are different sets and one of the readers is not in Python.
+`map_ops.py`'s `WRITABLE_FORMAT_VERSIONS` is read off `_BUNDLE_WRITERS`, the
+export dispatch itself, so a version with no writer function cannot be claimed
+and the refusal message is rendered from the same mapping; `viewer.html`
+declares its own `READABLE_FORMAT_VERSIONS` array because it grades a dropped
+file offline with no engine to ask, and `tests/test_web_assets.py` reads that
+array out of the page's source and holds it against Python's. The invariant is
+`writable ⊆ readable` in one direction only — a build that reads three versions
+and writes one is the normal end state of this policy, and pointing the writer
+at the reader's set is how a build starts advertising a version it can only
+parse.
+
 **Seven concern modules sit beside the packages, and that tier is deliberate.**
 `catalog.py`, `content.py`, `map_document.py`, `map_types.py`, `validation.py`,
 `coverage.py`, and `rulings.py`
