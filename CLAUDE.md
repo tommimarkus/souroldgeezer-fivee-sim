@@ -139,9 +139,10 @@ Game rules content comes from the **System Reference Document 5.2.1**, released 
 Wizards of the Coast LLC under **CC-BY-4.0**. Three rules follow, and they are
 not negotiable:
 
-**1. The attribution ships verbatim.** [NOTICE](NOTICE) opens with the exact
-required statement, on a single line so it can be matched byte-for-byte. Never
-reword or re-wrap that sentence.
+**1. The attribution and source-supplied notice ship verbatim.** [NOTICE](NOTICE)
+opens with the exact required attribution, on a single line so it can be matched
+byte-for-byte. It also retains the source's exact CC-BY-4.0 Section 5 disclaimer
+notice on a single line. Never reword or re-wrap either sentence.
 
 NOTICE also carries two statements about **our** work, which are required and must
 not be dropped. CC-BY-4.0 §3(a)(1)(B) obliges us to indicate that we modified the
@@ -199,8 +200,8 @@ substitute for it.
 `scripts/hooks/ip-hygiene-check.sh` is a fast `PostToolUse` tripwire for the
 three rules above. It is **activated by the presence of
 `.ip-hygiene-local.conf`** in the project root, which also holds its tuning
-knobs (surface globs, mark denylist, non-SRD denylist, expected attribution
-string).
+knobs (surface globs, mark denylist, non-SRD denylist, expected attribution and
+source-supplied disclaimer strings).
 
 The wiring lives only in the developer's `~/.claude/settings.json`, never in the
 plugin and never published. Because that wiring is user-global, the marker-file

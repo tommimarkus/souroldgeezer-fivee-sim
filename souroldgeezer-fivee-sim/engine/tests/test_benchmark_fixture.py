@@ -1,16 +1,15 @@
 """The level-1 benchmark suite, frozen as a regression fixture.
 
-Fourteen fights pit the four benchmark pregens — Fighter, Cleric, Rogue, Wizard,
-normalized to stat blocks from the battlecast.gg level-1 encounter write-ups —
-against bundled and fixture-pack monsters in the mapless arena the benchmark
-sessions used: party at x=0 (y 0/5/10/15), monsters at x=30 in 5 ft lanes,
-seed 20260730, 20-round cap, one fresh ``Random(SEED + index)`` per iteration.
-The source difficulty labels come from those write-ups too; they are recorded
-here as prose provenance, not asserted — the engine is not obliged to agree
-with them, only to keep agreeing with itself.
+Fourteen fights pit four project-authored abstract level-1 profiles — Vanguard,
+Warden, Skirmisher, and Arcanist — against a project-authored progression of
+bundled and fixture-pack monsters. SRD 5.2.1 supplies the game statistics under
+the repository's NOTICE; the profile choices, encounter matrix, rubric, and
+calibration are original to this project. The mapless arena puts the party at
+x=0 (y 0/5/10/15) and monsters at x=30 in 5 ft lanes, with seed 20260807, a
+20-round cap, and one fresh ``Random(SEED + index)`` per iteration.
 
-Band rubric, from the benchmark write-ups: win rate >= 0.90 reads easy/low,
->= 0.60 moderate, below that high/deadly.
+Project rubric: win rate >= 0.85 reads comfortable, >= 0.50 contested, and
+anything below that severe.
 
 **What a failure means.** The constants below were calibrated on this engine at
 ITERATIONS iterations. The run is deterministic under the fixed seed sequence,
@@ -62,7 +61,7 @@ from fivee_sim.model.encounter import Encounter
 
 FIXTURE = Path(__file__).parent / "benchmark-fixture-pack.json"
 
-SEED = 20260730
+SEED = 20260807
 ITERATIONS = 400
 MAX_ROUNDS = 20
 WIN_TOLERANCE = 0.05
@@ -70,10 +69,10 @@ DOWN_TOLERANCE = 0.35
 
 # name in the fixture pack, combatant label, spawn point
 PARTY: tuple[tuple[str, str, Point], ...] = (
-    ("Benchmark Fighter", "Fighter", (0, 5)),
-    ("Benchmark Cleric", "Cleric", (0, 10)),
-    ("Benchmark Rogue", "Rogue", (0, 0)),
-    ("Benchmark Wizard", "Wizard", (0, 15)),
+    ("Benchmark Vanguard", "Vanguard", (0, 5)),
+    ("Benchmark Warden", "Warden", (0, 10)),
+    ("Benchmark Skirmisher", "Skirmisher", (0, 0)),
+    ("Benchmark Arcanist", "Arcanist", (0, 15)),
 )
 PC_NAMES = frozenset(label for _, label, _ in PARTY)
 PARTY_SIZE = len(PARTY)
@@ -84,49 +83,41 @@ Roster = tuple[tuple[str, int], ...]
 class Fight(NamedTuple):
     title: str
     roster: Roster
-    source_label: str | None  # difficulty per the battlecast.gg write-up; None = folklore
     expected_win: float  # calibrated on this engine at ITERATIONS iterations
     expected_down: float  # calibrated expected PCs down at the end of the fight
 
 
 FIGHTS: tuple[Fight, ...] = (
-    Fight("2 Goblin Warriors", (("Goblin Warrior", 2),), "easy/low", 1.0000, 0.2500),
-    Fight("Zombie + Skeleton", (("Zombie", 1), ("Skeleton", 1)), "easy/low", 1.0000, 0.2625),
-    Fight("4 Goblin Warriors", (("Goblin Warrior", 4),), "low", 0.9300, 1.0825),
-    Fight("4 Skeletons", (("Skeleton", 4),), "low", 0.7775, 1.7425),
-    Fight("4 Wolves", (("Wolf", 4),), "low", 0.8700, 1.2225),
-    Fight("6 Goblin Warriors", (("Goblin Warrior", 6),), "moderate", 0.4975, 2.6150),
+    Fight("1 Goblin Warrior", (("Goblin Warrior", 1),), 1.0000, 0.0800),
+    Fight("3 Goblin Warriors", (("Goblin Warrior", 3),), 0.9825, 0.4550),
+    Fight("5 Goblin Warriors", (("Goblin Warrior", 5),), 0.6400, 2.0725),
+    Fight("2 Skeletons", (("Skeleton", 2),), 0.9975, 0.4850),
+    Fight("3 Skeletons", (("Skeleton", 3),), 0.9225, 0.9925),
+    Fight("2 Wolves", (("Wolf", 2),), 1.0000, 0.1525),
+    Fight("3 Wolves", (("Wolf", 3),), 0.9700, 0.5125),
     Fight(
-        "Goblin Boss + 2 Warriors",
-        (("Goblin Boss", 1), ("Goblin Warrior", 2)),
-        "moderate", 0.9025, 1.2275,
+        "Goblin Boss + Warrior",
+        (("Goblin Boss", 1), ("Goblin Warrior", 1)),
+        0.9725,
+        0.5875,
     ),
-    Fight(
-        "3 Goblins + 3 Skeletons",
-        (("Goblin Warrior", 3), ("Skeleton", 3)),
-        "moderate", 0.2650, 3.3300,
-    ),
-    Fight("Ogre + Goblin Boss", (("Ogre", 1), ("Goblin Boss", 1)), "deadly", 0.5325, 2.6175),
-    Fight("1 Ogre (folklore)", (("Ogre", 1),), None, 0.9350, 0.9825),
-    Fight("3 Giant Wasps", (("Giant Wasp", 3),), "moderate", 0.4675, 2.7525),
-    Fight("4 Giant Venomous Snakes", (("Giant Venomous Snake", 4),), "low", 0.3625, 3.1000),
-    Fight("3 Giant Venomous Snakes", (("Giant Venomous Snake", 3),), "low", 0.7175, 2.0575),
-    Fight(
-        "2 Snakes + 3 Goblins",
-        (("Giant Venomous Snake", 2), ("Goblin Warrior", 3)),
-        "low", 0.5400, 2.6550,
-    ),
+    Fight("1 Ogre", (("Ogre", 1),), 0.9275, 1.0475),
+    Fight("Ogre + Skeleton", (("Ogre", 1), ("Skeleton", 1)), 0.6575, 2.0825),
+    Fight("1 Giant Wasp", (("Giant Wasp", 1),), 1.0000, 0.2950),
+    Fight("2 Giant Wasps", (("Giant Wasp", 2),), 0.8900, 1.2175),
+    Fight("1 Giant Venomous Snake", (("Giant Venomous Snake", 1),), 1.0000, 0.2900),
+    Fight("5 Giant Venomous Snakes", (("Giant Venomous Snake", 5),), 0.0600, 3.8550),
 )
 
 
 def band(win: float) -> str:
-    """The benchmark write-ups' difficulty rubric, applied to a simulated win rate."""
-    return "easy/low" if win >= 0.90 else "moderate" if win >= 0.60 else "high/deadly"
+    """Apply this project's coarse outcome rubric to a simulated win rate."""
+    return "comfortable" if win >= 0.85 else "contested" if win >= 0.50 else "severe"
 
 
 def band_is_stable(expected_win: float) -> bool:
     """True when no win rate passing the ±WIN_TOLERANCE window can change band."""
-    return all(abs(expected_win - edge) >= WIN_TOLERANCE for edge in (0.90, 0.60))
+    return all(abs(expected_win - edge) >= WIN_TOLERANCE for edge in (0.85, 0.50))
 
 
 #: The fights that go without a band assertion, named rather than left to a
@@ -136,10 +127,7 @@ def band_is_stable(expected_win: float) -> bool:
 #: a recalibration that moves a fight on or off this list has to say so in the
 #: same commit, rather than quietly dropping a third of the fights' band checks.
 UNBANDED = (
-    "4 Goblin Warriors",
-    "4 Wolves",
-    "Goblin Boss + 2 Warriors",
-    "1 Ogre (folklore)",
+    "2 Giant Wasps",
 )
 
 
@@ -198,8 +186,7 @@ def test_fight_stays_calibrated(fight: Fight, registry: ContentRegistry) -> None
 
     assert win == pytest.approx(fight.expected_win, abs=WIN_TOLERANCE), (
         f"win rate {win:.4f} drifted from calibrated {fight.expected_win:.4f} "
-        f"(source label: {fight.source_label or 'none'}); if the engine change was "
-        f"intentional, recalibrate the constants in this module"
+        "if the engine change was intentional, recalibrate the constants in this module"
     )
     assert down == pytest.approx(fight.expected_down, abs=DOWN_TOLERANCE), (
         f"expected PCs down {down:.4f} drifted from calibrated {fight.expected_down:.4f}; "

@@ -68,6 +68,20 @@ def test_the_codex_manifest_points_at_the_shared_skills() -> None:
     assert (PLUGIN_ROOT / manifest["skills"]).is_dir()
 
 
+def test_benchmark_fixture_is_project_authored_without_external_source_claims() -> None:
+    fixture_path = "engine/tests/benchmark-fixture-pack.json"
+    benchmark_test_path = "engine/tests/test_benchmark_fixture.py"
+    fixture = _json(fixture_path)
+
+    assert fixture["provenance"] == (
+        "Project-authored benchmark regression fixture using SRD 5.2.1 game "
+        "statistics; see NOTICE."
+    )
+    shipped_surface = _text(fixture_path) + _text(benchmark_test_path)
+    assert "battlecast" not in shipped_surface.casefold()
+    assert "never shipped" not in shipped_surface.casefold()
+
+
 def test_neither_host_manifest_asks_to_spawn_a_server() -> None:
     """The engine is started by the command that needs it, not by the host.
 

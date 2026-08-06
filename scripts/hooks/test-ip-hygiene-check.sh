@@ -28,6 +28,7 @@ trap 'rm -rf "$tmp"' EXIT
 make_root() {
   local root="$tmp/$1"
   mkdir -p "$root/souroldgeezer-fivee-sim/.claude-plugin" \
+           "$root/souroldgeezer-fivee-sim/.codex-plugin" \
            "$root/souroldgeezer-fivee-sim/skills/encounter-sim" \
            "$root/souroldgeezer-fivee-sim/agents" \
            "$root/souroldgeezer-fivee-sim/engine/src/fivee_sim/data"
@@ -65,6 +66,22 @@ check "mark in plugin.json description" 2 "$R" "$P/.claude-plugin/plugin.json"
 printf '{"name":"souroldgeezer-fivee-sim","description":"5E-compatible combat simulation."}\n' \
   > "$P/.claude-plugin/plugin.json"
 check "clean plugin.json" 0 "$R" "$P/.claude-plugin/plugin.json"
+
+printf '{"name":"souroldgeezer-fivee-sim","description":"clean","interface":{"displayName":"Dungeons & Dragons Sim","shortDescription":"clean","longDescription":"clean","capabilities":["clean"],"defaultPrompt":["clean"]}}\n' \
+  > "$P/.codex-plugin/plugin.json"
+check "mark in Codex display name" 2 "$R" "$P/.codex-plugin/plugin.json"
+
+printf '{"name":"souroldgeezer-fivee-sim","description":"clean","interface":{"displayName":"5E Sim","shortDescription":"clean","longDescription":"clean","capabilities":["Run D&D encounters"],"defaultPrompt":["clean"]}}\n' \
+  > "$P/.codex-plugin/plugin.json"
+check "mark in Codex capability" 2 "$R" "$P/.codex-plugin/plugin.json"
+
+printf '{"name":"souroldgeezer-fivee-sim","description":"clean","interface":{"displayName":"5E Sim","shortDescription":"clean","longDescription":"clean","capabilities":["clean"],"defaultPrompt":["Run a D&D encounter"]}}\n' \
+  > "$P/.codex-plugin/plugin.json"
+check "mark in Codex default prompt" 2 "$R" "$P/.codex-plugin/plugin.json"
+
+printf '{"name":"souroldgeezer-fivee-sim","description":"5E-compatible simulation","interface":{"displayName":"5E Sim","shortDescription":"Seeded combat","longDescription":"Run reproducible encounters","capabilities":["Run seeded encounters"],"defaultPrompt":["Run a 5E-compatible encounter"]}}\n' \
+  > "$P/.codex-plugin/plugin.json"
+check "clean Codex public metadata" 0 "$R" "$P/.codex-plugin/plugin.json"
 
 mkdir -p "$R/.claude-plugin"
 printf '{"name":"t","plugins":[{"name":"x","description":"A D&D engine."}]}\n' \
@@ -128,6 +145,10 @@ check "missing plugin NOTICE, root copy intact" 2 "$S2" "$S2/souroldgeezer-fivee
 S3="$(make_root shipped_tampered)"
 echo 'Material from SRD 5.2.1, Wizards of the Coast.' > "$S3/souroldgeezer-fivee-sim/NOTICE"
 check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/souroldgeezer-fivee-sim/NOTICE"
+
+S4="$(make_root disclaimer_missing)"
+sed -i '/^Section 5 of CC-BY-4.0 includes a Disclaimer of Warranties and Limitation of Liability that limits our liability to you\.$/d' "$S4/NOTICE"
+check "missing source-supplied disclaimer notice" 2 "$S4" "$S4/NOTICE"
 
 # --- worktree / nested-root resolution ------------------------------------
 # Implementation happens in git worktrees under .worktrees/, which carry their

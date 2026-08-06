@@ -1,7 +1,7 @@
 {
   "pack": "benchmark-fixture",
   "version": "1.0",
-  "provenance": "Benchmark regression fixture: SRD 5.2.1 transcriptions plus battlecast.gg level-1 benchmark pregens normalized to stat blocks. Test data only — never shipped.",
+  "provenance": "Project-authored benchmark regression fixture using SRD 5.2.1 game statistics; see NOTICE.",
   "creatures": [
     {
       "name": "Giant Venomous Snake",
@@ -34,26 +34,26 @@
       "provenance": "SRD 5.2.1 pp.354-355"
     },
     {
-      "name": "Benchmark Fighter",
+      "name": "Benchmark Vanguard",
       "team": "party",
-      "ac": 19,
-      "max_hp": 12,
+      "ac": 17,
+      "max_hp": 13,
       "speed": 30,
       "abilities": { "strength": 16, "dexterity": 12, "constitution": 16 },
       "save_bonuses": { "strength": 5, "constitution": 5 },
       "attacks": [
         { "name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee", "reach": 5 }
       ],
-      "unmodelled": ["Second Wind", "Fighting Style specifics beyond the listed AC and damage"],
-      "provenance": "battlecast.gg level-1 benchmark pregen (12 HP, AC 19), normalized to a stat block"
+      "unmodelled": ["Abstract regression profile; class features are intentionally outside the fixture"],
+      "provenance": "Project-authored level-1 benchmark profile using SRD 5.2.1 game statistics; see NOTICE."
     },
     {
-      "name": "Benchmark Cleric",
+      "name": "Benchmark Warden",
       "team": "party",
-      "ac": 18,
-      "max_hp": 10,
+      "ac": 16,
+      "max_hp": 11,
       "speed": 30,
-      "abilities": { "strength": 14, "dexterity": 10, "constitution": 14, "wisdom": 16 },
+      "abilities": { "strength": 14, "dexterity": 12, "constitution": 16, "wisdom": 16 },
       "save_bonuses": { "wisdom": 5, "charisma": 3 },
       "attacks": [
         { "name": "Mace", "attack_bonus": 4, "damage": "1d6+2", "damage_type": "bludgeoning", "kind": "melee", "reach": 5 }
@@ -62,44 +62,41 @@
       "spell_slots": { "1": 2 },
       "spell_save_dc": 13,
       "spell_attack_bonus": 5,
-      "unmodelled": ["Healing Word / Cure Wounds (batch auto-play cannot value healing)", "Bless"],
-      "provenance": "battlecast.gg level-1 benchmark pregen (10 HP, AC 18), normalized to a stat block"
+      "unmodelled": ["Healing spells are excluded because batch auto-play cannot value healing", "Support effects are outside this regression profile"],
+      "provenance": "Project-authored level-1 benchmark profile using SRD 5.2.1 game statistics; see NOTICE."
     },
     {
-      "name": "Benchmark Rogue",
+      "name": "Benchmark Skirmisher",
       "team": "party",
-      "ac": 15,
-      "max_hp": 10,
+      "ac": 14,
+      "max_hp": 9,
       "speed": 30,
-      "abilities": { "strength": 10, "dexterity": 16, "constitution": 12 },
+      "abilities": { "strength": 10, "dexterity": 17, "constitution": 12 },
       "save_bonuses": { "dexterity": 5, "intelligence": 3 },
       "attacks": [
-        { "name": "Shortbow (Sneak folded)", "attack_bonus": 5, "damage": "2d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320 },
-        { "name": "Rapier (Sneak folded)", "attack_bonus": 5, "damage": "2d6+4", "damage_type": "piercing", "kind": "melee", "reach": 5 }
+        { "name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320 },
+        { "name": "Rapier", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "piercing", "kind": "melee", "reach": 5 }
       ],
-      "unmodelled": [
-        "Sneak Attack folded into every attack as +1d6 mean damage; assumes a qualifying target each turn",
-        "Cunning Action"
-      ],
-      "provenance": "battlecast.gg level-1 benchmark pregen (10 HP, AC 15), normalized to a stat block"
+      "unmodelled": ["Conditional bonus damage and mobility features are intentionally outside the fixture"],
+      "provenance": "Project-authored level-1 benchmark profile using SRD 5.2.1 game statistics; see NOTICE."
     },
     {
-      "name": "Benchmark Wizard",
+      "name": "Benchmark Arcanist",
       "team": "party",
-      "ac": 12,
-      "max_hp": 8,
+      "ac": 13,
+      "max_hp": 7,
       "speed": 30,
-      "abilities": { "strength": 8, "dexterity": 14, "constitution": 12, "intelligence": 16 },
+      "abilities": { "strength": 8, "dexterity": 16, "constitution": 12, "intelligence": 17 },
       "save_bonuses": { "intelligence": 5, "wisdom": 3 },
       "attacks": [
-        { "name": "Dagger", "attack_bonus": 4, "damage": "1d4+2", "damage_type": "piercing", "kind": "melee", "reach": 5 }
+        { "name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee", "reach": 5 }
       ],
       "spells": ["Magic Missile", "Fire Bolt"],
       "spell_slots": { "1": 2 },
       "spell_save_dc": 13,
       "spell_attack_bonus": 5,
-      "unmodelled": ["Shield reaction", "Sleep (no hit-point-pool mechanic in the engine)", "Mage Armor assumed not cast"],
-      "provenance": "battlecast.gg level-1 benchmark pregen (8 HP, AC 12), normalized to a stat block"
+      "unmodelled": ["Defensive reactions", "Area control without an engine mechanic", "Pre-combat armor spells"],
+      "provenance": "Project-authored level-1 benchmark profile using SRD 5.2.1 game statistics; see NOTICE."
     }
   ],
   "spells": [

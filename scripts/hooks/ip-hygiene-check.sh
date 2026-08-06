@@ -86,14 +86,20 @@ matches_any() {
 }
 
 # Pull only the *branding* values out of a metadata file — never whole-file
-# text. JSON: top-level name/description plus every marketplace plugin entry.
+# text. JSON: top-level name/description, every marketplace plugin entry, and
+# the user-visible Codex interface text.
 # Markdown: the name/description keys inside YAML frontmatter only.
 extract_branding() {
   local f="$1"
   case "$f" in
     *.json)
       jq -r '
-        [ .name?, .description?, (.plugins[]? | .name?, .description?) ]
+        [
+          .name?,
+          .description?,
+          (.plugins[]? | .name?, .description?),
+          (.interface? // {} | .. | strings)
+        ]
         | map(select(type == "string")) | .[]
       ' "$f" 2>/dev/null
       ;;
@@ -136,8 +142,13 @@ if matches_any "$rel" "${IP_DATA_GLOBS[@]}" || is_attribution_file "$rel"; then
     notice="$root/$notice_rel"
     if [ ! -f "$notice" ]; then
       findings+=("$notice_rel is missing — CC-BY-4.0 requires the SRD 5.2.1 attribution to ship with the distributed plugin")
-    elif ! grep -qF -- "$IP_ATTRIBUTION_STRING" "$notice"; then
+      continue
+    fi
+    if ! grep -qF -- "$IP_ATTRIBUTION_STRING" "$notice"; then
       findings+=("$notice_rel no longer contains the SRD 5.2.1 attribution byte-for-byte — it must not be reworded or re-wrapped")
+    fi
+    if ! grep -qF -- "$IP_DISCLAIMER_NOTICE_STRING" "$notice"; then
+      findings+=("$notice_rel no longer contains the SRD source-supplied Section 5 disclaimer notice byte-for-byte — it must ship with the licensed material")
     fi
   done
 fi

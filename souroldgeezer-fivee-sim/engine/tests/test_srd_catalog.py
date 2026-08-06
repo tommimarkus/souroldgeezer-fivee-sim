@@ -21,6 +21,10 @@ EXPECTED_ATTRIBUTION = (
     "5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, "
     "available at https://creativecommons.org/licenses/by/4.0/legalcode."
 )
+EXPECTED_DISCLAIMER_NOTICE = (
+    "Section 5 of CC-BY-4.0 includes a Disclaimer of Warranties and Limitation "
+    "of Liability that limits our liability to you."
+)
 EXPECTED_CATALOG_CHAPTERS = {
     1: "legal-information",
     2: "contents",
@@ -215,6 +219,7 @@ def test_notice_copies_are_identical_and_keep_the_exact_attribution() -> None:
     plugin_notice = (PLUGIN / "NOTICE").read_text(encoding="utf-8")
     assert root_notice == plugin_notice
     assert root_notice.splitlines()[0] == EXPECTED_ATTRIBUTION
+    assert EXPECTED_DISCLAIMER_NOTICE in root_notice.splitlines()
 
 
 def test_every_bundled_executable_srd_record_uses_5_2_1_provenance() -> None:
