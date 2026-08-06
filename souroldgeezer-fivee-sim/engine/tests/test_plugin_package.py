@@ -154,6 +154,48 @@ def test_encounter_analysis_guidance_is_conditionally_packaged() -> None:
         assert obligation in analysis_plain
 
 
+def test_map_adventure_replay_guidance_is_conditionally_packaged() -> None:
+    skill_path = "skills/map-forge/SKILL.md"
+    section = _markdown_section(_text(skill_path), "## A whole adventure as one replay")
+
+    assert re.search(
+        r"\bcompose\b.{0,100}\bvalidate\b.{0,100}\badventure replay\b",
+        section,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"\bdo not load\b.{0,100}\bsingle map\b.{0,100}\bsingle-encounter replay\b",
+        section,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    guidance = _packaged_reference(
+        skill_path, section, "references/adventure-replay.md"
+    )
+    guidance_plain = " ".join(
+        guidance.replace("*", "").replace("`", "").split()
+    )
+    for obligation in (
+        "# A whole adventure as one replay",
+        "fivee adventure.replay <adv-id>",
+        "nested verbatim, in order",
+        "chapter record carries its mode",
+        "fivee adventure.list",
+        "Every chapter must be finalized first",
+        "adventure.finalize",
+        "not a precondition",
+        "Nothing is re-derived",
+        "Chapters freeze at encounter.finalize",
+        "always a file, never inline",
+        "replay.list will not list it",
+        "no viewer_url comes back",
+        "Chapter picker",
+        "fivee replay.validate",
+        "fivee replay.validate --json -",
+    ):
+        assert obligation in guidance_plain
+
+
 def test_host_manifests_identify_the_same_plugin() -> None:
     claude = _json(".claude-plugin/plugin.json")
     codex = _json(".codex-plugin/plugin.json")
