@@ -342,7 +342,14 @@ hardest to hide.
 **It is a projection, not an access control, and nothing may cite it as one.**
 `as=` is caller-asserted; the engine has one per-launch token and no per-seat
 credential, so a client that can ask for a seat's brief can equally ask for
-`encounter.state`. What it buys is an honest payload — a cooperating client is not
+`encounter.state`. **`actor` on `encounter.act` is the same kind of field** and
+inherits the same disclaimer: in an interlude it names who takes the beat, and
+nothing checks that the caller is entitled to move that creature. In a fight
+initiative incidentally narrowed this — only the current combatant could be
+made to act — and an interlude has no initiative to narrow it, so any caller
+holding the launch token may act as anybody. That is the same trust boundary as
+before, not a smaller one, and per-seat credentials are still what closing it
+would take. What it buys is an honest payload — a cooperating client is not
 holding secrets it must remember not to draw — and that is worth having on its own
 terms. It is not a boundary against a client that does not want to cooperate, and
 per-seat credentials are what closing that would take.

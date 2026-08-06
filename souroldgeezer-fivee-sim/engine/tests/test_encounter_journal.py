@@ -499,6 +499,49 @@ def test_a_recovered_interlude_still_takes_its_next_beat() -> None:
     assert kettle["position"] == [20, 0]
 
 
+def test_a_recovered_interlude_still_stands_on_its_own_map() -> None:
+    """The combination that actually ships: an interlude is a walk somewhere.
+
+    The two cases either side of this one are mapless, and the ground is where
+    an interlude's beats mean anything — a move that pays for terrain, a wall
+    that refuses one. Recovery rebuilds the map from the payload the creation
+    record captured, by the same path a fight uses, so this is the combination
+    rather than a new mechanism; it is here because nothing else drives it and
+    because the beat's own budget is what a recovered move would spend.
+    """
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY],
+            seed=229,
+            mode="exploration",
+            # Dimensions are in squares; positions are in feet. One row deep so
+            # the wall at square 4 is a barrier rather than something to walk
+            # around, which is what makes the refusal below the wall's and not
+            # a movement budget's.
+            map={
+                "name": "mill floor",
+                "width": 30,
+                "height": 1,
+                "default_terrain": "normal",
+                "terrain": [{"kind": "wall", "squares": [[4, 0]]}],
+            },
+        )["encounter_id"]
+    )
+    api.encounter_act(encounter_id, "move", to_position=[10, 0], actor="Kettle")
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["state"] == before
+    assert recovered["state"]["map"]["name"] == "mill floor"
+    # The ground still refuses what it refused: the wall at [4, 0] stands
+    # between Kettle and the far side, and a recovered chapter that had lost
+    # its map would happily walk through it.
+    with pytest.raises(RequestError, match="no route"):
+        api.encounter_act(encounter_id, "move", to_position=[25, 0], actor="Kettle")
+
+
 def test_a_solo_interlude_recovers_from_a_journal_holding_one_combatant() -> None:
     """The arity rule reaches recovery too, and only the mode says which one.
 
