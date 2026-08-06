@@ -8,9 +8,10 @@ proving the parser works rather than proving the types stand alone.
 What is under test is the handful of derivations the tree owes its readers —
 which features are fixtures the fight owns, which storey one stands on, what a
 square is, and what a stairway, a sight link and a lamp fan out to. Each of them
-existed already, spelled structurally inside ``map_document._plane_of`` and
-``model.battlemap``; the value of naming them is that a reader asks the document
-rather than re-deriving the answer, and two readers cannot then disagree.
+existed already, spelled structurally inside a bridge that turned every document
+into a second map model before a fight could read it; naming them here is what
+let that bridge and that second model go, and it is why a fight and the map
+service cannot disagree about a square without one of these cases failing.
 """
 
 from __future__ import annotations
@@ -120,7 +121,7 @@ class TestFixtures:
     def test_the_merged_table_reads_the_ground_first(self) -> None:
         # Feature ids are unique across a whole document, so this order is not
         # a precedence rule — it is what makes the merge deterministic, and it
-        # matches BattleMap.features, which the same callers read today.
+        # is the order ``Encounter._fixtures`` answers in for the same callers.
         doc = document(
             level(1, "gallery", UPPER_TILES, door("hatch", at=(3, 3))),
             level(GROUND_LEVEL, "ground", GROUND_TILES, door()),
@@ -156,7 +157,7 @@ class TestLevelOf:
             doc.level_of("portcullis")
 
     def test_an_annotation_is_not_somewhere_a_fixture_can_be(self) -> None:
-        # The same question BattleMap.level_of answers, and it answers it over
+        # The question ``Encounter._fixture_level`` answers, and it answers over
         # fixtures: a spawn hint never crosses to the fight, so a fight asking
         # where it stands is asking about something that is not there.
         doc = document(level(GROUND_LEVEL, "ground", GROUND_TILES, spawn()))
@@ -376,37 +377,29 @@ class TestClaims:
         assert both[0].terrain == TerrainPair(closed="floor", open="floor")
         assert both[1].terrain == TerrainPair(closed="floor", open="water")
 
-    def test_the_order_matches_the_battle_maps_own_derivation(self) -> None:
-        """The two claims() must stay the same shape while both exist.
-
-        ``MapFeature.claims`` is what ``Encounter._adopt_map`` and
-        ``service.maps.query`` read today; this one is what they will read.
-        Same squares, same order, same claims — otherwise the switchover is a
-        behaviour change wearing a refactor's clothes.
-        """
-        from fivee_sim.model.battlemap import FeatureOverlay, MapFeature
-
-        overlay_cells = ((1, 3), (2, 3), (1, 3))
-        pair = TerrainPair(closed="floor", open="water")
-        record = MapFeatureRecord(
-            id="gate",
+    def test_a_fixture_carries_its_prerequisites_and_its_price(self) -> None:
+        # Held here because the runtime fixture type carried the same three and
+        # had its own case for them; that type is gone and this record is what a
+        # fight reads instead. A default that drifted would give every plain
+        # door a prerequisite or a price.
+        gate = MapFeatureRecord(
+            id="sluice",
             kind="door",
-            at=(3, 4),
+            at=(8, 4),
             state="closed",
-            terrain=TerrainPair(closed="wall", open="water"),
-            elevation=HeightPair(closed=0, open=-5),
-            affects=(MapOverlayRecord(cells=overlay_cells, terrain=pair),),
+            requires=("north spike", "south spike"),
+            costs_action=True,
+            check=FeatureCheck(ability=Ability.STRENGTH, dc=15),
         )
-        runtime = MapFeature(
-            name="gate",
-            square=(3, 4),
-            closed_terrain="wall",
-            open_terrain="water",
-            elevation=HeightPair(closed=0, open=-5),
-            affects=(FeatureOverlay(squares=overlay_cells, terrain=pair),),
-        )
-        ground = level(GROUND_LEVEL, "ground", GROUND_TILES, record)
-        assert list(record.claims(ground, LEGEND)) == list(runtime.claims())
+        assert gate.requires == ("north spike", "south spike")
+        assert gate.costs_action is True
+        assert gate.check == FeatureCheck(ability=Ability.STRENGTH, dc=15)
+
+    def test_a_plain_door_asks_nothing_and_costs_nothing(self) -> None:
+        door = MapFeatureRecord(id="door", kind="door", at=(0, 0), state="closed")
+        assert door.requires == ()
+        assert door.costs_action is False
+        assert door.check is None
 
 
 class TestTheTypesStandAlone:

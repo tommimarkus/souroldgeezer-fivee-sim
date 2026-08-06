@@ -596,7 +596,7 @@ var FiveeRenderer = (function () {
      sets; a fixture absent from it shows the state the document authored.
 
      Shared rather than written per page on purpose. Server-side the same
-     question has exactly one answer — MapFeature.claims() — whose docstring
+     question has exactly one answer — MapFeatureRecord.claims() — whose docstring
      names deriving it twice as how two answers drift; a copy in each page
      would make three. The ground-height half of an overlay is not here: the
      renderer draws no relief, and what the pages do with height is their own

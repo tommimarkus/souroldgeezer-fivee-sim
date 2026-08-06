@@ -36,7 +36,7 @@ from ..map_document import (
     MapProvenance,
     as_payload,
 )
-from ..model.battlemap import TerrainPair
+from ..map_types import TerrainPair
 from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind
 from .common import resolve_seed
@@ -576,12 +576,11 @@ def document_from_spec(spec: dict[str, Any], terrain_table: TerrainTable) -> Map
     form a person or a model writes by hand — or as a ``terrain`` list of
     ``{"kind", "squares"}`` entries.
 
-    A **document** and not a battle map, because there is one map format and a
-    spec is a shorthand for writing one, not a second kind of map. A fight gets
-    its grid from :func:`~fivee_sim.map_document.to_grid` here exactly as a saved
-    file does, and the encounter journal captures the document rather than a
-    payload re-synthesised out of the grid afterwards — which is what used to
-    lose every key ``to_grid`` has no slot for.
+    A **document**, because there is one map format and a spec is a shorthand
+    for writing one, not a second kind of map. A fight resolves on what this
+    builds exactly as it resolves on a saved file, and the encounter journal
+    captures that document rather than a payload re-synthesised afterwards out
+    of a grid — which is what used to lose every key the grid had no slot for.
 
     Two things that follow from that, and are the whole of why this function is
     longer than a translation:
@@ -758,10 +757,10 @@ def document_from_spec(spec: dict[str, Any], terrain_table: TerrainTable) -> Map
                             width, height),
             kind=kind,
             orientation=orientation,
-            # Written out whichever kind the fixture is, because ``to_grid``
-            # only falls back to the hardcoded door pair when the record carries
-            # none — and a spec's lever is entitled to say its square stays
-            # floor in both states.
+            # Written out whichever kind the fixture is, because
+            # ``MapFeatureRecord.own_terrain`` only falls back to the hardcoded
+            # door pair when the record carries none — and a spec's lever is
+            # entitled to say its square stays floor in both states.
             terrain=TerrainPair(
                 closed=str(entry.get("closed_terrain", "door-closed")),
                 open=str(entry.get("open_terrain", "door-open")),

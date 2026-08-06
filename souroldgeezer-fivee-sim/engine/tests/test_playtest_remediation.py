@@ -15,36 +15,85 @@ from fivee_sim.kernel.grid import TERRAIN, CoverGrade, MovementMode, TerrainEffe
 from fivee_sim.kernel.items import ActionCost, ItemEffect
 from fivee_sim.kernel.rules import DamageType
 from fivee_sim.kernel.spells import Spell
-from fivee_sim.map_document import as_payload, parse_document, to_grid
-from fivee_sim.model.battlemap import BattleMap, MapPlane
+from fivee_sim.map_document import as_payload, parse_document
+from fivee_sim.map_types import (
+    MapDocument,
+    MapElevation,
+    MapFeatureRecord,
+    MapGrid,
+    MapLevel,
+)
 from fivee_sim.model.creature import AttackOption, Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 from fivee_sim.service.uvtt import to_uvtt
 
-from .conftest import FIXTURE, FixedRandom, ScriptedRandom, advance_to, fighter
+from .conftest import (
+    FIXTURE,
+    FixedRandom,
+    ScriptedRandom,
+    advance_to,
+    fighter,
+    fixture_provenance,
+)
+
+#: The storey fixtures below are plain ``normal`` ground over the 8x4 footprint,
+#: so one glyph is the whole legend.
+_LEGEND = {".": "normal"}
+
+
+def _storey(
+    index: int,
+    *,
+    elevation: int = 0,
+    sees: tuple[tuple[int, int], tuple[int, ...]] | None = None,
+) -> MapLevel:
+    """One 8x4 storey at a given datum, optionally with a hole through the floor.
+
+    ``sees`` is the square and the levels it looks onto, authored the way the
+    format authors it: a feature carrying ``sight_to_levels`` and **no state**,
+    so it is a sight link and never a fixture the fight can operate.
+    """
+    features = () if sees is None else (
+        MapFeatureRecord(
+            id=f"opening-{index}", kind="opening", at=sees[0], sight_to_levels=sees[1]
+        ),
+    )
+    return MapLevel(
+        index=index,
+        name=f"level-{index}",
+        tiles=("." * 8,) * 4,
+        features=features,
+        elevation=MapElevation(default=elevation),
+    )
 
 
 def _mapped_encounter(
     combatants: list[Creature],
     *,
     terrain: dict[tuple[int, int], str] | None = None,
-    levels: dict[int, MapPlane] | None = None,
+    levels: dict[int, MapLevel] | None = None,
 ) -> Encounter:
     battle_map = (
-        BattleMap(name="fixture", width=8, height=4, levels=levels, provenance=FIXTURE)
+        MapDocument(
+            name="fixture",
+            grid=MapGrid(width=8, height=4),
+            legend=_LEGEND,
+            provenance=fixture_provenance(),
+            levels=levels,
+        )
         if levels is not None
-        else BattleMap.flat(
+        else MapDocument.flat(
             name="fixture",
             width=8,
             height=4,
             terrain=terrain,
-            provenance=FIXTURE,
+            provenance=fixture_provenance(),
         )
     )
     return Encounter(
         combatants,
         FixedRandom(10),
-        battle_map=battle_map,
+        map_document=battle_map,
         terrain_effects={
             "normal": TerrainEffect(),
             "water": TerrainEffect(move_cost_multiplier=2, underwater=True),
@@ -344,10 +393,7 @@ class TestMovementModes:
         stirge.level = 1
         stirge.fly_speed = 40
         target = fighter("Harrow", position=(17, 7))
-        levels = {
-            0: MapPlane(default_elevation=0),
-            1: MapPlane(default_elevation=10),
-        }
+        levels = {0: _storey(0), 1: _storey(1, elevation=10)}
         encounter = _mapped_encounter([stirge, target], levels=levels)
         advance_to(encounter, "Stirge", FixedRandom(10))
 
@@ -389,11 +435,8 @@ class TestMovementModes:
         stirge.fly_speed = 40
         target = fighter("Harrow", position=(17, 2))
         levels = {
-            0: MapPlane(default_elevation=0),
-            1: MapPlane(
-                default_elevation=10,
-                sight_links={(0, 0): frozenset({0})},
-            ),
+            0: _storey(0),
+            1: _storey(1, elevation=10, sees=((0, 0), (0,))),
         }
         encounter = _mapped_encounter([stirge, target], levels=levels)
         advance_to(encounter, "Stirge", FixedRandom(10))
@@ -464,10 +507,7 @@ class TestOpeningsAndLifeCycle:
             ),
         )
         target = fighter("Harrow", position=(17, 2))
-        levels = {
-            0: MapPlane(),
-            1: MapPlane(sight_links={(0, 0): frozenset({0})}),
-        }
+        levels = {0: _storey(0), 1: _storey(1, sees=((0, 0), (0,)))}
         encounter = _mapped_encounter([archer, target], levels=levels)
         advance_to(encounter, "Whip", FixedRandom(10))
 
@@ -877,10 +917,10 @@ class TestAuthoredOpeningsAndLighting:
             "color": "#ffcc66",
         }
 
-        grid = to_grid(document)
-        assert grid.ground.sight_links == {(0, 0): frozenset({1})}
-        assert grid.ground.lights[0].bright == 20
-        assert grid.ground.ambient_light.value == "darkness"
+        assert document.ground.sight_links() == {(0, 0): frozenset({1})}
+        assert document.ground.lights()[0][0] == (0, 0)
+        assert document.ground.lights()[0][1].bright == 20
+        assert document.ground.ambient_light == "darkness"
 
     def test_uvtt_export_carries_authored_ambient_light_and_sources(self) -> None:
         document = parse_document(_authored_map(), source="fixture", terrain=TERRAIN)
@@ -908,7 +948,7 @@ class TestAuthoredOpeningsAndLighting:
         target = fighter("Marauder", team="monsters", position=(7, 2))
         target.darkvision = 60
         encounter = Encounter(
-            [attacker, target], FixedRandom(10), battle_map=to_grid(document)
+            [attacker, target], FixedRandom(10), map_document=document
         )
         advance_to(encounter, "Harrow", FixedRandom(10))
 
@@ -932,7 +972,7 @@ class TestAuthoredOpeningsAndLighting:
             target = fighter("Marauder", team="monsters", position=(7, 2))
             target.darkvision = 60
             encounter = Encounter(
-                [attacker, target], FixedRandom(10), battle_map=to_grid(document)
+                [attacker, target], FixedRandom(10), map_document=document
             )
             advance_to(encounter, "Harrow", FixedRandom(10))
 

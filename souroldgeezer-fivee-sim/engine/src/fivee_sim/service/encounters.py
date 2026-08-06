@@ -193,7 +193,7 @@ def create(
         encounter = sessions.new_encounter(
             built_combatants, rng, content.registry,
             movement_rule=specs.parse_movement_rule(movement_rule),
-            battle_map=resolved.battle_map if resolved is not None else None,
+            map_document=resolved.document if resolved is not None else None,
         )
     except EncounterError as error:
         raise RequestError(str(error)) from error

@@ -31,15 +31,13 @@ from fivee_sim.map_document import (
     as_payload,
     parse_document,
     serialize,
-    to_grid,
     validate_document,
 )
-from fivee_sim.model.battlemap import (
-    BattleMap,
+from fivee_sim.map_types import (
     FeatureCheck,
-    FeatureOverlay,
     FeatureTrigger,
     HeightPair,
+    SquareClaim,
     TerrainPair,
     TriggerMode,
 )
@@ -453,12 +451,14 @@ class TestElevation:
         again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
         assert serialize(again) == text
 
-    def test_heights_cross_to_the_battle_map(self) -> None:
+    def test_heights_are_a_datum_and_the_squares_that_depart_from_it(self) -> None:
         payload = document()
         payload["elevation"] = {"default": 5, "squares": [[2, 2, 20]]}
-        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
-        assert grid.default_elevation == 5
-        assert grid.elevation == {(2, 2): 20}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.elevation.default == 5
+        assert doc.elevation.squares == {(2, 2): 20}
+        assert doc.elevation.at((2, 2)) == 20
+        assert doc.elevation.at((0, 0)) == 5
 
 
 class TestElevationDiagnostics:
@@ -771,29 +771,39 @@ class TestSerialize:
         assert serialize(parse_document(shuffled, source="b", terrain=TERRAIN)) == canonical
 
 
-class TestToGrid:
-    def test_terrain_lands_sparsely_around_the_majority_kind(self) -> None:
-        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
-        assert (grid.name, grid.width, grid.height) == ("test-chamber", 6, 5)
-        assert grid.default_terrain == "wall"  # 17 wall, 12 floor, 1 difficult
-        assert (0, 0) not in grid.terrain
-        assert grid.terrain[(1, 1)] == "floor"
-        assert grid.terrain[(2, 2)] == "difficult"
-        assert grid.terrain[(3, 4)] == "floor"  # the doorway is carved floor
-        assert len(grid.terrain) == 13
-        assert grid.provenance == document()["provenance"]["source"]
+class TestTheDocumentIsTheWholeMap:
+    """What ``to_grid`` used to answer, asked of the document itself.
+
+    The bridge built a sparse terrain mapping around a computed modal default,
+    and these cases read that mapping back. There is no second model to bridge
+    to any more, so the same claims are made against the tiles and the legend —
+    which is where they were true all along.
+    """
+
+    def test_the_tiles_say_what_each_square_is(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert (doc.name, doc.grid.width, doc.grid.height) == ("test-chamber", 6, 5)
+        assert doc.ground.terrain_at((0, 0), doc.legend) == "wall"
+        assert doc.ground.terrain_at((1, 1), doc.legend) == "floor"
+        assert doc.ground.terrain_at((2, 2), doc.legend) == "difficult"
+        assert doc.ground.terrain_at((3, 4), doc.legend) == "floor"  # carved doorway
+        assert doc.provenance.source == document()["provenance"]["source"]
 
     def test_doors_become_features_and_nothing_else_does(self) -> None:
-        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
-        assert set(grid.features) == {"door-1"}
-        door = grid.features["door-1"]
-        assert (door.square, door.kind, door.initially_open) == ((3, 4), "door", False)
+        payload = document()
+        payload["features"].append(
+            {"id": "spawn-1", "kind": "spawn", "at": [1, 3], "team": "party"}
+        )
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert set(doc.fixtures()) == {"door-1"}
+        door = doc.fixtures()["door-1"]
+        assert (door.at, door.kind, door.state) == ((3, 4), "door", "closed")
 
     def test_an_open_door_starts_open(self) -> None:
         payload = document()
         payload["features"][0]["state"] = "open"
-        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
-        assert grid.features["door-1"].initially_open is True
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.fixtures()["door-1"].state == "open"
 
 
 def storey() -> dict[str, Any]:
@@ -988,56 +998,59 @@ class TestLevelSerialize:
         assert [level["index"] for level in written["levels"]] == [-1, 1]
 
 
-class TestToGridLevels:
-    def test_a_floorless_map_bridges_to_one_plane(self) -> None:
-        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
-        assert set(grid.levels) == {0}
-        assert grid.ground is grid.levels[0]
+class TestStoreysAreReadOffTheDocument:
+    """The storey half of the same collapse.
 
-    def test_every_storey_becomes_its_own_plane(self) -> None:
-        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
-        assert set(grid.levels) == {0, 1}
-        upper = grid.levels[1]
-        assert upper.default_terrain == "floor"  # 29 floor to 1 wall up here
-        assert upper.default_elevation == 10
-        assert (2, 2) not in upper.terrain  # the ground's difficult square is not up here
+    The three claims worth keeping from the bridge's cases are here: a storey
+    answers from its *own* tiles, fixtures merge across storeys under one name
+    table, and a stairway without a target is decoration rather than a way up.
+    """
 
-    def test_each_plane_picks_its_own_majority_terrain(self) -> None:
-        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
-        assert grid.ground.default_terrain == "wall"
-        assert grid.levels[1].default_terrain == "floor"
+    def test_a_floorless_map_holds_only_the_ground(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert set(doc.levels) == {0}
+        assert doc.ground is doc.levels[0]
 
-    def test_the_ground_accessors_still_read_the_ground_plane(self) -> None:
-        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
-        assert grid.default_terrain == grid.ground.default_terrain
-        assert grid.terrain == grid.ground.terrain
-        assert grid.elevation == grid.ground.elevation
-        assert grid.default_elevation == grid.ground.default_elevation
+    def test_a_storey_answers_from_its_own_plane_of_tiles(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        assert set(doc.levels) == {0, 1}
+        upper = doc.levels[1]
+        assert upper.elevation.default == 10
+        # The ground's difficult square is not up here, and the wall is.
+        assert doc.ground.terrain_at((2, 2), doc.legend) == "difficult"
+        assert upper.terrain_at((2, 2), doc.legend) == "floor"
+        assert upper.terrain_at((0, 0), doc.legend) == "wall"
 
-    def test_features_merge_across_planes_under_one_name_table(self) -> None:
+    def test_the_ground_accessors_still_read_the_ground_storey(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        assert doc.tiles == doc.ground.tiles
+        assert doc.features == doc.ground.features
+        assert doc.elevation == doc.ground.elevation
+
+    def test_fixtures_merge_across_storeys_under_one_name_table(self) -> None:
         payload = with_storey()
         payload["levels"][0]["features"].append(
             {"id": "hatch", "kind": "door", "at": [1, 1],
              "orientation": "horizontal", "state": "closed"}
         )
-        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
-        assert set(grid.features) == {"door-1", "hatch"}
-        assert set(grid.ground.features) == {"door-1"}
-        assert set(grid.levels[1].features) == {"hatch"}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert set(doc.fixtures()) == {"door-1", "hatch"}
+        assert set(doc.ground.fixtures()) == {"door-1"}
+        assert set(doc.levels[1].fixtures()) == {"hatch"}
 
-    def test_a_connector_reaches_the_plane_it_stands_on(self) -> None:
-        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
-        assert grid.ground.connectors == {(3, 3): 1}
-        assert grid.levels[1].connectors == {(3, 3): 0}
+    def test_a_connector_reaches_the_storey_it_stands_on(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        assert doc.ground.connectors() == {(3, 3): 1}
+        assert doc.levels[1].connectors() == {(3, 3): 0}
 
     def test_a_stairway_without_a_target_stays_decoration(self) -> None:
         # Stairs have always been drawn and never walked; only `to_level` makes
-        # one a way between planes.
+        # one a way between storeys.
         payload = document()
         payload["features"].append({"id": "stair-1", "kind": "stairs_down", "at": [1, 3]})
-        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
-        assert grid.ground.connectors == {}
-        assert "stair-1" not in grid.features
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.ground.connectors() == {}
+        assert "stair-1" not in doc.fixtures()
 
 
 class TestHandEdited:
@@ -1051,9 +1064,8 @@ class TestHandEdited:
         assert doc.provenance.edited is True
         assert doc.provenance.seed == 7  # generation lineage rides through the edit
         assert dict(doc.provenance.params) == {"width": 6, "height": 5}
-        grid = to_grid(doc)
-        assert grid.terrain[(3, 2)] == "difficult"
-        assert grid.features["door-1"].initially_open is True
+        assert doc.ground.terrain_at((3, 2), doc.legend) == "difficult"
+        assert doc.fixtures()["door-1"].state == "open"
 
 
 def sluice() -> dict[str, Any]:
@@ -1441,37 +1453,50 @@ class TestFeatureTriggers:
         )
 
 
-class TestFixturesCrossToTheBattleMap:
-    """``state``, not ``kind``, is what makes a feature one the fight owns."""
+class TestFixturesAreWhatTheFightOwns:
+    """``state``, not ``kind``, is what makes a feature one the fight owns.
 
-    def test_a_non_door_carrying_a_state_becomes_a_feature(self) -> None:
-        grid = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN))
-        assert set(grid.features) == {"spike", "gate"}
-        assert grid.features["spike"].kind == "spike"
+    ``to_grid`` applied that gate *structurally* — a feature with no ``state``
+    simply never became a ``MapFeature``, so no consumer could have read one by
+    accident. The gate is now :meth:`MapDocument.fixtures`, one call among the
+    several a fight and the map service make, so it is worth naming what each
+    side of the line is: these cases are the line itself.
+    """
+
+    def test_a_non_door_carrying_a_state_is_a_fixture(self) -> None:
+        doc = parse_document(sluice(), source="test", terrain=TERRAIN)
+        assert set(doc.fixtures()) == {"spike", "gate"}
+        assert doc.fixtures()["spike"].kind == "spike"
 
     def test_a_non_door_carrying_no_state_stays_document_level(self) -> None:
         # The other side of the same rule: a spawn hint is an annotation, and a
         # drawn stairway goes on being drawn rather than operated.
         payload = sluice()
         payload["features"].append({"id": "stair-1", "kind": "stairs_down", "at": [4, 3]})
-        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
-        assert "stair-1" not in grid.features
-        assert "spawn-party" not in grid.features
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert "stair-1" not in doc.fixtures()
+        assert "spawn-party" not in doc.fixtures()
+        # And neither has left the document: they are drawn, placed and walked
+        # by the renderers and the encounter spec, which read ``features``.
+        assert {"stair-1", "spawn-party"} <= {record.id for record in doc.features}
 
     def test_a_fixture_without_terrain_takes_its_own_tile_in_both_states(self) -> None:
         # The regression guard for a hand-written file that already carries a
         # state on a non-door: a spike driven into a wall stays a wall.
-        spike = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["spike"]
-        assert (spike.closed_terrain, spike.open_terrain) == ("wall", "wall")
+        doc = parse_document(sluice(), source="test", terrain=TERRAIN)
+        spike = doc.fixtures()["spike"]
+        assert spike.own_terrain(doc.ground, doc.legend) == TerrainPair(
+            closed="wall", open="wall"
+        )
 
     def test_an_upper_storeys_fixture_takes_the_upper_storeys_tile(self) -> None:
         """The same rule, one floor up, where it is possible to get it wrong.
 
         The case above stands on the ground plane, where "this level's tile" and
         "the document's tiles" are the same string — so it passes against a
-        bridge that reads ``document.tiles`` whatever storey it was asked about,
-        and every lever, spike and pressure plate upstairs would silently take
-        the terrain of the room below it.
+        reader that consults ``document.tiles`` whatever storey it was asked
+        about, and every lever, spike and pressure plate upstairs would silently
+        take the terrain of the room below it.
 
         The gallery is open floor at (2, 2); the chamber beneath it is
         ``difficult`` there. One square, two answers, and only one of them is
@@ -1485,54 +1510,64 @@ class TestFixturesCrossToTheBattleMap:
         assert doc.levels[0].tiles[2][2] == "%"  # difficult, downstairs
         assert doc.levels[1].tiles[2][2] == "."  # floor, in the gallery
 
-        lever = to_grid(doc).features["gallery-lever"]
-        assert (lever.closed_terrain, lever.open_terrain) == ("floor", "floor")
-
-    def test_a_door_without_terrain_keeps_the_door_pair(self) -> None:
-        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
-        door = grid.features["door-1"]
-        assert (door.closed_terrain, door.open_terrain) == ("door-closed", "door-open")
-
-    def test_link_and_orientation_cross_to_the_runtime_map(self) -> None:
-        battle = to_grid(parse_document(double_doors(), source="test", terrain=TERRAIN))
-        assert battle.features["door-left"].linked_to == "door-right"
-        assert battle.features["door-right"].linked_to == "door-left"
-        assert battle.features["door-left"].orientation == "horizontal"
-        assert battle.features["door-right"].orientation == "horizontal"
-
-    def test_an_authored_pair_overrides_the_default(self) -> None:
-        gate = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["gate"]
-        assert (gate.closed_terrain, gate.open_terrain) == ("door-closed", "water")
-        assert gate.elevation == HeightPair(closed=0, open=-5)
-
-    def test_overlays_cross_as_runtime_overlays(self) -> None:
-        gate = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["gate"]
-        assert gate.affects == (
-            FeatureOverlay(
-                squares=((1, 3), (2, 3)),
-                terrain=TerrainPair(closed="floor", open="water"),
-                elevation=HeightPair(closed=0, open=-5),
-            ),
-            FeatureOverlay(
-                squares=((4, 1),),
-                terrain=TerrainPair(closed="floor", open="difficult"),
-            ),
+        lever = doc.fixtures()["gallery-lever"]
+        assert lever.own_terrain(doc.levels[1], doc.legend) == TerrainPair(
+            closed="floor", open="floor"
         )
 
-    def test_what_operating_it_costs_and_takes_crosses_too(self) -> None:
-        grid = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN))
-        assert grid.features["gate"].requires == ("spike",)
-        assert grid.features["gate"].costs_action is True
-        assert grid.features["spike"].check == FeatureCheck(ability=Ability.STRENGTH, dc=15)
+    def test_a_door_without_terrain_keeps_the_door_pair(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        door = doc.fixtures()["door-1"]
+        assert door.own_terrain(doc.ground, doc.legend) == TerrainPair(
+            closed="door-closed", open="door-open"
+        )
 
-    def test_a_fixture_on_a_storey_lands_on_its_own_plane(self) -> None:
+    def test_a_link_and_an_orientation_are_the_records_own(self) -> None:
+        doc = parse_document(double_doors(), source="test", terrain=TERRAIN)
+        fixtures = doc.fixtures()
+        assert fixtures["door-left"].linked_to == "door-right"
+        assert fixtures["door-right"].linked_to == "door-left"
+        assert fixtures["door-left"].orientation == "horizontal"
+        assert fixtures["door-right"].orientation == "horizontal"
+
+    def test_an_authored_pair_overrides_the_default(self) -> None:
+        doc = parse_document(sluice(), source="test", terrain=TERRAIN)
+        gate = doc.fixtures()["gate"]
+        assert gate.own_terrain(doc.ground, doc.legend) == TerrainPair(
+            closed="door-closed", open="water"
+        )
+        assert gate.elevation == HeightPair(closed=0, open=-5)
+
+    def test_an_overlay_claims_every_cell_it_names(self) -> None:
+        doc = parse_document(sluice(), source="test", terrain=TERRAIN)
+        gate = doc.fixtures()["gate"]
+        claims = dict(gate.claims(doc.ground, doc.legend))
+        assert claims[(1, 3)] == SquareClaim(
+            feature="gate",
+            terrain=TerrainPair(closed="floor", open="water"),
+            elevation=HeightPair(closed=0, open=-5),
+        )
+        assert claims[(2, 3)] == claims[(1, 3)]
+        assert claims[(4, 1)] == SquareClaim(
+            feature="gate",
+            terrain=TerrainPair(closed="floor", open="difficult"),
+        )
+
+    def test_what_operating_it_costs_and_takes_is_the_records_own(self) -> None:
+        fixtures = parse_document(sluice(), source="test", terrain=TERRAIN).fixtures()
+        assert fixtures["gate"].requires == ("spike",)
+        assert fixtures["gate"].costs_action is True
+        assert fixtures["spike"].check == FeatureCheck(ability=Ability.STRENGTH, dc=15)
+
+    def test_a_fixture_on_a_storey_belongs_to_that_storey(self) -> None:
         payload = with_storey()
         payload["levels"][0]["features"].append(
             {"id": "lever", "kind": "lever", "at": [1, 1], "state": "closed"}
         )
-        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
-        assert set(grid.levels[1].features) == {"lever"}
-        assert "lever" not in grid.ground.features
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert set(doc.levels[1].fixtures()) == {"lever"}
+        assert "lever" not in doc.ground.fixtures()
+        assert doc.level_of("lever") == 1
 
 
 class TestFixturePairDiagnostics:
@@ -1879,9 +1914,11 @@ class TestAllocateLegend:
 
 
 class TestMapDocumentFlat:
-    """``MapDocument.flat``: the document twin of ``BattleMap.flat``.
+    """``MapDocument.flat``: a document from what a caller already has.
 
-    One plane, built from what a caller already has — dimensions, a default
+    It was the twin of a ``BattleMap.flat`` that no longer exists — the
+    constructor a fight's map used to be built with, and the reason this one has
+    the shape it does. One plane, built from what a caller already has — dimensions, a default
     kind, the squares that differ from it — and the format's own concerns
     (glyphs, dense tiles, provenance) filled in. The property every case here
     turns on is that the result is a document the parser accepts: a builder that
@@ -1913,24 +1950,21 @@ class TestMapDocumentFlat:
 
         assert as_payload(self._parsed(built)) == as_payload(built)
 
-    def test_it_answers_the_same_square_by_square_as_the_battle_map_twin(self) -> None:
-        # The two ``flat`` constructors are one shape authored twice; if they
-        # disagreed about what a square is, collapsing map production onto the
-        # document would silently move a fight's terrain.
+    def test_every_square_reads_back_as_the_kind_it_was_given(self) -> None:
+        # The sparse mapping in and the dense tiles out have to agree about every
+        # square, not only the ones that differ: this is the constructor a fight's
+        # map is built with, so a square that densified wrong moves the terrain
+        # under a fight silently.
         terrain = {(1, 0): "wall", (3, 1): "water", (0, 1): "difficult"}
         built = MapDocument.flat(
             name="strip", width=4, height=2, default_terrain="floor", terrain=terrain
         )
-        twin = BattleMap.flat(
-            name="strip", width=4, height=2, default_terrain="floor", terrain=terrain
-        )
 
-        bridged = to_grid(built)
         for y in range(2):
             for x in range(4):
-                assert bridged.ground.terrain.get(
-                    (x, y), bridged.default_terrain
-                ) == twin.ground.terrain.get((x, y), twin.default_terrain)
+                assert built.ground.terrain_at((x, y), built.legend) == terrain.get(
+                    (x, y), "floor"
+                )
 
     def test_a_reserved_glyph_in_the_authors_legend_moves_and_the_tiles_follow(
         self,
@@ -1981,9 +2015,8 @@ class TestMapDocumentFlat:
         assert self._parsed(built).elevation.at((2, 0)) == 25
 
     def test_a_square_outside_the_grid_is_not_drawn_and_not_recorded(self) -> None:
-        # ``BattleMap.flat`` never consults such a square; a document would write
-        # it out and the parser would refuse the file. Dropped, so the builder
-        # cannot make a document nothing can read.
+        # A document would write it out and the parser would refuse the file.
+        # Dropped, so the builder cannot make a document nothing can read.
         built = MapDocument.flat(
             name="strip", width=2, height=1, default_terrain="floor",
             terrain={(9, 9): "wall"}, elevation={(9, 9): 30},

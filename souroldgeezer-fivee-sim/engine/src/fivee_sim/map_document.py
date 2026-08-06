@@ -66,8 +66,13 @@ The glyphs ``+`` ``/`` ``<`` ``>`` ``@`` are reserved for renderer overlays
 
 :func:`serialize` writes canonical bytes — stable key order, sorted legend and
 params, LF line endings, trailing newline — so parse → serialize → parse is
-byte-stable and a saved file diffs cleanly. :func:`to_grid` is the single
-bridge to the encounter-facing :class:`~fivee_sim.model.battlemap.BattleMap`.
+byte-stable and a saved file diffs cleanly.
+
+**There is no bridge to a second map model any more.** ``to_grid`` built an
+encounter-facing ``BattleMap`` out of every document, and a fight took that
+rather than this; both are gone. A fight holds the :class:`MapDocument` and asks
+it the questions ``to_grid`` used to precompute, which is why
+:mod:`fivee_sim.map_types` exists and why ``model`` may import it.
 
 **The tree itself lives in** :mod:`fivee_sim.map_types`, and this module is the
 reading of a file into it. The split is not tidiness: a dataclass needs nothing
@@ -112,13 +117,6 @@ from .map_types import (
     TriggerMode,
     allocate_legend,
 )
-from .model.battlemap import (
-    BattleMap,
-    FeatureOverlay,
-    LightSource,
-    MapFeature,
-    MapPlane,
-)
 from .validation import Diagnostic, Reader, Severity
 
 #: Every name below that this module no longer *defines* is re-exported from
@@ -151,7 +149,6 @@ __all__ = [
     "feature_payload",
     "parse_document",
     "serialize",
-    "to_grid",
     "validate_document",
 ]
 
@@ -1181,7 +1178,7 @@ def _check_connectors(
 
 
 def _claimed_squares(feature: MapFeatureRecord) -> Iterator[Square]:
-    """Every square a fixture decides — the record side of ``MapFeature.claims``.
+    """Every square a fixture decides, as the parser needs to see them.
 
     The same walk, deliberately: the own square, then every overlay cell. The
     runtime asks the battle-map feature itself, which does not exist until the
@@ -1861,9 +1858,8 @@ def document_from(
 
     A generator's dense height grid is reduced here rather than in the
     generator: the commonest height becomes the document's datum and only the
-    squares departing from it are written, which is the same choice
-    :func:`to_grid` makes for terrain and for the same reason — the file stays
-    small and a run of flat ground costs nothing to record.
+    squares departing from it are written, so the file stays small and a run of
+    flat ground costs nothing to record.
     """
     glyph_of = {kind: glyph for glyph, kind in DEFAULT_LEGEND.items()}
     tiles: list[str] = []
@@ -1915,112 +1911,4 @@ def document_from(
                 )
             }
         ),
-    )
-
-
-# --- the bridge to the battle map ------------------------------------------
-def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
-    """One document level as the encounter-facing plane.
-
-    Every question this asks of the level is one the level answers for itself —
-    :meth:`~fivee_sim.map_types.MapLevel.terrain_at` for a square,
-    :meth:`~fivee_sim.map_types.MapLevel.fixtures` for what a fight owns, and
-    :meth:`~fivee_sim.map_types.MapLevel.connectors`,
-    :meth:`~fivee_sim.map_types.MapLevel.sight_links` and
-    :meth:`~fivee_sim.map_types.MapLevel.lights` for the three fan-outs. What is
-    left here is translation into the runtime shapes and nothing else, which is
-    the point: this bridge used to be the only place several of those rules were
-    written down, so a reader that wanted one had to re-derive it.
-
-    ``default_terrain`` is the one thing genuinely computed here, because it is a
-    property of the *runtime* plane rather than of the document: the tiles are
-    dense and have no default. It is the most common kind on *this level's* tiles
-    (ties broken by kind name, so the choice is deterministic), and only squares
-    that differ enter the sparse mapping. Each storey chooses its own, because a
-    gallery that is mostly floor should not pay for the ground being mostly wall.
-    """
-    squares = [
-        ((x, y), level.terrain_at((x, y), legend))
-        for y, row in enumerate(level.tiles)
-        for x in range(len(row))
-    ]
-    counts: Counter[str] = Counter(kind for _, kind in squares)
-    if counts:
-        default = min(counts, key=lambda kind: (-counts[kind], kind))
-    else:  # pragma: no cover - dimensions are validated to at least 1x1
-        default = "floor"
-
-    terrain: dict[Square, str] = {
-        square: kind for square, kind in squares if kind != default
-    }
-
-    features: dict[str, MapFeature] = {}
-    for feature in level.fixtures().values():
-        own = feature.own_terrain(level, legend)
-        features[feature.id] = MapFeature(
-            name=feature.id,
-            square=feature.at,
-            kind=feature.kind,
-            orientation=feature.orientation,
-            closed_terrain=own.closed,
-            open_terrain=own.open,
-            initially_open=feature.state == "open",
-            elevation=feature.elevation,
-            affects=tuple(
-                FeatureOverlay(
-                    squares=overlay.cells,
-                    terrain=overlay.terrain,
-                    elevation=overlay.elevation,
-                )
-                for overlay in feature.affects
-            ),
-            requires=feature.requires,
-            trigger=feature.trigger,
-            costs_action=feature.costs_action,
-            check=feature.check,
-            linked_to=feature.linked_to,
-        )
-    return MapPlane(
-        default_terrain=default,
-        terrain=terrain,
-        default_elevation=level.elevation.default,
-        elevation=dict(level.elevation.squares),
-        features=features,
-        connectors=dict(level.connectors()),
-        sight_links=dict(level.sight_links()),
-        ambient_light=LightLevel(level.ambient_light),
-        lights=tuple(
-            LightSource(square=square, bright=light.bright, dim=light.dim, color=light.color)
-            for square, light in level.lights()
-        ),
-    )
-
-
-def to_grid(document: MapDocument) -> BattleMap:
-    """The single bridge from a document to an encounter-facing battle map.
-
-    One :class:`~fivee_sim.model.battlemap.MapPlane` per level, each resolved by
-    :func:`_plane_of`. Ground height crosses as the document already holds it —
-    the level's own default and the squares that depart from it — since there is
-    nothing to infer. Every feature carrying a ``state`` becomes a
-    :class:`MapFeature` row with ``initially_open`` read from that state, and
-    the overlay records flattened into the runtime form beside it.
-
-    A feature carrying ``to_level`` also becomes a connector on its plane, which
-    is the one thing a fight consults a stairway for. A feature carrying neither
-    — a plain stairway drawn for the reader, a spawn hint — stays document-level
-    *on purpose*: the battle map has no slot for it and a fight does not ask;
-    renderers and placement logic read them from the document.
-    """
-    return BattleMap(
-        name=document.name,
-        width=document.grid.width,
-        height=document.grid.height,
-        levels=MappingProxyType(
-            {
-                index: _plane_of(document.levels[index], document.legend)
-                for index in sorted(document.levels)
-            }
-        ),
-        provenance=document.provenance.source,
     )

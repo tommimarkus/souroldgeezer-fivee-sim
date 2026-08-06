@@ -30,9 +30,8 @@ from fivee_sim.map_document import (
     MapDocument,
     as_payload,
     parse_document,
-    to_grid,
 )
-from fivee_sim.model.battlemap import BattleMap, TerrainPair
+from fivee_sim.map_types import TerrainPair
 from fivee_sim.service import specs
 from fivee_sim.service.errors import RequestError
 from fivee_sim.service.specs import ATTACK_SPEC_KEYS, creature_from_spec
@@ -44,14 +43,15 @@ GOBLIN: dict[str, Any] = {"name": "Goblin", "team": "monsters", "ac": 15, "max_h
 ALLY: dict[str, Any] = {"name": "Bram", "team": "party", "ac": 14, "max_hp": 22}
 
 
-def _grid_from_spec(spec: dict[str, Any]) -> BattleMap:
-    """The battle map an inline spec still produces — now by way of its document.
+def _grid_from_spec(spec: dict[str, Any]) -> MapDocument:
+    """The map an inline spec produces, which is the map a fight resolves on.
 
-    ``document_from_spec`` is the whole producer now, and ``to_grid`` is the one
-    bridge onto the grid a fight resolves on, so the cases below assert what they
-    always asserted about a spec through the road a fight actually takes.
+    ``document_from_spec`` is the whole producer and the document is the whole
+    artifact — there is no second model behind it any more — so the cases below
+    assert what they always asserted about a spec, on the thing a fight is
+    actually handed.
     """
-    return to_grid(specs.document_from_spec(spec, TERRAIN))
+    return specs.document_from_spec(spec, TERRAIN)
 
 
 @pytest.fixture(scope="module")
@@ -503,12 +503,12 @@ class TestAMapSpecCanSayHowItsDoorsHang:
 
     def test_a_door_may_declare_how_it_hangs(self) -> None:
         built = _grid_from_spec(self._door(orientation="vertical"))
-        assert built.features["gate"].orientation == "vertical"
+        assert built.fixtures()["gate"].orientation == "vertical"
 
     def test_every_orientation_the_format_knows_is_accepted(self) -> None:
         for orientation in DOOR_ORIENTATIONS:
             built = _grid_from_spec(self._door(orientation=orientation))
-            assert built.features["gate"].orientation == orientation
+            assert built.fixtures()["gate"].orientation == orientation
 
     def test_an_orientation_the_format_does_not_know_names_what_was_written(self) -> None:
         # The refusal has to carry the caller's own word back: "must be one of"
@@ -529,8 +529,8 @@ class TestAMapSpecCanSayHowItsDoorsHang:
             {"name": "right", "square": [2, 1], "orientation": "horizontal",
              "linked_to": "left"},
         ))
-        assert built.features["left"].linked_to == "right"
-        assert built.features["right"].linked_to == "left"
+        assert built.fixtures()["left"].linked_to == "right"
+        assert built.fixtures()["right"].linked_to == "left"
 
     def test_a_linked_leaf_must_be_named_by_non_empty_text(self) -> None:
         with pytest.raises(RequestError, match="linked_to must name a feature"):
@@ -588,7 +588,7 @@ class TestADoorMustSayHowItHangs:
                 "closed_terrain": "floor", "open_terrain": "floor",
             }],
         })
-        assert built.features["lever"].orientation is None
+        assert built.fixtures()["lever"].orientation is None
 
     def test_the_two_authoring_surfaces_refuse_a_bare_door_in_the_same_words(self) -> None:
         # The point of the change, asserted rather than described: whatever the
@@ -642,9 +642,8 @@ class TestAnInlineSpecBuildsADocumentLikeEveryOtherProducer:
             "legend": {"#": "wall", ".": "floor"},
         })
 
-        grid = to_grid(built)
-        assert grid.ground.terrain.get((1, 1), grid.default_terrain) == "floor"
-        assert grid.ground.terrain.get((0, 0), grid.default_terrain) == "wall"
+        assert built.ground.terrain_at((1, 1), built.legend) == "floor"
+        assert built.ground.terrain_at((0, 0), built.legend) == "wall"
 
     def test_an_authors_own_glyphs_survive_into_the_document(self) -> None:
         # A legend a person wrote is theirs. Reallocating it would make the

@@ -29,6 +29,7 @@ from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellShape
+from fivee_sim.map_types import MapProvenance
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import Encounter
 
@@ -128,6 +129,19 @@ class ScriptedRandom(Random):
     def randint(self, a: int, b: int) -> int:
         face = self._script.pop(0) if self._script else b
         return max(a, min(face, b))
+
+
+def fixture_provenance(source: str = FIXTURE) -> MapProvenance:
+    """The provenance a hand-built ``MapDocument`` carries in this suite.
+
+    A fight's map is a document now, and a document insists on being told where
+    it came from — a battle map took a bare string and most of these fixtures
+    passed one. This is that string, in the shape the format wants: no generator
+    run to reproduce, so no seed and no params, and nobody has edited it since.
+    """
+    return MapProvenance(
+        generator="hand", seed=0, params={}, edited=False, source=source
+    )
 
 
 def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 24) -> None:

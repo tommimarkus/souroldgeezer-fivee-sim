@@ -56,7 +56,7 @@ def simulate_rounds(
             items=dict(registry.items),
             condition_effects=registry.condition_effects,
             movement_rule=specs.parse_movement_rule(movement_rule),
-            battle_map=resolved.battle_map if resolved is not None else None,
+            map_document=resolved.document if resolved is not None else None,
             terrain_effects=registry.terrain_effects,
         )
     except (ValueError, EncounterError) as error:

@@ -37,15 +37,23 @@ import json
 from collections.abc import Callable
 from itertools import combinations
 from pathlib import Path
+from random import Random
 from typing import Any
 
 import pytest
 
+from fivee_sim.map_types import (
+    MapDocument,
+    MapFeatureRecord,
+    MapGrid,
+    MapLevel,
+)
 from fivee_sim.model import encounter as model
+from fivee_sim.model.encounter import Encounter
 from fivee_sim.service.errors import NotFoundError
 
 from . import api
-from .conftest import advance_encounter_to
+from .conftest import advance_encounter_to, fighter, fixture_provenance
 
 FIXTURE = "synthetic test fixture, not SRD content"
 
@@ -590,6 +598,81 @@ class TestTheClassificationIsTotal:
             "the vault carries no wiring at all, so the classification case "
             "above would pass over an empty half"
         )
+
+    def test_a_withheld_key_stays_off_the_summary_even_when_the_record_has_one(
+        self,
+    ) -> None:
+        """The half of the pair the payload cannot reach on its own.
+
+        Six entries in ``FEATURE_WITHHELD_KEYS`` — ``team``, ``to_level``,
+        ``sight_to_levels``, ``facing``, ``hinge``, ``swing`` — are keys a
+        ``MapFeatureRecord`` carries and ``_feature_summary`` does not emit.
+        They were classified *ahead of* any payload, when a fixture stopped
+        being a ``MapFeature`` (which held none of them) and became the
+        document's own record (which holds all six), so the case above cannot
+        see them: it derives from what a fight emits.
+
+        This is the assertion that makes the decision bite. A fixture is built
+        carrying every one of them and the fight is asked for its map, so the
+        day somebody widens the summary the classification stops being a claim
+        nobody checks and becomes a failure with a name on it. Derived from the
+        set rather than a list written here, so a seventh entry is covered by
+        adding it in one place.
+        """
+        record = MapFeatureRecord(
+            id="wired hatch",
+            kind="hatch",
+            at=(1, 1),
+            state="closed",
+            team="monsters",
+            to_level=1,
+            sight_to_levels=(1,),
+            facing="north",
+            hinge="west",
+            swing="north",
+        )
+        carried = {
+            key
+            for key in model.FEATURE_WITHHELD_KEYS
+            if getattr(record, key, None) not in (None, (), False)
+        }
+        assert carried == {
+            "team", "to_level", "sight_to_levels", "facing", "hinge", "swing"
+        }, (
+            "the record no longer carries every withheld key this case was "
+            f"built to carry, or it carries a new one: {sorted(carried)}"
+        )
+        # Two storeys, because ``to_level`` and ``sight_to_levels`` name one and
+        # ``_adopt_map`` refuses a connector to a level the map does not have —
+        # a fixture that could not start a fight would prove nothing about what
+        # its summary says.
+        document = MapDocument(
+            name="wired",
+            grid=MapGrid(width=4, height=4),
+            legend={".": "normal"},
+            provenance=fixture_provenance(FIXTURE),
+            levels={
+                index: MapLevel(
+                    index=index,
+                    name=f"level-{index}",
+                    tiles=("." * 4,) * 4,
+                    features=(record,) if index == 0 else (),
+                )
+                for index in (0, 1)
+            },
+        )
+        fight = Encounter(
+            [
+                fighter("Thora", position=(0, 0)),
+                fighter("Grull", team="monsters", position=(15, 15)),
+            ],
+            Random(1),
+            map_document=document,
+        )
+
+        summary = fight.state()["map"]["features"]["wired hatch"]
+
+        assert set(summary) & model.FEATURE_WITHHELD_KEYS == set(), summary
 
     def test_every_event_data_key_the_model_emits_is_classified_exactly_once(
         self,

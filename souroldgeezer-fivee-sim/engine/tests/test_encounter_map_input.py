@@ -100,7 +100,7 @@ class TestAnInlineMapIsWhicheverFormatItSaysItIs:
 
         The door's DC is the discriminator: it exists only in the document
         format, so a fight that knows it can only have been built by
-        :func:`~fivee_sim.map_document.to_grid`. A test asserting the map's
+        the document path. A test asserting the map's
         *name* would pass against a spec parser taught to ignore ``format``.
         """
         created = api.encounter_create(roster(), seed=11, map=buffer_document())
@@ -170,7 +170,7 @@ class TestAnInlineDocumentHasNoFileToHaveMoved:
         """No id, so the map travels by value — and as the document it arrived as.
 
         Rendering it back out of the battle map instead would drop everything
-        ``to_grid`` has no slot for: the provenance that says where the map came
+        a grid had no slot for: the provenance that says where the map came
         from, and any fixture the grid does not consult. That is the replay gap
         the missing ``map_source`` would otherwise leave, so it is closed here
         rather than papered over there.

@@ -47,7 +47,7 @@ from ..kernel.grid import (
 )
 from ..kernel.items import ActionCost, ItemEffect
 from ..kernel.spells import Spell, SpellShape
-from ..model.battlemap import BattleMap
+from ..map_types import MapDocument
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from .expectation import attack_damage_expectation, save_damage_expectation
@@ -548,13 +548,14 @@ def _sphere_option(
     encounter: Encounter, actor: Creature, spell: Spell, slot_level: int, dice: Dice
 ) -> _Option | None:
     candidates: set[Point] = set()
-    if encounter.battle_map is None:
+    if encounter.map_document is None:
         for creature in _conscious(encounter):
             px, py = as_point(creature.position)
             for offset in (-spell.radius, 0, spell.radius):
                 candidates.add((px + offset, py))
     else:
-        width, height = encounter.battle_map.width, encounter.battle_map.height
+        grid = encounter.map_document.grid
+        width, height = grid.width, grid.height
         squares: set[Square] = set()
         for creature in _conscious(encounter):
             squares |= sphere_squares(
@@ -680,7 +681,7 @@ def _closing_move(
     desired = _threat_range(encounter, actor, turn)
     if desired is None:
         return None
-    if encounter.battle_map is not None:
+    if encounter.map_document is not None:
         return _closing_move_mapped(
             encounter, actor, enemies, int(turn["movement_left"]), desired
         )
@@ -722,7 +723,7 @@ def _closing_dash(
     if desired is None:
         return None
     movement_mode: MovementMode | None = None
-    if encounter.battle_map is not None:
+    if encounter.map_document is not None:
         movement_mode = _preferred_movement_mode(encounter, actor, enemies, desired)
         can_close = movement_mode is not None
     else:
@@ -798,16 +799,16 @@ def _cross_level_flight_move(
     desired: int,
 ) -> Action | None:
     """Best legal direct flight toward an enemy on another visible storey."""
-    battle_map = encounter.battle_map
-    if battle_map is None or actor.fly_speed <= 0:
+    document = encounter.map_document
+    if document is None or actor.fly_speed <= 0:
         return None
     origin = as_point(actor.position)
     radius = max(0, budget // FEET_PER_SQUARE + 1)
     origin_square = to_square(origin)
     x_min = max(0, origin_square[0] - radius)
-    x_max = min(battle_map.width - 1, origin_square[0] + radius)
+    x_max = min(document.grid.width - 1, origin_square[0] + radius)
     y_min = max(0, origin_square[1] - radius)
-    y_max = min(battle_map.height - 1, origin_square[1] + radius)
+    y_max = min(document.grid.height - 1, origin_square[1] + radius)
     candidates: list[tuple[int, int, int, str, int, int, int]] = []
     for enemy in sorted(enemies, key=lambda creature: creature.name):
         if enemy.level == actor.level:
@@ -1004,7 +1005,7 @@ def simulate_rounds(
     items: dict[str, ItemEffect] | None = None,
     condition_effects: ConditionTable | None = None,
     movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
-    battle_map: BattleMap | None = None,
+    map_document: MapDocument | None = None,
     terrain_effects: TerrainTable | None = None,
 ) -> dict[str, Any]:
     """Auto-play the same encounter ``iterations`` times and summarise the outcomes.
@@ -1013,7 +1014,7 @@ def simulate_rounds(
     a batch that reloaded content while running would stop being reproducible from
     its seed, which is the one property these numbers rest on.
 
-    ``battle_map`` puts every iteration on the same frozen map — safe to share,
+    ``map_document`` puts every iteration on the same frozen map — safe to share,
     since a map is immutable and each :class:`Encounter` builds its own overlay
     state (door positions reset between iterations by construction).
 
@@ -1067,7 +1068,7 @@ def simulate_rounds(
             items=items,
             condition_effects=condition_effects,
             movement_rule=movement_rule,
-            battle_map=battle_map,
+            map_document=map_document,
             terrain_effects=terrain_effects,
         )
         outcome = run_encounter(encounter, rng, max_rounds=max_rounds)

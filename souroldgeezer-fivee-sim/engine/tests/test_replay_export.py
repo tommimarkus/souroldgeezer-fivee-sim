@@ -29,9 +29,8 @@ from fivee_sim.map_document import (
     MapFeatureRecord,
     as_payload,
     parse_document,
-    to_grid,
 )
-from fivee_sim.model.battlemap import FeatureTrigger, TerrainPair, TriggerMode
+from fivee_sim.map_types import FeatureTrigger, TerrainPair, TriggerMode
 from fivee_sim.model.creature import AttackOption
 from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
@@ -240,7 +239,7 @@ class TestBundleV2:
         }
         parsed = parse_document(payload, source="replay", terrain=TERRAIN)
         assert next(feature for feature in parsed.features if feature.id == "gate").trigger == (
-            to_grid(document).features["gate"].trigger
+            document.fixtures()["gate"].trigger
         )
 
     def test_v2_records_normalized_inputs_actions_checkpoints_and_integrity(self) -> None:

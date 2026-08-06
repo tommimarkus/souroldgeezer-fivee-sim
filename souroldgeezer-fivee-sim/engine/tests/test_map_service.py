@@ -23,7 +23,6 @@ from fivee_sim.map_document import (
     MapError,
     parse_document,
     serialize,
-    to_grid,
 )
 from fivee_sim.service import maps as service
 from fivee_sim.service.common import resolve_seed, sha256_of, slugify
@@ -538,7 +537,7 @@ class TestConnectorEdits:
         )
         assert doc.levels[1].features[-1].to_level == 0
         # And it is a connector to the fight, not merely a drawn glyph.
-        assert to_grid(doc).levels[1].connectors[(1, 1)] == 0
+        assert doc.levels[1].connectors()[(1, 1)] == 0
 
     def test_a_connector_to_a_level_the_map_lacks_is_the_documents_refusal(self) -> None:
         # The refusals stay the document's, as every fixture key's do: the
@@ -586,7 +585,7 @@ class TestConnectorEdits:
         doc = edited(storeyed(), {"op": "set_feature", "feature": {
             "id": "stair-foot", "kind": "stairs_up", "at": [3, 3]}})
         assert doc.features[-1].to_level is None
-        assert to_grid(doc).levels[0].connectors == {}
+        assert doc.levels[0].connectors() == {}
 
 
 class TestLevelViews:

@@ -274,12 +274,12 @@ class MapColor:
 class MapOverlayRecord:
     """Squares a fixture governs beyond its own, as the document records them.
 
-    Deliberately not the runtime
-    :class:`~fivee_sim.model.battlemap.FeatureOverlay`: the file wants a
-    canonically-sorted list it can write back byte-for-byte, and a fight wants a
-    square-to-kind index it can read inside a pathfinding loop. The flattening
-    between the two is translation, and it lives in
-    :func:`~fivee_sim.map_document._plane_of` beside the rest of it.
+    A canonically-sorted list of cells, because that is what the file wants to
+    write back byte-for-byte. A fight reads it through
+    :meth:`MapFeatureRecord.claims`, which flattens every overlay into the
+    square-keyed index a pathfinding loop can afford — once, at adoption. There
+    was a runtime ``FeatureOverlay`` beside this holding the same three fields
+    in a second shape, and one translation between the two; both are gone.
     """
 
     cells: tuple[Square, ...]
@@ -369,13 +369,13 @@ class MapFeatureRecord:
     ) -> Iterator[tuple[Square, SquareClaim]]:
         """Every square this fixture decides, and what it decides about it.
 
-        The document-side twin of
-        :meth:`~fivee_sim.model.battlemap.MapFeature.claims`, and deliberately
-        the same yield order: the fixture's own square first, then each overlay's
-        cells in the order the file wrote them. Both real callers build a
-        ``dict`` from this, where the last claim for a square wins, so the order
-        decides which of two conflicting claims survives — and therefore which
-        one the refusal that follows names.
+        The single derivation of it, and the yield order is part of the answer:
+        the fixture's own square first, then each overlay's cells in the order
+        the file wrote them. Both real callers — ``Encounter._adopt_map`` and
+        :class:`~fivee_sim.service.maps.ResolvedLevel` — build a ``dict`` from
+        this, where the last claim for a square wins, so the order decides which
+        of two conflicting claims survives, and therefore which one the refusal
+        that follows names.
 
         The own square's pair comes from :meth:`own_terrain` rather than straight
         off ``terrain``, which is optional: a claim carrying no terrain falls
@@ -427,11 +427,21 @@ class MapLevel:
         Python would read ``tiles[-1][-1]`` as the far corner with a straight
         face, and a reader that asked about a square which is not there has a
         defect rather than a terrain kind.
+
+        Only the *negative* half of that is a check: an index past the end
+        raises :class:`IndexError` on its own, and the ``try`` costs nothing on
+        the path that does not take it. This is the hottest read in the engine —
+        every step of every route goes through ``Encounter._terrain_at_level``
+        and lands here — and the arithmetic form measured 64 ns against this
+        one's 42, on a floor of 36 with no check at all.
         """
         x, y = square
-        if not (0 <= y < len(self.tiles) and 0 <= x < len(self.tiles[y])):
+        if x < 0 or y < 0:
             raise KeyError(square)
-        return legend[self.tiles[y][x]]
+        try:
+            return legend[self.tiles[y][x]]
+        except IndexError:
+            raise KeyError(square) from None
 
     def fixtures(self) -> Mapping[str, MapFeatureRecord]:
         """This storey's features a fight can operate, keyed by id.
@@ -550,9 +560,9 @@ class MapDocument:
         """Every storey's fixtures under one name table, the ground's first.
 
         Feature ids are unique across a whole document, so the order is not a
-        precedence rule — it is what makes the merge deterministic, and it is the
-        order :attr:`~fivee_sim.model.battlemap.BattleMap.features` already
-        answers in for the same callers.
+        precedence rule — it is what makes the merge deterministic, and it is
+        the order ``Encounter._fixtures`` and every refusal that lists the map's
+        fixtures answer in.
 
         The ``state`` gate itself lives on :meth:`MapLevel.fixtures`; this
         merges. A second ``state is None`` written here is how a document and a
@@ -566,10 +576,9 @@ class MapDocument:
     def level_of(self, feature_name: str) -> int:
         """Which storey holds a named fixture. Raises :class:`KeyError` if none does.
 
-        Fixtures, not features: a spawn hint never crosses to the fight, so a
-        caller asking where it stands is asking about something that is not
-        there. The same question, and the same answer, as
-        :meth:`~fivee_sim.model.battlemap.BattleMap.level_of`.
+        Fixtures, not features: a spawn hint is not something a fight owns, so
+        a caller asking which storey one stands on is asking about something
+        that is not there to be reached.
         """
         for index in sorted(self.levels):
             if feature_name in self.levels[index].fixtures():
@@ -594,13 +603,12 @@ class MapDocument:
     ) -> MapDocument:
         """A one-plane document, built from the shape a caller already has.
 
-        The document twin of :meth:`~fivee_sim.model.battlemap.BattleMap.flat`,
-        and deliberately the same shape: a default terrain kind and the squares
-        that differ from it, a default height and the squares that differ from
-        that, and the fixtures. What it adds is the three things the *format*
-        wants and a battle map does not — a legend, dense ``tiles``, and a
-        provenance — none of which a caller should have to spell to say "a
-        20x20 room with a wall down one side".
+        The shape a caller who is not writing a file already has: a default
+        terrain kind and the squares that differ from it, a default height and
+        the squares that differ from that, and the fixtures. What it adds is the
+        three things the *format* wants and that caller does not have — a
+        legend, dense ``tiles``, and a provenance — none of which anybody should
+        have to spell to say "a 20x20 room with a wall down one side".
 
         ``legend`` is a preference, not a requirement: see
         :func:`allocate_legend` for what is honoured and what is moved. The
@@ -608,8 +616,7 @@ class MapDocument:
         leave a row pointing at a legend entry that no longer exists.
 
         A square outside the grid is dropped from both layers rather than
-        recorded. ``BattleMap.flat`` can hold one harmlessly because nothing
-        ever looks it up; a document would write it into the file and
+        recorded: a document would write it into the file and
         :func:`~fivee_sim.map_document.parse_document` would refuse to read the
         file back.
 

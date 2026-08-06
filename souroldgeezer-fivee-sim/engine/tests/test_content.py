@@ -1657,14 +1657,13 @@ class TestCustomTerrain:
         # The deferred assertion from the terrain content step: a pack-defined
         # kind, on a real map, actually slows movement and actually screens.
         from fivee_sim.kernel.grid import CoverGrade
-        from fivee_sim.model.battlemap import BattleMap
+        from fivee_sim.map_types import MapDocument
 
         path = write_pack(tmp_path, "thorns.json", self.THORNS)
         registry = load_packs([path], include_environment=False)
-        battle_map = BattleMap.flat(
+        battle_map = MapDocument.flat(
             name="thornfield", width=5, height=1,
             terrain={(2, 0): "vale-thornfield"},
-            provenance="test fixture",
         )
         hero = make_creature("Goblin Warrior", registry=registry, label="A", team="a")
         villain = make_creature(
@@ -1675,7 +1674,7 @@ class TestCustomTerrain:
         encounter = Encounter(
             [hero, villain], rng,
             condition_effects=registry.condition_effects,
-            battle_map=battle_map,
+            map_document=battle_map,
             terrain_effects=registry.terrain_effects,
         )
         # cover: 1 — the thorns screen whoever stands behind them.

@@ -3,9 +3,9 @@
 ``Encounter`` answers "what is this square" from its own flattened claim index
 (``_feature_squares``, resolved against ``map_state.open_features``).
 :class:`~fivee_sim.service.maps.ResolvedLevel` answers the same question from
-the same plane and the same open set. They are two derivations of one thing, and
-the only reason they agree today is that both were written from
-:meth:`~fivee_sim.model.battlemap.MapFeature.claims` — a shared origin, not a
+the same storey and the same open set. They are two derivations of one thing,
+and the only reason they agree today is that both were written from
+:meth:`~fivee_sim.map_types.MapFeatureRecord.claims` — a shared origin, not a
 shared implementation. This file holds them against each other square by square,
 over a corpus wide enough that a divergence has somewhere to show: storeys with
 connectors, sight links and an authored light, an overlay fixture that moves
@@ -22,16 +22,18 @@ Illumination deliberately is not: ``Encounter._illumination_at`` asks about a
 against.
 
 The fixture-name assertion is the other half. Which document features become
-fixtures a fight owns is decided by one line of ``_plane_of``: a feature with no
-``state`` is skipped, so a spawn hint, a drawn stairway and a brazier stay
-document-level. That is a structural fact of the bridge rather than a rule
-written anywhere, which is exactly the kind of thing a rewrite loses quietly.
+fixtures a fight owns is decided by one line of :meth:`MapLevel.fixtures`: a
+feature with no ``state`` is skipped, so a spawn hint, a drawn stairway and a
+brazier stay document-level. That gate used to be applied *structurally* — by
+``to_grid``, which built a battle map that had no slot for such a feature at all
+— so no consumer could read one by accident. It is a method call now, made at
+nine or so sites, and this is where the whole set of them is held to it.
 
 Two more properties are pinned here because nothing else pinned them and both
-are load-bearing for "the map is a static artifact": a :class:`BattleMap` is
+are load-bearing for "the map is a static artifact": a :class:`MapDocument` is
 frozen, and a fight that operates a door records the change in
-``map_state.open_features`` while leaving the ``BattleMap`` byte-for-byte as it
-found it.
+``map_state.open_features`` while leaving the document byte-for-byte as it found
+it.
 """
 
 from __future__ import annotations
@@ -50,8 +52,8 @@ from fivee_sim.kernel.grid import (
     Square,
     terrain_effect_of,
 )
-from fivee_sim.map_document import parse_document, to_grid
-from fivee_sim.model.battlemap import BattleMap
+from fivee_sim.map_document import parse_document
+from fivee_sim.map_types import MapDocument
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 from fivee_sim.service.maps import ResolvedLevel
 
@@ -276,17 +278,17 @@ def corpus() -> list[MapCase]:
     ]
 
 
-def encounter_on(case: MapCase) -> tuple[Encounter, BattleMap]:
-    battle_map = to_grid(parse_document(case.payload, source=case.name, terrain=TERRAIN))
+def encounter_on(case: MapCase) -> tuple[Encounter, MapDocument]:
+    document = parse_document(case.payload, source=case.name, terrain=TERRAIN)
     encounter = Encounter(
         [
             fighter(position=standing_at(case.party)),
             fighter("Grull", team="foes", position=standing_at(case.foes)),
         ],
         Random(1),
-        battle_map=battle_map,
+        map_document=document,
     )
-    return encounter, battle_map
+    return encounter, document
 
 
 def expected_cover(kind: str) -> int:
@@ -299,18 +301,17 @@ class TestTwoReadersAgree:
     def test_every_square_of_every_storey_resolves_identically(
         self, case: MapCase
     ) -> None:
-        encounter, battle_map = encounter_on(case)
-        document = parse_document(case.payload, source=case.name, terrain=TERRAIN)
+        encounter, document = encounter_on(case)
         assert encounter.map_state is not None
         open_features = encounter.map_state.open_features
 
         divergent: list[str] = []
-        for level in sorted(battle_map.levels):
+        for level in sorted(document.levels):
             resolved = ResolvedLevel.of(
                 document.levels[level], document.legend, open_features
             )
-            for y in range(battle_map.height):
-                for x in range(battle_map.width):
+            for y in range(document.grid.height):
+                for x in range(document.grid.width):
                     square = (x, y)
                     fight = (
                         encounter._terrain_at_level(level, square),
@@ -330,8 +331,7 @@ class TestTwoReadersAgree:
     def test_only_a_feature_carrying_a_state_becomes_a_fixture_of_the_fight(
         self, case: MapCase
     ) -> None:
-        document = parse_document(case.payload, source=case.name, terrain=TERRAIN)
-        encounter, _battle_map = encounter_on(case)
+        encounter, document = encounter_on(case)
 
         state = encounter.state()["map"]
         assert state is not None
@@ -359,20 +359,18 @@ class TestTwoReadersAgree:
 
 
 class TestTheMapItselfIsNeverWritten:
-    def test_a_battle_map_is_frozen(self) -> None:
-        battle_map = to_grid(
-            parse_document(chamber_payload(), source="frozen", terrain=TERRAIN)
-        )
+    def test_a_map_document_is_frozen(self) -> None:
+        document = parse_document(chamber_payload(), source="frozen", terrain=TERRAIN)
         with pytest.raises(dataclasses.FrozenInstanceError):
-            battle_map.name = "renamed"  # type: ignore[misc]
+            document.name = "renamed"  # type: ignore[misc]
 
     def test_operating_a_door_moves_the_overlay_and_not_the_artifact(self) -> None:
         # ``test_analytics`` shares one map across five iterations, but its arena
         # carries no fixtures at all, so a fight that wrote to its map would not
         # surface there. This one has a door and opens it.
         payload = chamber_payload()
-        pristine = to_grid(parse_document(payload, source="pristine", terrain=TERRAIN))
-        battle_map = to_grid(parse_document(payload, source="played", terrain=TERRAIN))
+        pristine = parse_document(payload, source="pristine", terrain=TERRAIN)
+        document = parse_document(payload, source="pristine", terrain=TERRAIN)
         rng = Random(3)
         encounter = Encounter(
             [
@@ -380,7 +378,7 @@ class TestTheMapItselfIsNeverWritten:
                 fighter("Grull", team="foes", position=standing_at((1, 1))),
             ],
             rng,
-            battle_map=battle_map,
+            map_document=document,
         )
         assert encounter.map_state is not None
         assert encounter.map_state.open_features == set()
@@ -392,6 +390,6 @@ class TestTheMapItselfIsNeverWritten:
 
         assert encounter.map_state.open_features == {"chamber-door"}
         # The change lives in the overlay only: the artifact still equals a map
-        # built fresh from the same document, feature record and all.
-        assert battle_map == pristine
-        assert battle_map.features["chamber-door"].initially_open is False
+        # parsed fresh from the same payload, feature record and all.
+        assert document == pristine
+        assert document.fixtures()["chamber-door"].state == "closed"
