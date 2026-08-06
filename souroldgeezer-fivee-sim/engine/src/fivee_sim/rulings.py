@@ -305,6 +305,34 @@ RULINGS: tuple[Ruling, ...] = (
         sites=("model/encounter.py:Encounter._step_cost",),
     ),
     _ruling(
+        code="movement_mode_ungated_by_terrain",
+        kind=RulingKind.APPROXIMATION,
+        question=(
+            "A Swim Speed needs water, a Burrow Speed needs something to burrow "
+            "through, a Fly Speed needs open air. The printed rule assumes the "
+            "terrain a mode needs is actually there before a creature draws on it."
+        ),
+        decision=(
+            "The turn's movement budget is the highest of every mode a creature "
+            "has, with no check that the square it occupies offers what that mode "
+            "requires. A swim speed counts on dry land; a burrow speed counts in "
+            "open air; a fly speed counts underground."
+        ),
+        because=(
+            "This predates the wave for swim, climb and fly; burrow joined the "
+            "same rule rather than inventing a gate for one mode alone. A grid "
+            "square carries a terrain price, not a per-mode legality flag, and "
+            "adding one is a single decision for all five modes together."
+        ),
+        basis=("SRD 5.2.1, Rules Glossary, Speed",),
+        revisit=(
+            "A real gate is one decision covering all five modes at once, not a "
+            "burrow-shaped patch. The day a map needs a creature refused a swim "
+            "move on dry ground is the day to design it, for every mode together."
+        ),
+        sites=("model/encounter.py:Encounter._begin_turn",),
+    ),
+    _ruling(
         code="cylinder_height_unread",
         kind=RulingKind.APPROXIMATION,
         question=(
@@ -327,6 +355,69 @@ RULINGS: tuple[Ruling, ...] = (
             "diagnostic anywhere."
         ),
         sites=("kernel/spells.py:Spell.height",),
+    ),
+    _ruling(
+        code="temp_hp_grant_takes_the_higher_value",
+        kind=RulingKind.APPROXIMATION,
+        question=(
+            "Temporary Hit Points, They Don't Stack: the recipient chooses whether "
+            "to keep what they have or take the new grant. This engine has no "
+            "player-choice channel at grant time."
+        ),
+        decision=(
+            "Creature.grant_temp_hp takes the higher of what the creature already "
+            "carries and what is offered, rather than asking anyone."
+        ),
+        because=(
+            "There is no channel through which a grant can pause and put the "
+            "choice to the recipient, and the higher value is the choice a player "
+            "would make anyway whenever the two amounts differ, so defaulting to "
+            "it costs nothing a real choice would have kept."
+        ),
+        basis=("SRD 5.2.1, Temporary Hit Points",),
+        revisit=(
+            "The day a grant can carry a real choice — an interactive session "
+            "where the recipient answers a prompt rather than the engine picking "
+            "for them — is the day this reverts to the printed rule."
+        ),
+        sites=("model/creature.py:Creature.grant_temp_hp",),
+    ),
+    _ruling(
+        code="effect_release_drops_the_whole_condition",
+        kind=RulingKind.APPROXIMATION,
+        question=(
+            "A cumulative condition like Exhaustion is held at a level, and more "
+            "than one source can be adding to it. The printed rule tracks the "
+            "level; nothing says an ending effect should remove more than its own "
+            "contribution."
+        ),
+        decision=(
+            "Encounter._release_effect calls remove_condition(effect.condition) "
+            "outright once it is the last ledger effect holding that condition, "
+            "dropping the whole entry rather than the levels this one effect "
+            "contributed."
+        ),
+        because=(
+            "The ledger's stacked/remaining guards protect a condition already "
+            "held before this effect began, or still held by another live "
+            "effect, but neither guard is re-checked at release time: a level "
+            "added by something outside the ledger — a table ruling, most "
+            "concretely — after this effect started is not accounted for and is "
+            "stripped along with it."
+        ),
+        basis=(
+            "SRD 5.2.1, Conditions, Exhaustion",
+            "SRD 5.2.1, Rules Glossary, Concentration",
+        ),
+        revisit=(
+            "A pack that imposes one level of a cumulative condition through a "
+            "timed or concentration effect, on a creature that also picks up a "
+            "level from a table ruling or another channel while that effect is "
+            "still active, is misresolved the moment the first effect lapses. "
+            "Give remove_condition's levels parameter a real caller here before "
+            "that content ships."
+        ),
+        sites=("model/encounter.py:Encounter._release_effect",),
     ),
     # --- the SRD says it and no field can carry it -------------------------
     _ruling(
@@ -418,6 +509,33 @@ RULINGS: tuple[Ruling, ...] = (
             "The moment a hidden creature is expressible, this number is what an "
             "onlooker's passive Perception must beat, and the omission codes on five "
             "bundled records become closable."
+        ),
+    ),
+    _ruling(
+        code="tremorsense_carried_and_unconsumed",
+        kind=RulingKind.SCHEMA_CEILING,
+        question=(
+            "Tremorsense pinpoints a creature's location within range and "
+            "explicitly 'doesn't count as a form of sight.'"
+        ),
+        decision=(
+            "Creature.tremorsense is transcribed and reported. Encounter._can_see, "
+            "the engine's only sight predicate, has no rung for it and no rule "
+            "consults the field."
+        ),
+        because=(
+            "Every consumer of _can_see only has 'can see' and 'cannot see' to "
+            "choose between, and answering True for a Tremorsense-only observer "
+            "would wrongly cancel the unseen-target Disadvantage against a "
+            "creature it has pinpointed but still cannot see. The same "
+            "declared-but-inert standing as passive_perception_transcribed_only: "
+            "carrying a printed number with no consumer to spend it on."
+        ),
+        basis=("SRD 5.2.1, Rules Glossary, Tremorsense",),
+        revisit=(
+            "The day this engine gains a pinpoint-without-sight state — "
+            "something between 'can see' and 'cannot see' — is the day "
+            "Tremorsense has a rung of its own to occupy in _can_see."
         ),
     ),
     _ruling(

@@ -104,6 +104,20 @@ Basis: SRD 5.2.1, Climbing, Swimming, and Crawling; SRD 5.2.1, Difficult Terrain
 
 Governs: `model/encounter.py:Encounter._step_cost`.
 
+### `movement_mode_ungated_by_terrain`
+
+**Question.** A Swim Speed needs water, a Burrow Speed needs something to burrow through, a Fly Speed needs open air. The printed rule assumes the terrain a mode needs is actually there before a creature draws on it.
+
+**Decision.** The turn's movement budget is the highest of every mode a creature has, with no check that the square it occupies offers what that mode requires. A swim speed counts on dry land; a burrow speed counts in open air; a fly speed counts underground.
+
+**Why.** This predates the wave for swim, climb and fly; burrow joined the same rule rather than inventing a gate for one mode alone. A grid square carries a terrain price, not a per-mode legality flag, and adding one is a single decision for all five modes together.
+
+**Revisit when.** A real gate is one decision covering all five modes at once, not a burrow-shaped patch. The day a map needs a creature refused a swim move on dry ground is the day to design it, for every mode together.
+
+Basis: SRD 5.2.1, Rules Glossary, Speed.
+
+Governs: `model/encounter.py:Encounter._begin_turn`.
+
 ### `cylinder_height_unread`
 
 **Question.** The SRD gives a Cylinder both a radius and a height. Areas here are two-dimensional.
@@ -117,6 +131,34 @@ Governs: `model/encounter.py:Encounter._step_cost`.
 Basis: SRD 5.2.1, Spells, Areas of Effect.
 
 Governs: `kernel/spells.py:Spell.height`.
+
+### `temp_hp_grant_takes_the_higher_value`
+
+**Question.** Temporary Hit Points, They Don't Stack: the recipient chooses whether to keep what they have or take the new grant. This engine has no player-choice channel at grant time.
+
+**Decision.** Creature.grant_temp_hp takes the higher of what the creature already carries and what is offered, rather than asking anyone.
+
+**Why.** There is no channel through which a grant can pause and put the choice to the recipient, and the higher value is the choice a player would make anyway whenever the two amounts differ, so defaulting to it costs nothing a real choice would have kept.
+
+**Revisit when.** The day a grant can carry a real choice — an interactive session where the recipient answers a prompt rather than the engine picking for them — is the day this reverts to the printed rule.
+
+Basis: SRD 5.2.1, Temporary Hit Points.
+
+Governs: `model/creature.py:Creature.grant_temp_hp`.
+
+### `effect_release_drops_the_whole_condition`
+
+**Question.** A cumulative condition like Exhaustion is held at a level, and more than one source can be adding to it. The printed rule tracks the level; nothing says an ending effect should remove more than its own contribution.
+
+**Decision.** Encounter._release_effect calls remove_condition(effect.condition) outright once it is the last ledger effect holding that condition, dropping the whole entry rather than the levels this one effect contributed.
+
+**Why.** The ledger's stacked/remaining guards protect a condition already held before this effect began, or still held by another live effect, but neither guard is re-checked at release time: a level added by something outside the ledger — a table ruling, most concretely — after this effect started is not accounted for and is stripped along with it.
+
+**Revisit when.** A pack that imposes one level of a cumulative condition through a timed or concentration effect, on a creature that also picks up a level from a table ruling or another channel while that effect is still active, is misresolved the moment the first effect lapses. Give remove_condition's levels parameter a real caller here before that content ships.
+
+Basis: SRD 5.2.1, Conditions, Exhaustion; SRD 5.2.1, Rules Glossary, Concentration.
+
+Governs: `model/encounter.py:Encounter._release_effect`.
 
 ## Said by the rules, unsayable here
 
@@ -157,6 +199,18 @@ Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
 **Revisit when.** The moment a hidden creature is expressible, this number is what an onlooker's passive Perception must beat, and the omission codes on five bundled records become closable.
 
 Basis: SRD 5.2.1, Perception; SRD 5.2.1, Monsters.
+
+### `tremorsense_carried_and_unconsumed`
+
+**Question.** Tremorsense pinpoints a creature's location within range and explicitly 'doesn't count as a form of sight.'
+
+**Decision.** Creature.tremorsense is transcribed and reported. Encounter._can_see, the engine's only sight predicate, has no rung for it and no rule consults the field.
+
+**Why.** Every consumer of _can_see only has 'can see' and 'cannot see' to choose between, and answering True for a Tremorsense-only observer would wrongly cancel the unseen-target Disadvantage against a creature it has pinpointed but still cannot see. The same declared-but-inert standing as passive_perception_transcribed_only: carrying a printed number with no consumer to spend it on.
+
+**Revisit when.** The day this engine gains a pinpoint-without-sight state — something between 'can see' and 'cannot see' — is the day Tremorsense has a rung of its own to occupy in _can_see.
+
+Basis: SRD 5.2.1, Rules Glossary, Tremorsense.
 
 ### `touch_range_transcribed_as_five_feet`
 

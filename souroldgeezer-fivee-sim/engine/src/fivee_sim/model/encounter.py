@@ -2049,6 +2049,8 @@ class Encounter:
         # the rules forfeits its movement for having been down when the turn
         # began. Deriving it first froze ``movement_left`` at 0 for the whole
         # turn while ``attacks_left`` was granted regardless.
+        # ruling: movement_mode_ungated_by_terrain — the highest mode wins with
+        # no check that its terrain is actually there.
         maximum_speed = max(creature.speed_for(mode) for mode in MovementMode)
         if any(link.source == creature.name for link in self._attachments):
             maximum_speed = 0
@@ -4615,6 +4617,8 @@ class Encounter:
                 f"{effect.name} ends; {effect.condition} persists ({reason})",
             )
             return
+        # ruling: effect_release_drops_the_whole_condition — a full removal, not
+        # a decrement by this effect's own contribution.
         target.remove_condition(effect.condition)
         self._emit(
             "effect_end", effect.source, effect.target,

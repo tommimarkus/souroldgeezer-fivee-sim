@@ -921,6 +921,7 @@ class Creature:
             self.death_save_failures = 0
             self.remove_condition(Condition.UNCONSCIOUS)
 
+    # ruling: temp_hp_grant_takes_the_higher_value
     def grant_temp_hp(self, amount: int) -> None:
         """Grant Temporary Hit Points, never routed through :meth:`heal`.
 
@@ -936,7 +937,8 @@ class Creature:
         They Don't Stack: this engine has no player-choice channel at grant
         time, so it takes the higher of what the creature already carries
         and what is offered, as a deliberate simplification rather than the
-        SRD's own recipient's-choice rule.
+        SRD's own recipient's-choice rule. See ``rulings.py``,
+        ``temp_hp_grant_takes_the_higher_value``.
         """
         if self.dead or amount <= 0:
             return
