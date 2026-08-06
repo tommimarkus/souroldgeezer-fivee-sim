@@ -103,6 +103,21 @@ __all__ = [
 #: contract the served pages code against, and the offline guarantee turns on
 #: the config gate it belongs to.
 TOKEN_HEADER = "X-Fivee-Editor-Token"
+#: Caps on the two problem+json fields that quote the caller back to itself.
+#:
+#: A refusal in ``service/`` names what was asked for — ``no ruling with code
+#: 'x'`` — and that convention is why a refusal is useful. It also means the
+#: response grows with the request, and ``instance`` carries the request target
+#: on the **401 path, which answers before the token is checked**. So an
+#: unauthenticated caller could make the server quote an arbitrary string back.
+#:
+#: Bounded here rather than at the ~40 sites that build these messages: this is
+#: the one place the document is assembled, the adapter already owns
+#: serialisation, and a site added later inherits the cap without knowing it
+#: exists. Generous enough that no refusal the suite produces is touched — the
+#: longest is a couple of hundred characters — so this trims runaways only.
+MAX_PROBLEM_DETAIL = 2048
+MAX_PROBLEM_INSTANCE = 1024
 #: Request bodies above this are refused with 413 before being read.
 MAX_BODY_BYTES = 8 * 1024 * 1024
 #: The marker the served pages carry where the launch configuration goes. A
@@ -337,6 +352,17 @@ class EngineServer:
             f"http://127.0.0.1:{self.port}/viewer"
             f"?replay={quote(slugify(written.stem), safe='')}"
         )
+
+
+def _shortened(text: str, limit: int) -> str:
+    """``text``, trimmed to ``limit`` characters with an ellipsis if it was cut.
+
+    The ellipsis is the point: a silently truncated identifier reads as the
+    identifier, and a caller debugging a refusal would chase the wrong name.
+    """
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "\u2026"
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -670,11 +696,11 @@ class _Handler(BaseHTTPRequestHandler):
             "type": routes.error_type(int(problem.status)),
             "title": problem.status.phrase,
             "status": int(problem.status),
-            "detail": problem.detail,
+            "detail": _shortened(problem.detail, MAX_PROBLEM_DETAIL),
             # RFC 9457 §3.1.4: which occurrence this is. The agent driving this
             # server has no trace context to correlate by — one process, no
             # outbound calls — so the request target is the correlation handle.
-            "instance": self.path,
+            "instance": _shortened(self.path, MAX_PROBLEM_INSTANCE),
         }
         if problem.diagnostics is not None:
             payload["diagnostics"] = problem.diagnostics
