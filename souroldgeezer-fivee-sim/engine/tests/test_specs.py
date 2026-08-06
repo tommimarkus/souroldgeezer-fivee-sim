@@ -16,13 +16,23 @@ before feeding it back is a caller who will get the reshaping wrong.
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from fivee_sim.content import ContentRegistry, builtin
-from fivee_sim.map_document import DOOR_ORIENTATIONS
+from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.map_document import (
+    DOOR_ORIENTATIONS,
+    MAX_MAP_BYTES,
+    MapDocument,
+    as_payload,
+    parse_document,
+    to_grid,
+)
+from fivee_sim.model.battlemap import BattleMap, TerrainPair
 from fivee_sim.service import specs
 from fivee_sim.service.errors import RequestError
 from fivee_sim.service.specs import ATTACK_SPEC_KEYS, creature_from_spec
@@ -32,6 +42,16 @@ from . import api
 HERO: dict[str, Any] = {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30}
 GOBLIN: dict[str, Any] = {"name": "Goblin", "team": "monsters", "ac": 15, "max_hp": 7}
 ALLY: dict[str, Any] = {"name": "Bram", "team": "party", "ac": 14, "max_hp": 22}
+
+
+def _grid_from_spec(spec: dict[str, Any]) -> BattleMap:
+    """The battle map an inline spec still produces — now by way of its document.
+
+    ``document_from_spec`` is the whole producer now, and ``to_grid`` is the one
+    bridge onto the grid a fight resolves on, so the cases below assert what they
+    always asserted about a spec through the road a fight actually takes.
+    """
+    return to_grid(specs.document_from_spec(spec, TERRAIN))
 
 
 @pytest.fixture(scope="module")
@@ -482,12 +502,12 @@ class TestAMapSpecCanSayHowItsDoorsHang:
         return cls._spec(feature)
 
     def test_a_door_may_declare_how_it_hangs(self) -> None:
-        built = specs.battle_map_from_spec(self._door(orientation="vertical"))
+        built = _grid_from_spec(self._door(orientation="vertical"))
         assert built.features["gate"].orientation == "vertical"
 
     def test_every_orientation_the_format_knows_is_accepted(self) -> None:
         for orientation in DOOR_ORIENTATIONS:
-            built = specs.battle_map_from_spec(self._door(orientation=orientation))
+            built = _grid_from_spec(self._door(orientation=orientation))
             assert built.features["gate"].orientation == orientation
 
     def test_an_orientation_the_format_does_not_know_names_what_was_written(self) -> None:
@@ -496,14 +516,14 @@ class TestAMapSpecCanSayHowItsDoorsHang:
         # nothing at all, and the caller is looking for which of their features
         # is wrong.
         with pytest.raises(RequestError, match="got 'sideways'"):
-            specs.battle_map_from_spec(self._door(orientation="sideways"))
+            _grid_from_spec(self._door(orientation="sideways"))
 
     def test_an_orientation_that_is_not_even_text_is_refused_the_same_way(self) -> None:
         with pytest.raises(RequestError, match="got 90"):
-            specs.battle_map_from_spec(self._door(orientation=90))
+            _grid_from_spec(self._door(orientation=90))
 
     def test_a_door_may_name_the_leaf_it_swings_with(self) -> None:
-        built = specs.battle_map_from_spec(self._spec(
+        built = _grid_from_spec(self._spec(
             {"name": "left", "square": [1, 1], "orientation": "horizontal",
              "linked_to": "right"},
             {"name": "right", "square": [2, 1], "orientation": "horizontal",
@@ -514,7 +534,7 @@ class TestAMapSpecCanSayHowItsDoorsHang:
 
     def test_a_linked_leaf_must_be_named_by_non_empty_text(self) -> None:
         with pytest.raises(RequestError, match="linked_to must name a feature"):
-            specs.battle_map_from_spec(self._door(linked_to=" "))
+            _grid_from_spec(self._door(linked_to=" "))
 
 
 class TestADoorMustSayHowItHangs:
@@ -535,14 +555,14 @@ class TestADoorMustSayHowItHangs:
 
     def test_a_door_with_no_orientation_is_refused_by_name(self) -> None:
         with pytest.raises(RequestError, match="feature 'gate' is a door, so it needs"):
-            specs.battle_map_from_spec({
+            _grid_from_spec({
                 "width": 4, "height": 3,
                 "features": [{"name": "gate", "square": [1, 1], "kind": "door"}],
             })
 
     def test_the_refusal_offers_the_two_words_that_would_satisfy_it(self) -> None:
         with pytest.raises(RequestError, match="horizontal or vertical"):
-            specs.battle_map_from_spec({
+            _grid_from_spec({
                 "width": 4, "height": 3,
                 "features": [{"name": "gate", "square": [1, 1], "kind": "door"}],
             })
@@ -553,7 +573,7 @@ class TestADoorMustSayHowItHangs:
         # say where the door came from, or the only fix it suggests is the wrong
         # one.
         with pytest.raises(RequestError, match="a feature that names no 'kind' is a door"):
-            specs.battle_map_from_spec({
+            _grid_from_spec({
                 "width": 4, "height": 3,
                 "features": [{"name": "gate", "square": [1, 1]}],
             })
@@ -561,7 +581,7 @@ class TestADoorMustSayHowItHangs:
     def test_a_feature_that_is_not_a_door_needs_no_orientation(self) -> None:
         # The requirement is the format's rule about doors and nothing wider: a
         # lever hangs nowhere, and the document asks it for nothing.
-        built = specs.battle_map_from_spec({
+        built = _grid_from_spec({
             "width": 4, "height": 3,
             "features": [{
                 "name": "lever", "square": [1, 1], "kind": "lever",
@@ -580,7 +600,231 @@ class TestADoorMustSayHowItHangs:
         assert "a door needs 'orientation' (horizontal or vertical)" in source
 
         with pytest.raises(RequestError, match=r"needs 'orientation' \(horizontal or vertical\)"):
-            specs.battle_map_from_spec({
+            _grid_from_spec({
                 "width": 4, "height": 3,
                 "features": [{"name": "gate", "square": [1, 1], "kind": "door"}],
             })
+
+
+class TestAnInlineSpecBuildsADocumentLikeEveryOtherProducer:
+    """``document_from_spec``: the spec's own output is now a map document.
+
+    There used to be two ways a map reached a fight — a ``BattleMap`` built
+    straight from a spec, and a document parsed from a file — with
+    ``replay.battle_map_payload`` re-synthesising a document out of the first so
+    the journal and the replay viewer had something to hold. This is the
+    collapse: a spec produces the same artifact a file does, and the fake goes
+    away with it.
+
+    So every case below is really one claim in two halves. The document a spec
+    builds must *say what the spec said*, and it must be a document
+    ``parse_document`` accepts — because that document is what the encounter
+    journal captures, and a journal holding a map the parser refuses is a fight
+    that cannot be recovered.
+    """
+
+    @staticmethod
+    def _built(spec: dict[str, Any]) -> MapDocument:
+        return specs.document_from_spec(spec, TERRAIN)
+
+    @classmethod
+    def _reparsed(cls, spec: dict[str, Any]) -> MapDocument:
+        """What journal recovery does to the document: write it out, read it back."""
+        return parse_document(
+            as_payload(cls._built(spec)), source="journal", terrain=TERRAIN
+        )
+
+    def test_rows_and_a_legend_become_dense_tiles_over_the_same_squares(self) -> None:
+        built = self._built({
+            "name": "room", "width": 3, "height": 2,
+            "default_terrain": "floor",
+            "rows": ["###", "#.#"],
+            "legend": {"#": "wall", ".": "floor"},
+        })
+
+        grid = to_grid(built)
+        assert grid.ground.terrain.get((1, 1), grid.default_terrain) == "floor"
+        assert grid.ground.terrain.get((0, 0), grid.default_terrain) == "wall"
+
+    def test_an_authors_own_glyphs_survive_into_the_document(self) -> None:
+        # A legend a person wrote is theirs. Reallocating it would make the
+        # captured document unreadable beside the spec that produced it.
+        built = self._built({
+            "width": 2, "height": 1, "default_terrain": "floor",
+            "rows": ["W."], "legend": {"W": "wall", ".": "floor"},
+        })
+
+        assert built.legend == {"W": "wall", ".": "floor"}
+        assert built.tiles == ("W.",)
+
+    def test_a_glyph_the_document_reserves_is_the_one_thing_moved(self) -> None:
+        # A spec may legally spell wall '+'; the document format may not, because
+        # the renderers draw doors with it. Left alone, this produced a captured
+        # document the parser refused.
+        built = self._built({
+            "width": 2, "height": 1, "default_terrain": "floor",
+            "rows": ["+."], "legend": {"+": "wall", ".": "floor"},
+        })
+
+        assert "+" not in built.legend
+        assert built.legend["."] == "floor"
+        assert set(built.legend.values()) == {"wall", "floor"}
+        assert self._reparsed({
+            "width": 2, "height": 1, "default_terrain": "floor",
+            "rows": ["+."], "legend": {"+": "wall", ".": "floor"},
+        }).tiles == built.tiles
+
+    def test_a_door_crosses_with_everything_the_format_demands_of_one(self) -> None:
+        built = self._reparsed({
+            "width": 3, "height": 1,
+            "features": [{
+                "name": "gate", "square": [1, 0], "orientation": "vertical",
+                "initially_open": True,
+            }],
+        })
+
+        gate = next(one for one in built.features if one.id == "gate")
+        assert (gate.kind, gate.orientation, gate.state) == ("door", "vertical", "open")
+        assert gate.terrain == TerrainPair(closed="door-closed", open="door-open")
+
+    def test_a_linked_pair_survives_the_write_and_the_read_back(self) -> None:
+        built = self._reparsed({
+            "width": 4, "height": 1,
+            "features": [
+                {"name": "left", "square": [1, 0], "orientation": "horizontal",
+                 "linked_to": "right"},
+                {"name": "right", "square": [2, 0], "orientation": "horizontal",
+                 "linked_to": "left"},
+            ],
+        })
+
+        assert {one.id: one.linked_to for one in built.features} == {
+            "left": "right", "right": "left"
+        }
+
+    def test_heights_cross_as_the_documents_datum_and_departures(self) -> None:
+        built = self._reparsed({
+            "width": 3, "height": 1,
+            "default_elevation": 10, "elevation": [[2, 0, 25]],
+        })
+
+        assert built.elevation.default == 10
+        assert built.elevation.at((2, 0)) == 25
+
+
+class TestAnUnknownTerrainKindIsRefusedInTheCallersOwnWords:
+    """The refusal that must not become the document parser's.
+
+    Handing a synthesised payload to ``parse_document`` would answer an unknown
+    kind with *glyph 'a' names terrain 'lava'* — a glyph the caller never wrote,
+    at 422, about a document they never sent. The spec layer owns this refusal
+    because the spec layer is where the caller's own word for it is still
+    available.
+    """
+
+    def test_an_unknown_default_terrain_names_the_kind_and_lists_what_is_loaded(
+        self,
+    ) -> None:
+        with pytest.raises(RequestError, match="does not define: lava. Defined:"):
+            specs.document_from_spec(
+                {"width": 2, "height": 1, "default_terrain": "lava"}, TERRAIN
+            )
+
+    def test_an_unknown_kind_in_a_legend_the_rows_use_is_refused_the_same_way(
+        self,
+    ) -> None:
+        with pytest.raises(RequestError, match="does not define: lava"):
+            specs.document_from_spec(
+                {
+                    "width": 2, "height": 1, "default_terrain": "floor",
+                    "rows": ["L."], "legend": {"L": "lava", ".": "floor"},
+                },
+                TERRAIN,
+            )
+
+    def test_an_unknown_kind_in_a_terrain_entry_is_refused_the_same_way(self) -> None:
+        with pytest.raises(RequestError, match="does not define: lava"):
+            specs.document_from_spec(
+                {
+                    "width": 2, "height": 1,
+                    "terrain": [{"kind": "lava", "squares": [[0, 0]]}],
+                },
+                TERRAIN,
+            )
+
+    def test_an_unknown_kind_a_fixture_names_is_refused_the_same_way(self) -> None:
+        with pytest.raises(RequestError, match="does not define: lava"):
+            specs.document_from_spec(
+                {
+                    "width": 2, "height": 1,
+                    "features": [{
+                        "name": "vent", "square": [0, 0], "kind": "vent",
+                        "closed_terrain": "floor", "open_terrain": "lava",
+                    }],
+                },
+                TERRAIN,
+            )
+
+    def test_the_refusal_names_no_glyph_because_the_caller_wrote_none(self) -> None:
+        # The regression this class exists for: a message about a synthesised
+        # glyph sends the author looking for something they did not write.
+        with pytest.raises(RequestError, match="does not define: lava") as raised:
+            specs.document_from_spec(
+                {"width": 2, "height": 1, "default_terrain": "lava"}, TERRAIN
+            )
+        assert "glyph" not in str(raised.value)
+
+    def test_the_engine_still_refuses_it_end_to_end_at_the_same_status(self) -> None:
+        # Through the operation, not just the parser: an unknown kind has always
+        # been a 400 about the request, and moving where it is caught must not
+        # make it a 422 about a document.
+        with pytest.raises(RequestError, match="does not define: lava"):
+            api.encounter_create(
+                [dict(HERO), dict(GOBLIN)], seed=5,
+                map={"width": 4, "height": 4, "default_terrain": "lava"},
+            )
+
+
+class TestASpecTheEngineAcceptsStaysAcceptable:
+    """The bounds question, answered rather than assumed.
+
+    ``specs.MAX_MAP_SQUARES`` caps each side at 512 and the document format caps
+    a serialised map at ``MAX_MAP_BYTES``. Densifying tiles is what puts the two
+    in the same sentence for the first time: a spec that named three walls now
+    writes a full grid of glyphs. These pin that the largest spec the dimension
+    check admits is still a document the format admits.
+    """
+
+    def test_the_largest_grid_the_dimension_check_admits_is_well_under_the_cap(
+        self,
+    ) -> None:
+        # Measured, not assumed: 512x512 of dense glyphs writes out to about
+        # 265 KB, six percent of the cap. Densifying tiles is not what can put a
+        # spec over it, which is why nothing here refuses a spec for its size
+        # alone.
+        side = specs.MAX_MAP_SQUARES
+        built = specs.document_from_spec(
+            {"width": side, "height": side, "default_terrain": "floor"}, TERRAIN
+        )
+
+        size = len(json.dumps(as_payload(built), ensure_ascii=False).encode("utf-8"))
+        assert size < MAX_MAP_BYTES // 4, size
+        assert parse_document(as_payload(built), source="cap", terrain=TERRAIN)
+
+    def test_a_spec_that_would_not_fit_is_refused_in_bytes_and_refused_here(self) -> None:
+        # The one way past the dimension check, and it is reachable: a height per
+        # square at a height wide enough to spell. Such a spec was accepted
+        # before, ran its fight, and then failed to come back from its own
+        # journal, because the document it wrote there is one the parser refuses
+        # to read. The refusal belongs where the spec still is.
+        side = specs.MAX_MAP_SQUARES
+        with pytest.raises(RequestError, match="over the 4194304 byte limit"):
+            specs.document_from_spec(
+                {
+                    "width": side, "height": side, "default_terrain": "floor",
+                    "elevation": [
+                        [x, y, 1000000] for y in range(side) for x in range(side)
+                    ],
+                },
+                TERRAIN,
+            )

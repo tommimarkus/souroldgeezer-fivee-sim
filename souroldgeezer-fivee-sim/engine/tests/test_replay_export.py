@@ -24,8 +24,14 @@ from fivee_sim.kernel.actions import AttackKind, RiderExpiry
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.kernel.rules import Ability, DamageType, Size
-from fivee_sim.map_document import parse_document
-from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
+from fivee_sim.map_document import (
+    MapDocument,
+    MapFeatureRecord,
+    as_payload,
+    parse_document,
+    to_grid,
+)
+from fivee_sim.model.battlemap import FeatureTrigger, TerrainPair, TriggerMode
 from fivee_sim.model.creature import AttackOption
 from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
@@ -191,30 +197,40 @@ class TestBundleV2:
         # exported this could not open it.
         parse_document(bundle["map"], source="bundle", terrain=TERRAIN)
 
-    def test_runtime_map_capture_keeps_trigger_definitions(self) -> None:
-        battle_map = BattleMap.flat(
+    def test_a_captured_map_keeps_trigger_definitions(self) -> None:
+        """A fixture's predicate survives the capture and reads back as itself.
+
+        This case used to hold ``replay.battle_map_payload``, which re-synthesised
+        a document out of a runtime battle map because a spec could not produce
+        one. That fake is gone: every producer builds a
+        :class:`~fivee_sim.map_document.MapDocument` now, so the capture is
+        ``as_payload`` and the thing under test is the format's own writer. The
+        claim is unchanged and is the one that matters — a trigger written into a
+        bundle parses back to the trigger it was, so a replay of a fight with a
+        pressure plate in it is a replay of that fight.
+        """
+        document = MapDocument.flat(
             name="trigger hall",
             width=3,
             height=1,
             default_terrain="floor",
-            features={
-                "lever": MapFeature(
-                    name="lever", square=(0, 0), kind="lever",
-                    closed_terrain="floor", open_terrain="floor",
+            features=(
+                MapFeatureRecord(
+                    id="lever", kind="lever", at=(0, 0), state="closed",
+                    terrain=TerrainPair(closed="floor", open="floor"),
                 ),
-                "gate": MapFeature(
-                    name="gate", square=(2, 0), kind="gate",
-                    closed_terrain="floor", open_terrain="floor",
+                MapFeatureRecord(
+                    id="gate", kind="gate", at=(2, 0), state="closed",
+                    terrain=TerrainPair(closed="floor", open="floor"),
                     trigger=FeatureTrigger(
                         when=(("lever", True),), set_open=True,
                         mode=TriggerMode.MAINTAINED,
                     ),
                 ),
-            },
-            provenance=FIXTURE,
+            ),
         )
 
-        payload = replay_service.battle_map_payload(battle_map)
+        payload = as_payload(document)
 
         gate = next(feature for feature in payload["features"] if feature["id"] == "gate")
         assert gate["trigger"] == {
@@ -224,7 +240,7 @@ class TestBundleV2:
         }
         parsed = parse_document(payload, source="replay", terrain=TERRAIN)
         assert next(feature for feature in parsed.features if feature.id == "gate").trigger == (
-            battle_map.features["gate"].trigger
+            to_grid(document).features["gate"].trigger
         )
 
     def test_v2_records_normalized_inputs_actions_checkpoints_and_integrity(self) -> None:

@@ -41,7 +41,7 @@ def simulate_rounds(
     # a reconfiguration land mid-batch and make the result unreproducible from its
     # seed, which is the one property these numbers rest on.
     registry = sessions.active_registry(state)
-    battle_map, map_source, _document = sessions.resolve_battle_map(state, map_spec, map_id)
+    resolved = sessions.resolve_battle_map(state, map_spec, map_id)
 
     def factory() -> list[Creature]:
         return specs.combatants_from_specs(given, registry)
@@ -56,13 +56,13 @@ def simulate_rounds(
             items=dict(registry.items),
             condition_effects=registry.condition_effects,
             movement_rule=specs.parse_movement_rule(movement_rule),
-            battle_map=battle_map,
+            battle_map=resolved.battle_map if resolved is not None else None,
             terrain_effects=registry.terrain_effects,
         )
     except (ValueError, EncounterError) as error:
         raise RequestError(str(error)) from error
-    if map_source is not None:
-        result["map_source"] = map_source
+    if resolved is not None and resolved.source is not None:
+        result["map_source"] = resolved.source
     return result
 
 

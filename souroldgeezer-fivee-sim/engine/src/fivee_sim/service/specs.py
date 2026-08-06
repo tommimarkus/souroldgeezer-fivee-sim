@@ -2,7 +2,7 @@
 
 Everything here answers one question: *what did the caller mean?* A combatant
 spec becomes a :class:`~fivee_sim.model.creature.Creature`, a map spec a
-:class:`~fivee_sim.model.battlemap.BattleMap`, a journal record's arguments an
+:class:`~fivee_sim.map_document.MapDocument`, a journal record's arguments an
 :class:`~fivee_sim.model.encounter.Action`. Nothing here decides a rule, and
 nothing here holds state — this module changes when the shape a caller sends
 changes, and at no other time, which is why it is its own boundary rather than
@@ -16,18 +16,27 @@ they described and nothing says so.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import fields
 from enum import Enum
+from types import MappingProxyType
 from typing import Any, TypeVar
 
 from ..content import ContentRegistry, DataError, make_creature
 from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.dice import Advantage, Dice
-from ..kernel.grid import DiagonalRule, Facing, MovementMode, Point
+from ..kernel.grid import DiagonalRule, Facing, MovementMode, Point, TerrainTable
 from ..kernel.rules import Ability, DamageType, Size
-from ..map_document import DOOR_ORIENTATIONS
-from ..model.battlemap import BattleMap, MapFeature
+from ..map_document import (
+    DOOR_ORIENTATIONS,
+    MAX_MAP_BYTES,
+    MapDocument,
+    MapFeatureRecord,
+    MapProvenance,
+    as_payload,
+)
+from ..model.battlemap import TerrainPair
 from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind
 from .common import resolve_seed
@@ -44,10 +53,10 @@ __all__ = [
     "MAX_MAP_SQUARES",
     "action_from_journal",
     "attack_from_spec",
-    "battle_map_from_spec",
     "checked_seed",
     "combatants_from_specs",
     "creature_from_spec",
+    "document_from_spec",
     "parse_advantage",
     "parse_carried_flag",
     "parse_death_saves",
@@ -523,6 +532,17 @@ FEATURE_KEYS = frozenset({
 #: An inline map is authored by hand or by a model, not generated; this bound only
 #: exists so a malformed spec fails with a size complaint instead of an allocation.
 MAX_MAP_SQUARES = 512
+#: What the document a spec builds says about where it came from. Unchanged from
+#: the payload ``replay.battle_map_payload`` used to synthesise, so a v2 bundle
+#: exported before this collapse and one exported after say the same thing about
+#: the same fight.
+INLINE_PROVENANCE = MapProvenance(
+    generator="inline",
+    seed=0,
+    params=MappingProxyType({}),
+    edited=False,
+    source="Caller-supplied inline map",
+)
 
 
 def parse_square(value: Any, what: str, width: int, height: int) -> tuple[int, int]:
@@ -549,14 +569,34 @@ def parse_map_dimension(spec: dict[str, Any], key: str) -> int:
     return value
 
 
-def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
-    """Build a :class:`BattleMap` from the inline tool spec, refusing precisely.
+def document_from_spec(spec: dict[str, Any], terrain_table: TerrainTable) -> MapDocument:
+    """Build a :class:`MapDocument` from the inline tool spec, refusing precisely.
 
     Terrain is authored either as ``rows`` of characters with a ``legend`` — the
     form a person or a model writes by hand — or as a ``terrain`` list of
-    ``{"kind", "squares"}`` entries. Terrain *kinds* are not resolved here: the
-    encounter validates them against the content it captured, so a pack-defined
-    kind works and an unknown one is refused with the loaded list.
+    ``{"kind", "squares"}`` entries.
+
+    A **document** and not a battle map, because there is one map format and a
+    spec is a shorthand for writing one, not a second kind of map. A fight gets
+    its grid from :func:`~fivee_sim.map_document.to_grid` here exactly as a saved
+    file does, and the encounter journal captures the document rather than a
+    payload re-synthesised out of the grid afterwards — which is what used to
+    lose every key ``to_grid`` has no slot for.
+
+    Two things that follow from that, and are the whole of why this function is
+    longer than a translation:
+
+    *Terrain kinds are resolved here*, against the table the caller's content
+    defines, and the refusal names the kind the caller typed. It would otherwise
+    fall out of :func:`~fivee_sim.map_document.parse_document` naming the
+    *glyph* this function invented for it — a character the author never wrote,
+    in a document they never sent.
+
+    *The document is sized here*, for the same reason: a spec that densifies
+    past :data:`~fivee_sim.map_document.MAX_MAP_BYTES` would start its fight and
+    then fail to come back from its own journal. ``MAX_MAP_SQUARES`` bounds the
+    grid and nothing bounds a height layer, so the two caps are not the same cap
+    and only the serialised bytes can answer.
     """
     for key in sorted(set(spec) - MAP_KEYS):
         raise RequestError(
@@ -564,8 +604,18 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
         )
     width = parse_map_dimension(spec, "width")
     height = parse_map_dimension(spec, "height")
+    map_name = str(spec.get("name", "battle map"))
+    if not map_name.strip():
+        # The format asks every map for a name, and journal recovery re-reads
+        # what this writes. An empty one used to build a fight that could not be
+        # resumed rather than a spec that could not be written.
+        raise RequestError("map 'name' must be non-empty text")
     default_terrain = str(spec.get("default_terrain", "normal"))
     terrain: dict[tuple[int, int], str] = {}
+    #: The glyphs the author chose, kept where the document format allows them.
+    #: Only a ``rows`` spec has any; a ``terrain`` list names kinds and never
+    #: characters, so its legend is allocated outright.
+    author_legend: dict[str, str] | None = None
 
     rows = spec.get("rows")
     entries = spec.get("terrain")
@@ -581,6 +631,7 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
                 "'rows' needs a 'legend' object mapping single characters to "
                 "terrain kinds, such as {\"#\": \"wall\", \".\": \"normal\"}"
             )
+        author_legend = dict(legend)
         if not isinstance(rows, list) or not all(isinstance(row, str) for row in rows):
             raise RequestError("'rows' must be a list of strings, one per map row")
         if len(rows) != height:
@@ -648,7 +699,7 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
             )
         elevation[square] = int(entry[2])
 
-    features: dict[str, MapFeature] = {}
+    features: dict[str, MapFeatureRecord] = {}
     raw_features = spec.get("features", [])
     if not isinstance(raw_features, list):
         raise RequestError("'features' must be a list of feature objects")
@@ -675,6 +726,10 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
                 f"{', '.join(DOOR_ORIENTATIONS)}; got {orientation!r}"
             )
         kind = str(entry.get("kind", "door"))
+        if not kind.strip():
+            # The format asks every feature what it is, and journal recovery
+            # re-reads what this writes — the same trap the map's own name sets.
+            raise RequestError(f"feature {name!r} 'kind' must be non-empty text")
         if kind == "door" and orientation is None:
             # ``service.maps._feature_entry`` refuses this on the ``map.edit``
             # surface in these words; a second wording for one rule is how a
@@ -697,35 +752,68 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
             raise RequestError(
                 f"feature {name!r} linked_to must name a feature; got {linked_to!r}"
             )
-        features[name] = MapFeature(
-            name=name,
-            square=parse_square(entry.get("square"), f"feature {name!r} square",
-                                width, height),
+        features[name] = MapFeatureRecord(
+            id=name,
+            at=parse_square(entry.get("square"), f"feature {name!r} square",
+                            width, height),
             kind=kind,
             orientation=orientation,
-            closed_terrain=str(entry.get("closed_terrain", "door-closed")),
-            open_terrain=str(entry.get("open_terrain", "door-open")),
+            # Written out whichever kind the fixture is, because ``to_grid``
+            # only falls back to the hardcoded door pair when the record carries
+            # none — and a spec's lever is entitled to say its square stays
+            # floor in both states.
+            terrain=TerrainPair(
+                closed=str(entry.get("closed_terrain", "door-closed")),
+                open=str(entry.get("open_terrain", "door-open")),
+            ),
             # ``initially_open`` needs no matching requirement. The document
             # format demands a door's ``state`` for the same reason it demands
             # its orientation, and ``map.edit`` refuses a door without one — but
             # a spec that omits it is not silent about the answer the way an
             # omitted orientation is. ``False`` is a real answer, the one every
-            # door is authored in, and ``replay._feature_payload`` writes it out
-            # as ``"closed"``, so the captured document is complete either way.
-            initially_open=initially_open,
+            # door is authored in, and it is written out here as ``"closed"``,
+            # so the captured document is complete either way.
+            state="open" if initially_open else "closed",
             linked_to=linked_to,
         )
 
-    return BattleMap.flat(
-        name=str(spec.get("name", "battle map")),
+    named = {default_terrain, *terrain.values()}
+    for record in features.values():
+        assert record.terrain is not None
+        named.update((record.terrain.closed, record.terrain.open))
+    unknown = sorted(kind for kind in named if kind not in terrain_table)
+    if unknown:
+        # Word for word what ``Encounter._adopt_map`` says about a hand-built
+        # battle map, because it is one rule and the caller should not be able
+        # to tell which surface caught it. Said *here* so it can be said about
+        # the kind the caller wrote rather than about the glyph this function
+        # would have invented for it.
+        defined = ", ".join(sorted(terrain_table)) or "none"
+        raise RequestError(
+            f"the map names terrain the loaded content does not define: "
+            f"{', '.join(unknown)}. Defined: {defined}"
+        )
+
+    document = MapDocument.flat(
+        name=map_name,
         width=width,
         height=height,
         default_terrain=default_terrain,
         terrain=terrain,
         default_elevation=default_elevation,
         elevation=elevation,
-        features=features,
+        features=tuple(features.values()),
+        legend=author_legend,
+        provenance=INLINE_PROVENANCE,
     )
+    size = len(json.dumps(as_payload(document), ensure_ascii=False).encode("utf-8"))
+    if size > MAX_MAP_BYTES:
+        raise RequestError(
+            f"this map writes out to {size} bytes, over the {MAX_MAP_BYTES} byte "
+            f"limit for a map document; a {width}x{height} grid leaves room for "
+            f"fewer heights and features than this"
+        )
+    return document
 
 
 def action_from_journal(arguments: Mapping[str, Any]) -> Action:
