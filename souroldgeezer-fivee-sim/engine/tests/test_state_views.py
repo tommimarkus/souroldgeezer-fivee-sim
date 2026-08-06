@@ -1068,3 +1068,84 @@ class TestTheRouteTableAndTheServiceAgreeOnTheViews:
         }
 
         assert declared == expected
+
+
+class TestTheEngineOwnsAReceiverToo:
+    """``model.apply_state_delta``, and why this file's own applier stays.
+
+    The module docstring above says a delta's receiver is written out here
+    rather than imported, because a round trip through one function proves only
+    that the function is its own inverse. That is still true and this class does
+    not change it: :func:`apply_delta` above stays the independent reading of
+    the published rule, and it is the oracle the engine's applier is graded
+    against.
+
+    The engine grew one because a **v3 replay bundle** stores its checkpoints as
+    a keyframe and a chain of deltas, and ``replay.validate`` has to rebuild each
+    one before it can say whether the state in it is a legal state or whether the
+    hash beside it is the right hash. A validator that could not reconstruct
+    could only check that a delta is an object, which is most of what validating
+    a checkpoint is for.
+
+    So the property is agreement, not round-tripping: two implementations
+    written from opposite ends — one from the published prose, one beside the
+    diff it inverts — reach the same payload from the same inputs. Both shapes
+    are run, because the snapshot's ``STATE_ENTRIES`` is empty and a state-only
+    run therefore exercises no single-creature branch at all.
+    """
+
+    def test_it_agrees_with_the_published_rule_over_a_snapshot(self) -> None:
+        answers = busy_fight()
+        held = answers[0]["state"]
+
+        for step, answer in enumerate(answers[1:], start=1):
+            delta = answer["state_delta"]
+            expected = apply_delta(held, delta)
+            assert (
+                model.apply_state_delta(
+                    held,
+                    delta,
+                    rosters=model.STATE_ROSTERS,
+                    entries=model.STATE_ENTRIES,
+                )
+                == expected
+            ), f"the two receivers diverged at step {step}"
+            held = expected
+
+    def test_it_agrees_with_the_published_rule_over_a_seats_brief(self) -> None:
+        answers = busy_fight(viewer=VIEWER)
+        held = answers[0]["state"]
+
+        for step, answer in enumerate(answers[1:], start=1):
+            delta = answer["state_delta"]
+            expected = apply_delta(held, delta)
+            assert (
+                model.apply_state_delta(
+                    held,
+                    delta,
+                    rosters=model.BRIEF_ROSTERS,
+                    entries=model.BRIEF_ENTRIES,
+                )
+                == expected
+            ), f"the two receivers diverged at step {step}"
+            held = expected
+
+    def test_it_leaves_the_payload_it_was_handed_alone(self) -> None:
+        """A validator walking a checkpoint chain must not edit the bundle.
+
+        The baseline it is given is a checkpoint already validated and hashed;
+        an applier that overlaid into it would rewrite the evidence behind the
+        assertion that just passed.
+        """
+        answers = busy_fight()
+        held = answers[0]["state"]
+        before = json.dumps(held, sort_keys=True)
+
+        model.apply_state_delta(
+            held,
+            answers[1]["state_delta"],
+            rosters=model.STATE_ROSTERS,
+            entries=model.STATE_ENTRIES,
+        )
+
+        assert json.dumps(held, sort_keys=True) == before

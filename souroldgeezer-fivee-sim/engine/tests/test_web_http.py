@@ -1108,7 +1108,10 @@ class TestReplays:
         assert row["name"] == bundle["name"]
         assert row["seed"] == bundle["seed"]
         assert row["events"] == len(bundle["events"])
-        assert row["format_version"] == 2
+        # Read off the bundle like every line above it rather than spelled: the
+        # claim is that the row reports the file's own version, and a literal
+        # here would only pin whichever version the fixture happened to write.
+        assert row["format_version"] == bundle["format_version"]
 
     def test_listing_needs_the_token_like_every_other_api_route(
         self, editor: Editor

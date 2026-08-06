@@ -1407,10 +1407,9 @@ function canonicalHash(value) {
   return createHash("sha256").update(canonicalJson(value), "utf8").digest("hex");
 }
 
-function sealReplayV2(bundle) {
-  bundle.checkpoints.forEach((checkpoint) => {
-    checkpoint.state_hash = canonicalHash(checkpoint.state);
-  });
+/* The component hashes, which every enveloped version computes identically —
+ * over the checkpoints *as written*, whatever shape those are in. */
+function sealEnvelope(bundle) {
   const unhashedContent = {};
   Object.keys(bundle.content).forEach((key) => {
     if (key !== "sha256") { unhashedContent[key] = bundle.content[key]; }
@@ -1427,6 +1426,22 @@ function sealReplayV2(bundle) {
     content: bundle.content.sha256,
   };
   return bundle;
+}
+
+function sealReplayV2(bundle) {
+  bundle.checkpoints.forEach((checkpoint) => {
+    checkpoint.state_hash = canonicalHash(checkpoint.state);
+  });
+  return sealEnvelope(bundle);
+}
+
+/* v3's sealer stamps no `state_hash`, and that is the difference rather than an
+ * omission. A chained checkpoint carries no `state` for this to hash; the hash
+ * names the state the *delta* stands for, and only the fixture that wrote the
+ * delta knows what that is. So each one states it, which is exactly what lets a
+ * case below tamper with a delta and watch the hash beside it catch the change. */
+function sealReplayV3(bundle) {
+  return sealEnvelope(bundle);
 }
 
 function replayV2() {
@@ -1492,6 +1507,54 @@ function replayV2() {
   bundle.content = { "\ue000": 1, "😀": 2 };
   bundle.encounter = { id: "enc-test", seed: 7, movement_rule: "5-5-5" };
   return sealReplayV2(bundle);
+}
+
+/* The same envelope with its checkpoints thinned to a keyframe and a chain of
+ * deltas, which is the whole of what version 3 changed. The page needs a
+ * *receiver* to read one: the state a checkpoint stands for stopped being
+ * something it looks up and became something it computes.
+ *
+ * So the delta below is written out by hand and the state it stands for is
+ * written out beside it. A fixture that computed the delta would be a second
+ * sender agreeing with the first, and would say nothing about whether this page
+ * can read what the engine writes — the same reason `tests/test_state_views.py`
+ * keeps an applier of its own rather than importing the model's.
+ *
+ * Every field the delta moves is one no event handler touches, and the second
+ * event is an `attack`, which `fold` folds nothing out of. A page that dropped
+ * the chain entirely would still scrub to event 2 and still draw a Hero — just
+ * the keyframe's, at full health, still concentrating. That is the failure this
+ * fixture is shaped to make visible. */
+function replayV3() {
+  const bundle = replayV2();
+  bundle.format_version = 3;
+  bundle.events.push({
+    seq: 1, kind: "attack", round: 1, turn: "Hero", actor: "Ghoul", target: "Hero",
+    timestamp: "2026-01-01T00:00:03Z",
+    data: { attack: "Claw", hit: true, detail: "d20 [17] +4 = 21 vs AC 17" },
+  });
+  /* What the delta stands for, spelled out. `state_hash` is over this rather
+   * than over the delta: a checkpoint's hash names the state it stands for in
+   * every version of this format, which is what keeps the viewer's existing
+   * integrity check meaning what it meant. */
+  const hurt = copy(bundle.checkpoints[0].state);
+  hurt.combatants[0].hp = 4;
+  hurt.combatants[0].conditions = ["Poisoned"];
+  delete hurt.combatants[0].concentrating_on;
+  bundle.checkpoints.push({
+    index: 2, event_count: 2, timestamp: "2026-01-01T00:00:03Z",
+    /* Membership absolute, values differential: the roster is the complete cast
+     * in order, each entry thinned to `name` plus what moved. `round` and `turn`
+     * did not move, so they are absent rather than repeated, and `dropped` names
+     * what the baseline had and this payload does not. */
+    state_delta: {
+      combatants: [{ name: "Hero", hp: 4, conditions: ["Poisoned"] }],
+      dropped: ["combatants/Hero/concentrating_on"],
+    },
+    state_hash: canonicalHash(hurt),
+  });
+  bundle.latest_state = copy(hurt);
+  return sealReplayV3(bundle);
 }
 
 /* An interlude: a chapter with no fight in it. Shaped off a real composed run
@@ -1754,6 +1817,72 @@ await suite("viewer.html: replay v2 state and validation", "the page sandbox in 
           && page.alerts[page.alerts.length - 1].indexOf(invalid.diagnostic_path) !== -1,
         show(page.alerts.slice(before)));
     }
+  });
+
+/* Version 3's one difference from version 2 is that a checkpoint after the first
+ * carries what moved rather than the whole state, so the page has to rebuild the
+ * chain before it can draw a scrub or grade a hash. These cases are the only
+ * place that receiver is driven. Two of them would pass against a page that
+ * ignored the chain outright — a clean bundle still loads, a keyframe still
+ * draws — which is why the third scrubs past the keyframe and reads what the
+ * delta alone decided. */
+await suite("viewer.html: replay v3's checkpoint chain", "the page sandbox in makePage()",
+  async () => {
+    const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    const clean = page.alerts.length;
+    await page.drop(replayV3(), "v3.json");
+    check("a clean chain loads without complaint",
+      page.alerts.length === clean, show(page.alerts.slice(clean)));
+
+    page.element("scrub").value = "2";
+    page.element("scrub").dispatch("input");
+    const drawn = page.element("combatant-state").textContent;
+    check("the delta's own numbers reach the drawn state, not the keyframe's",
+      drawn.indexOf("HP 4/9") !== -1 && drawn.indexOf("Poisoned") !== -1,
+      drawn);
+    /* Named rather than merely absent: "the page drew no Ward" is also true of
+     * a page that drew nothing at all, and a bundle this suite refused to load
+     * would satisfy the second half on its own. */
+    check("a dropped path is removed rather than carried forward",
+      drawn.indexOf("Hero") !== -1 && drawn.indexOf("concentrating: Ward") === -1,
+      drawn);
+
+    const unchained = replayV3();
+    delete unchained.checkpoints[1].state_delta;
+    sealReplayV3(unchained);
+    let before = page.alerts.length;
+    await page.drop(unchained, "no-delta-v3.json");
+    check("a checkpoint with no delta is named rather than skipped",
+      page.alerts.length === before + 1
+        && page.alerts[page.alerts.length - 1].indexOf("checkpoints.1.state_delta") !== -1,
+      show(page.alerts.slice(before)));
+
+    /* The hash is over the state the delta stands for, so moving one number in
+     * the delta moves the state it rebuilds to and the hash beside it stops
+     * matching. Without reconstruction there would be nothing here to hash and
+     * a tampered delta would ride through untouched. */
+    const tampered = replayV3();
+    tampered.checkpoints[1].state_delta.combatants[0].hp = 5;
+    sealReplayV3(tampered);
+    before = page.alerts.length;
+    await page.drop(tampered, "tampered-delta-v3.json");
+    check("a tampered delta is caught by the hash it leads to",
+      page.alerts.length === before + 1
+        && page.alerts[page.alerts.length - 1].indexOf("checkpoints.1.state_hash") !== -1,
+      show(page.alerts.slice(before)));
+
+    /* Re-sealed, so every component hash agrees and the only thing left to
+     * disagree is the chain's own end against `latest_state`. */
+    const unreached = replayV3();
+    unreached.latest_state.round = 99;
+    sealReplayV3(unreached);
+    before = page.alerts.length;
+    await page.drop(unreached, "unreached-latest-v3.json");
+    check("a latest_state the chain does not reach is named",
+      page.alerts.length === before + 1
+        && page.alerts[page.alerts.length - 1].indexOf("latest_state") !== -1,
+      show(page.alerts.slice(before)));
   });
 
 /* The viewer builds its token model twice — once from the bundle's initial

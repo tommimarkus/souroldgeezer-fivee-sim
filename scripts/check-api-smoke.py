@@ -1259,6 +1259,51 @@ def declared_body_keys(operation: str) -> set[str]:
     return set()
 
 
+def declared_body_default(operation: str, field: str) -> object:
+    """One request-body field's declared default, parsed out of the route table.
+
+    Read as source like everything else here, and worth reading rather than
+    spelling because the alternative is a literal that only pins whichever
+    version this file was last edited at. The replay case wants two claims and
+    a constant answers neither: that the engine exports the version its own
+    contract advertises, and that the summary beside the bundle reports the
+    bundle's own version rather than a second copy of the number.
+
+    Returns ``None`` when the operation, the field, or the default is absent —
+    the caller reports that rather than proceeding, since a missing default is
+    indistinguishable here from one declared as ``null``.
+    """
+    tree = ast.parse(ROUTES_SOURCE.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "Route":
+            continue
+        if len(node.args) < 3 or not isinstance(node.args[2], ast.Constant):
+            continue
+        if node.args[2].value != operation:
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "body_schema" or not isinstance(keyword.value, ast.Dict):
+                continue
+            for key, value in zip(keyword.value.keys, keyword.value.values, strict=True):
+                if not isinstance(key, ast.Constant) or key.value != "properties":
+                    continue
+                if not isinstance(value, ast.Dict):
+                    continue
+                for name, schema in zip(value.keys, value.values, strict=True):
+                    if not isinstance(name, ast.Constant) or name.value != field:
+                        continue
+                    if not isinstance(schema, ast.Dict):
+                        continue
+                    for entry, declared in zip(schema.keys, schema.values, strict=True):
+                        if not isinstance(entry, ast.Constant) or entry.value != "default":
+                            continue
+                        if isinstance(declared, ast.Constant):
+                            return declared.value
+    return None
+
+
 def declared_pages() -> dict[str, tuple[str, str]]:
     """The ``PAGES`` table as source: served path -> (filename, content type).
 
@@ -1495,14 +1540,24 @@ def main() -> int:
 
         replay = reference["replay"]
         written = Path(str(replay["written"]["path"]))
+        # Neither version is spelled. `advertised` is what the shipped contract
+        # says a caller gets by default, and the bundle is what the engine
+        # actually wrote — a literal here would pin only whichever number this
+        # file was last edited at, and would still pass against a server whose
+        # summary reported a version its bundle does not carry.
+        advertised = declared_body_default("encounter.replay", "format_version")
+        versioned = advertised is not None and advertised == replay["bundle"][
+            "format_version"
+        ] == replay["format_version"]
         report(
             replay["summary"]["format"] == "fivee-sim-replay"
             and replay["summary"]["events"] == EXPECTED_EVENTS
-            and replay["format_version"] == 2
+            and versioned
             and written.is_file()
             and str(written).startswith(str(primary.root)),
-            "encounter.replay exports the fight, inline and to a file in the scratch root",
-            json.dumps(replay["summary"])[:200] + f" written={written}",
+            "encounter.replay exports the version its contract advertises, inline and to a file",
+            json.dumps(replay["summary"])[:200]
+            + f" advertised={advertised} written={written}",
         )
         validated = primary.json_call("POST", "/replays/validate", {"bundle": replay["bundle"]})
         report(

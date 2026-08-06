@@ -20,7 +20,7 @@ from fivee_sim.service.replay import (
 )
 
 from . import api
-from .conftest import REPLAY_HERO, mapless_fight
+from .conftest import REPLAY_HERO, eventful_fight, mapless_fight
 
 
 def interlude(seed: int = 90) -> str:
@@ -107,6 +107,23 @@ def test_every_version_this_build_writes_is_a_version_it_can_read() -> None:
     )
 
 
+
+def test_every_writer_stamps_the_version_it_was_dispatched_for() -> None:
+    """Each writer names its own number, and the dispatch is where that is checked.
+
+    The trap is one the reader-superset test above cannot see.
+    ``replay_bundle_v2`` stamped ``LATEST_FORMAT_VERSION`` rather than a literal
+    ``2``, which was correct exactly as long as it *was* the latest — bumping
+    that constant for v3 would have had the v2 writer emit v2 checkpoints under
+    a v3 banner, a bundle the validator accepts and no reader can reconstruct.
+    """
+    encounter_id = mapless_fight(seed=83)
+
+    for version in sorted(WRITABLE_FORMAT_VERSIONS):
+        bundle = api.replay_export(encounter_id, format_version=version)["bundle"]
+        assert bundle["format_version"] == version
+
+
 def test_replay_validate_reports_all_diagnostics_without_loading_a_session() -> None:
     result = api.replay_validate(
         {
@@ -134,6 +151,94 @@ def test_v2_checkpoint_hashes_and_authoritative_latest_state_are_verified() -> N
 
     assert any(item["path"].endswith("state_hash") for item in found)
     assert any(item["path"] == "latest_state" for item in found)
+
+
+class TestTheV3CheckpointChain:
+    """A keyframe and a chain of deltas, graded by rebuilding it.
+
+    v3 is where validating a checkpoint stops being a comparison and becomes a
+    reconstruction: the state a checkpoint stands for is not in the file, so
+    ``state_hash`` can only be checked against a payload the validator builds
+    for itself. That is worth having rather than working around — a validator
+    that shrugged at a delta it could not apply would accept a bundle no viewer
+    can play, which is the one thing this operation exists to rule out.
+
+    Every case below tampers with the *chain* rather than the hashes, and then
+    repairs ``integrity.checkpoints`` so the array-level digest is not what
+    fails. What is under test is that a broken reconstruction is caught by the
+    checkpoint's own claim about itself.
+    """
+
+    def chained(self, seed: int = 63) -> dict[str, Any]:
+        bundle = bundle_of(eventful_fight(seed=seed, turns=6), format_version=3)
+        assert len(bundle["checkpoints"]) > 2, "a chain this short proves nothing"
+        return bundle
+
+    def reseal(self, bundle: dict[str, Any]) -> dict[str, Any]:
+        bundle["integrity"]["checkpoints"] = canonical_sha256(bundle["checkpoints"])
+        return bundle
+
+    def test_a_clean_chain_is_accepted(self) -> None:
+        assert validate_replay(self.chained()) == []
+
+    def test_a_tampered_delta_is_caught_by_the_hash_it_leads_to(self) -> None:
+        bundle = self.chained(seed=65)
+        set_path(bundle, "checkpoints.2.state_delta.round", 99)
+
+        found = validate_replay(self.reseal(bundle))
+
+        assert {"path": "checkpoints.2.state_hash", "problem": "does not match state"} in found
+
+    def test_a_checkpoint_with_no_delta_is_named_rather_than_skipped(self) -> None:
+        bundle = self.chained(seed=67)
+        del bundle["checkpoints"][1]["state_delta"]
+
+        found = validate_replay(self.reseal(bundle))
+
+        assert {
+            "path": "checkpoints.1.state_delta",
+            "problem": "must be an object",
+        } in found
+
+    def test_the_keyframe_must_still_carry_a_whole_state(self) -> None:
+        """Index 0 is what every later checkpoint is expressed against."""
+        bundle = self.chained(seed=69)
+        bundle["checkpoints"][0] = {
+            **{
+                key: value
+                for key, value in bundle["checkpoints"][0].items()
+                if key != "state"
+            },
+            "state_delta": {},
+        }
+
+        found = validate_replay(self.reseal(bundle))
+
+        assert {"path": "checkpoints.0.state", "problem": "must be an object"} in found
+
+    def test_a_latest_state_the_chain_does_not_reach_is_named(self) -> None:
+        bundle = self.chained(seed=71)
+        bundle["latest_state"]["round"] = 99
+        bundle["integrity"]["latest_state"] = canonical_sha256(bundle["latest_state"])
+
+        found = validate_replay(bundle)
+
+        assert {
+            "path": "latest_state",
+            "problem": "must equal the final authoritative checkpoint",
+        } in found
+
+    def test_a_v2_bundle_still_reads_its_checkpoints_whole(self) -> None:
+        """The clause that matters most: an older bundle keeps validating.
+
+        Reconstruction is v3's rule, not the validator's. A bundle already on
+        somebody's disk carries every checkpoint in full and is graded the way
+        it was written.
+        """
+        bundle = bundle_of(eventful_fight(seed=73, turns=6), format_version=2)
+
+        assert validate_replay(bundle) == []
+        assert all("state" in one for one in bundle["checkpoints"])
 
 
 @pytest.mark.parametrize(

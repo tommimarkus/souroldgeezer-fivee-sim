@@ -634,12 +634,12 @@ that names one by id reads it fresh — but a hash you are holding is stale, so
 
 `encounter.replay` turns an encounter into a portable, self-contained audit
 record.
-Version 2 is the default:
+Version 3 is the default:
 
 ```json
 {
   "format": "fivee-sim-replay",
-  "format_version": 2,
+  "format_version": 3,
   "name": "guard room",
   "seed": 71203941,
   "map": { "...": "a fivee-sim-map payload, or null" },
@@ -650,7 +650,12 @@ Version 2 is the default:
   "events": [ { "kind": "round", "timestamp": "...", "...": "..." } ],
   "actions": [],
   "attempts": [],
-  "checkpoints": [ { "event_count": 2, "state_hash": "...", "state": {} } ],
+  "checkpoints": [
+    { "index": 0, "event_count": 0, "state_hash": "...", "state": {} },
+    { "index": 1, "event_count": 2, "state_hash": "...",
+      "state_delta": { "combatants": [ { "name": "Hero", "hp": 4 } ],
+                       "dropped": ["combatants/Hero/concentrating_on"] } }
+  ],
   "latest_state": {},
   "content": { "records": {}, "sha256": "..." },
   "integrity": { "algorithm": "sha256", "events": "...", "...": "..." }
@@ -658,30 +663,43 @@ Version 2 is the default:
 ```
 
 `map` is the document **as the fight captured it** — an edit made after
-`encounter.create` never changes an export. Version 2 also converts an inline
-`map` spec to a complete map document and preserves every storey; only a mapless
-fight carries `null`. `initial.combatants` is the normalized creation input,
+`encounter.create` never changes an export. Version 2 onward also converts an
+inline `map` spec to a complete map document and preserves every storey; only a
+mapless fight carries `null`. `initial.combatants` is the normalized creation input,
 including attacks and resources, while the captured content records preserve
 the spells, conditions, items, and terrain the fight resolved against.
 
 Every event has a wall-clock timestamp. Successful actions and advances are in
 `actions`; `attempts` also carries refused actions, encounter-scoped rolls,
-checks, saves, and `encounter_note` entries. Checkpoints hold authoritative full
-state after creation and after every state-changing call, each with its own hash.
+checks, saves, and `encounter_note` entries.
+
+Checkpoints stand for the authoritative state after creation and after every
+state-changing call. **Version 3 writes the first one whole and every later one
+as what moved since the one before it** — `state_delta` in place of `state`,
+each still carrying the `state_hash` of the state it stands for rather than of
+the delta. So a reader applies the chain in order and holds one payload, and a
+break anywhere in it is a hash mismatch rather than a silently wrong frame. A
+`state_delta` reads exactly like the one `encounter.act` answers with under
+`view=delta`: membership is absolute and values are differential, `combatants`
+is the complete ordered cast with each entry thinned to `name` plus what moved,
+and `dropped` names the paths the baseline had and this state does not. Version
+2 wrote every checkpoint whole and is still both written and read.
+
 The top-level integrity block hashes the map, initial state, events, actions,
 checkpoints, latest state, and content. `replay_validate` checks the nested
-schema and all hashes, and the viewer performs the same checks before rendering
-a dropped or embedded v2 file. These hashes make corruption and alteration
-evident; they are not signatures and do not authenticate an author. Pass
-`format_version=1` only when a legacy consumer needs the old seven-field bundle;
-the viewer continues to accept both versions.
+schema and all hashes — reconstructing each v3 checkpoint from the chain first,
+so those hashes still mean what they meant — and the viewer performs the same
+checks before rendering a dropped or embedded file. These hashes make corruption
+and alteration evident; they are not signatures and do not authenticate an
+author. Pass `format_version=2` when a consumer wants whole checkpoints, or `1`
+for the old seven-field bundle; the viewer continues to accept all three.
 
 Encounters are journaled under the configured encounters root (the sibling
 `.fivee-sim/encounters/` by default). Creation, attempt, and result records are
 append-only, fsynced, and hash-chained. `request_id` makes creation, actions,
 advances, and encounter-scoped primitives safe to retry. `encounter_list`
 discovers active or finalized journals, `encounter_resume` recovers one after a
-restart, and `encounter_finalize` writes its replay v2 file and marks it
+restart, and `encounter_finalize` writes its replay v3 file and marks it
 finalized without deleting the journal. A partial crash tail is preserved beside
 the journal; hash-chain tampering is refused.
 

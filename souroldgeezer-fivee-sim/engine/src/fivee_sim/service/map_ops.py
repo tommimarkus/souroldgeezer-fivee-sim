@@ -628,10 +628,17 @@ def _bundle_v1(
     )
 
 
-def _bundle_v2(
+def _envelope_arguments(
     state: EngineState, session: sessions.Session, encounter_id: str
 ) -> tuple[dict[str, Any], str]:
-    """The scrubbable bundle: actions, timestamps, checkpoints and integrity."""
+    """Everything a v2 or v3 envelope is composed from, and the bundle's name.
+
+    The two versions differ in exactly one thing — whether a checkpoint after
+    the first carries its state whole or as a delta — and that difference lives
+    in ``replay.py``, which also owns the reader that undoes it. So both writers
+    read the session the same way, here, and the composer they hand it to is the
+    whole of what tells them apart.
+    """
     captured_map = session.map_payload or session.inline_map_payload
     name = str(captured_map["name"]) if captured_map is not None else encounter_id
     latest_state = session.encounter.state()
@@ -652,28 +659,51 @@ def _bundle_v2(
             }
         )
     return (
-        replay_service.replay_bundle_v2(
-            name=name,
-            engine_version=__version__,
-            encounter_id=encounter_id,
-            seed=session.seed,
-            movement_rule=session.encounter.movement_rule.value,
-            mode=session.encounter.mode.value,
-            map_payload=captured_map,
-            initial_creatures=initial_state["combatants"],
-            normalized_combatants=session.normalized_combatants,
-            initial_state=initial_state,
-            map_open_features=session.initial_open_features,
-            actions=[record.as_dict() for record in session.encounter.actions],
-            events=[event.as_dict() for event in session.encounter.log],
-            event_timestamps=session.event_timestamps,
-            latest_state=latest_state,
-            checkpoints=checkpoints,
-            attempts=session.attempts,
-            content_snapshot=session.content_snapshot,
-        ),
+        {
+            "name": name,
+            "engine_version": __version__,
+            "encounter_id": encounter_id,
+            "seed": session.seed,
+            "movement_rule": session.encounter.movement_rule.value,
+            "mode": session.encounter.mode.value,
+            "map_payload": captured_map,
+            "initial_creatures": initial_state["combatants"],
+            "normalized_combatants": session.normalized_combatants,
+            "initial_state": initial_state,
+            "map_open_features": session.initial_open_features,
+            "actions": [record.as_dict() for record in session.encounter.actions],
+            "events": [event.as_dict() for event in session.encounter.log],
+            "event_timestamps": session.event_timestamps,
+            "latest_state": latest_state,
+            "checkpoints": checkpoints,
+            "attempts": session.attempts,
+            "content_snapshot": session.content_snapshot,
+        },
         name,
     )
+
+
+def _bundle_v2(
+    state: EngineState, session: sessions.Session, encounter_id: str
+) -> tuple[dict[str, Any], str]:
+    """The scrubbable bundle: actions, timestamps, checkpoints and integrity.
+
+    Kept writable after v3 took the default, for the reason the engine keeps
+    reading every version it has ever written: a bundle leaves the machine, and
+    a viewer somebody already has a copy of reads the version it was written
+    for. v1's writer, which nothing has defaulted to for two format versions, is
+    the precedent rather than the exception.
+    """
+    arguments, name = _envelope_arguments(state, session, encounter_id)
+    return replay_service.replay_bundle_v2(**arguments), name
+
+
+def _bundle_v3(
+    state: EngineState, session: sessions.Session, encounter_id: str
+) -> tuple[dict[str, Any], str]:
+    """The same bundle with its checkpoint chain thinned to a keyframe and deltas."""
+    arguments, name = _envelope_arguments(state, session, encounter_id)
+    return replay_service.replay_bundle_v3(**arguments), name
 
 
 #: Which ``format_version`` this build can *produce*, and the thing that
@@ -694,6 +724,7 @@ _BUNDLE_WRITERS: Mapping[
 ] = {
     1: _bundle_v1,
     2: _bundle_v2,
+    3: _bundle_v3,
 }
 
 #: The writable set, read off the dispatch above rather than restated. A phase

@@ -32,7 +32,12 @@ from fivee_sim.map_document import (
 )
 from fivee_sim.map_types import FeatureTrigger, TerrainPair, TriggerMode
 from fivee_sim.model.creature import AttackOption
-from fivee_sim.model.encounter import EncounterMode
+from fivee_sim.model.encounter import (
+    STATE_ENTRIES,
+    STATE_ROSTERS,
+    EncounterMode,
+    apply_state_delta,
+)
 from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, RequestError
@@ -42,6 +47,7 @@ from .conftest import (
     REPLAY_GOBLIN,
     REPLAY_HERO,
     advance_encounter_to,
+    eventful_fight,
     mapless_fight,
 )
 
@@ -137,9 +143,132 @@ class TestBundleSchema:
             api.replay_export("enc-never")
 
 
+def exported(encounter_id: str, format_version: int, target: Path) -> dict[str, Any]:
+    """The bundle as written to disk, because an eventful v2 one outgrows inline.
+
+    A fight long enough to have a delta chain worth measuring is a fight whose
+    v2 export crosses ``INLINE_BUNDLE_BYTES`` and comes back as a path — which
+    is the size problem this version exists for, arriving as a test detail.
+    """
+    api.replay_export(encounter_id, path=str(target), format_version=format_version)
+    parsed = json.loads(target.read_text(encoding="utf-8"))
+    assert isinstance(parsed, dict)
+    return parsed
+
+
+def rebuilt_checkpoints(bundle: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every checkpoint's state, reconstructed the way the validator does."""
+    states: list[dict[str, Any]] = []
+    for checkpoint in bundle["checkpoints"]:
+        if "state" in checkpoint:
+            states.append(dict(checkpoint["state"]))
+            continue
+        states.append(
+            apply_state_delta(
+                states[-1],
+                checkpoint["state_delta"],
+                rosters=STATE_ROSTERS,
+                entries=STATE_ENTRIES,
+            )
+        )
+    return states
+
+
+class TestBundleV3:
+    """A keyframe and a chain of deltas, and the same fight at the end of it.
+
+    v2 wrote every checkpoint whole, and for a fight of any length that was over
+    half the bundle — the same six combatants, most of their fields identical,
+    once per turn. v3 writes the first one whole and then only what moved, which
+    is the shape the live responses already went to in phase 3.
+
+    What must not change is what a checkpoint *means*: ``state_hash`` still
+    covers the state the checkpoint stands for, so a reader that reconstructs
+    gets the same digest v2 recorded over the state it read directly.
+    """
+
+    def test_v3_is_the_default_export_contract(self) -> None:
+        assert api.replay_export(mapless_fight())["bundle"]["format_version"] == 3
+
+    def test_only_the_first_checkpoint_carries_a_whole_state(
+        self, tmp_path: Path
+    ) -> None:
+        bundle = exported(eventful_fight(), 3, tmp_path / "fight.json")
+        checkpoints = bundle["checkpoints"]
+
+        assert len(checkpoints) > 4, "a chain this short would prove nothing"
+        assert "state" in checkpoints[0] and "state_delta" not in checkpoints[0]
+        for index, checkpoint in enumerate(checkpoints[1:], start=1):
+            assert "state_delta" in checkpoint, f"checkpoint {index} has no delta"
+            assert "state" not in checkpoint, f"checkpoint {index} is still whole"
+
+    def test_the_chain_rebuilds_the_state_every_hash_names(
+        self, tmp_path: Path
+    ) -> None:
+        """``state_hash`` keeps its v2 meaning: the state, not the delta."""
+        bundle = exported(eventful_fight(seed=57), 3, tmp_path / "fight.json")
+
+        rebuilt = rebuilt_checkpoints(bundle)
+
+        for index, checkpoint in enumerate(bundle["checkpoints"]):
+            assert checkpoint["state_hash"] == replay_service.canonical_sha256(
+                rebuilt[index]
+            ), f"the reconstruction diverged at checkpoint {index}"
+        assert rebuilt[-1] == bundle["latest_state"]
+
+    def test_it_replays_the_same_states_v2_wrote_out_in_full(
+        self, tmp_path: Path
+    ) -> None:
+        """The two versions exported from one session, held against each other.
+
+        The strongest form of "nothing was lost": not that the chain is
+        self-consistent, but that it reconstructs the very payloads the version
+        that wrote them whole put on the wire.
+        """
+        encounter_id = eventful_fight(seed=59)
+
+        whole = exported(encounter_id, 2, tmp_path / "whole.json")
+        thinned = exported(encounter_id, 3, tmp_path / "thinned.json")
+
+        assert rebuilt_checkpoints(thinned) == [
+            checkpoint["state"] for checkpoint in whole["checkpoints"]
+        ]
+
+    def test_the_chain_costs_a_fraction_of_the_states_it_stands_for(
+        self, tmp_path: Path
+    ) -> None:
+        """The win, as a number rather than a claim.
+
+        A ceiling rather than a ratio to the run's own v2 export, because a
+        ratio holds just as well when both sides grow: it is the absolute cost
+        of a turn's checkpoint that this phase exists to bring down.
+        """
+        encounter_id = eventful_fight(seed=61)
+        whole = exported(encounter_id, 2, tmp_path / "whole.json")
+        thinned = exported(encounter_id, 3, tmp_path / "thinned.json")
+
+        was = len(json.dumps(whole["checkpoints"]))
+        now = len(json.dumps(thinned["checkpoints"]))
+
+        assert now * 3 < was, f"checkpoints went from {was} to {now} bytes"
+
+
 class TestBundleV2:
-    def test_v2_is_the_default_export_contract(self) -> None:
-        assert api.replay_export(mapless_fight())["bundle"]["format_version"] == 2
+    def test_v2_is_still_written_when_it_is_asked_for(self) -> None:
+        """The default moved; the writer stayed.
+
+        A bundle is the one artifact here that leaves the machine, and a viewer
+        somebody already has a copy of reads the version it was written for. The
+        engine keeps a writer for every version it has ever written for the same
+        reason it keeps a reader — and v1's writer, which nothing has defaulted
+        to for two format versions, is the precedent rather than the exception.
+        """
+        assert (
+            api.replay_export(mapless_fight(), format_version=2)["bundle"][
+                "format_version"
+            ]
+            == 2
+        )
 
     def test_v2_carries_the_reconstruction_and_state_contract(self) -> None:
         encounter_id = mapless_fight(seed=67)

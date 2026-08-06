@@ -209,12 +209,15 @@ the problem's `detail` on stderr, and the exit code is 3. Read the reason and
 adapt. Do not retry the same call hoping for a different answer, and do not
 narrate the action as though it happened.
 
-For a portable record, **`fivee encounter.replay <id>`** defaults to version 2:
+For a portable record, **`fivee encounter.replay <id>`** defaults to version 3:
 normalized starting combatants, captured inline/loaded maps and storeys, captured
-content, successful actions, refused attempts, timestamps, full state checkpoints,
-and integrity hashes. `replay.validate` and the viewer verify the nested schema
-and hashes; the hashes detect alteration but are not author signatures. Use
-`--format-version 1` only for a legacy consumer.
+content, successful actions, refused attempts, timestamps, state checkpoints —
+the first whole and each later one as what moved since the one before it — and
+integrity hashes. `replay.validate` and the viewer verify the nested schema and
+hashes, rebuilding the checkpoint chain first, so a break in it is a hash
+mismatch rather than a wrong frame; the hashes detect alteration but are not
+author signatures. Use `--format-version 2` for whole checkpoints, or `1` for a
+legacy consumer.
 
 ## Running an adventure: fights in a row
 

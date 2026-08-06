@@ -209,7 +209,38 @@ if (typeof FiveeRenderer === "undefined") {
      its latest version and keeps reading every version it ever wrote, because a
      bundle already on somebody's disk outlives the writer that made it — which
      is exactly the file this page is usually opened on. */
-  var READABLE_FORMAT_VERSIONS = [1, 2];
+  var READABLE_FORMAT_VERSIONS = [1, 2, 3];
+
+  /* The readable versions carrying the full encounter envelope, mirroring
+     service/replay.py's ENVELOPED_FORMAT_VERSIONS for the same reason the array
+     above mirrors READABLE_FORMAT_VERSIONS. Version 1 is the bare shape
+     documented in that module and has no encounter, no actions and no
+     checkpoints, so everything below the version-agnostic prefix is skipped for
+     it — and skipped, deliberately, for a version this page cannot read at all,
+     because grading an unknown shape against the newest envelope would bury the
+     one diagnostic that matters under twenty that do not.
+
+     It was `version === 2` until version 3 landed, which is exactly the defect
+     this spelling exists to stop: the same literal on the Python side quietly
+     skipped every envelope check for a v3 bundle. */
+  var ENVELOPED_FORMAT_VERSIONS = [2, 3];
+
+  /* The enveloped versions whose checkpoints are a keyframe and a chain of
+     deltas rather than a stack of whole states, mirroring service/replay.py's
+     CHAINED_FORMAT_VERSIONS. Read by both the grader and the player, so the
+     page has one answer to "does this bundle chain?" and Python has the same
+     one. A set rather than a floor: "3 and everything after it" is a claim
+     about versions nobody has designed. */
+  var CHAINED_FORMAT_VERSIONS = [3];
+
+  /* Which keys of a state payload a delta treats as a roster and which as a
+     single entry, mirroring model/encounter.py's STATE_ROSTERS and
+     STATE_ENTRIES. A whole-fight state has one roster and no single entry; the
+     seat-narrowed brief shape a delta can also describe is never a replay
+     bundle's, so the empty array is the honest declaration rather than a
+     placeholder. */
+  var STATE_ROSTERS = ["combatants"];
+  var STATE_ENTRIES = [];
 
   /* Mirrors service/replay.py's `_declared_mode`, fallback included. Null
      covers two different documents and reads them the same deliberate way: a
@@ -235,6 +266,8 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   var bundle = null;
+  var checkpointStateList = [];  /* the loaded bundle's checkpoint states, in
+                                    order, rebuilt once — see checkpointStates */
   var mapDoc = null;      /* what is drawn: the map payload or a synthesized
                              neutral plane, minus the hidden kinds above */
   var offset = [0, 0];    /* cell shift applied on the neutral plane */
@@ -358,7 +391,8 @@ if (typeof FiveeRenderer === "undefined") {
 
   function initialState() {
     var tokens = Object.create(null);
-    var authoritative = bundle.format_version === 2 && bundle.initial.state
+    var enveloped = ENVELOPED_FORMAT_VERSIONS.indexOf(bundle.format_version) !== -1;
+    var authoritative = enveloped && bundle.initial.state
       ? (bundle.initial.state.combatants || []) : (bundle.initial.creatures || []);
     authoritative.forEach(function (creature) {
       tokens[creature.name] = {
@@ -459,11 +493,117 @@ if (typeof FiveeRenderer === "undefined") {
     return current;
   }
 
-  function checkpointAt(eventCount) {
+  function isRecord(value) {
+    return !!value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  /* model/encounter.py's `state_delta` run backwards: the payload a delta
+     describes, laid over the baseline it was computed against.
+
+     Membership is absolute and values are differential. A roster arrives as the
+     complete cast in the order it should end up in, each entry thinned to `name`
+     plus whatever moved, so a creature that left is gone by being absent and one
+     that arrived needs no marker. `dropped` names the paths the baseline had and
+     this payload does not — the one thing an overlay cannot say by itself.
+
+     Written from the rule the engine publishes rather than ported from the
+     engine's own applier, which is the same choice tests/test_state_views.py
+     makes and for the same reason: this page reads bundles it did not write, on
+     a machine that may have no engine at all, so agreeing with the *contract* is
+     the property worth having. A port would agree with one implementation.
+
+     It shares nothing with either argument. The validator hands it a state it
+     has already hashed and graded, and an applier that overlaid into that would
+     rewrite the evidence behind an assertion that just passed. */
+  function applyStateDelta(baseline, delta, rosters, entries) {
+    var result = JSON.parse(JSON.stringify(baseline));
+    var dropped = delta.dropped;
+    if (Array.isArray(dropped)) {
+      dropped.forEach(function (path) { dropPath(result, String(path).split("/")); });
+    }
+    Object.keys(delta).forEach(function (key) {
+      if (key === "dropped") { return; }
+      var value = delta[key];
+      if (rosters.indexOf(key) !== -1 && Array.isArray(value)) {
+        result[key] = overlaidRoster(result[key], value);
+      } else if (entries.indexOf(key) !== -1 && isRecord(value)) {
+        result[key] = merged(isRecord(result[key]) ? result[key] : {}, value);
+      } else {
+        result[key] = value;
+      }
+    });
+    return result;
+  }
+
+  function merged(held, incoming) {
+    var out = {};
+    Object.keys(held).forEach(function (key) { out[key] = held[key]; });
+    Object.keys(incoming).forEach(function (key) { out[key] = incoming[key]; });
+    return out;
+  }
+
+  /* The delta's cast, in its order, each entry laid over the one held. Junk is
+     carried rather than refused: an entry that is not an object, or one with no
+     name, passes through as it arrived, because the caller here is grading an
+     untrusted file and has a diagnostic vocabulary for saying so. */
+  function overlaidRoster(held, incoming) {
+    var previous = Object.create(null);
+    (Array.isArray(held) ? held : []).forEach(function (one) {
+      if (isRecord(one) && "name" in one) { previous[String(one.name)] = one; }
+    });
+    return incoming.map(function (entry) {
+      if (!isRecord(entry) || !("name" in entry)) { return entry; }
+      var was = previous[String(entry.name)];
+      return merged(was === undefined ? {} : was, entry);
+    });
+  }
+
+  /* One path, whose only shapes are `key`, `entry/key` and `roster/name/key`. */
+  function dropPath(payload, path) {
+    if (path.length === 1) { delete payload[path[0]]; return; }
+    var held = payload[path[0]];
+    if (path.length === 2) {
+      if (isRecord(held)) { delete held[path[1]]; }
+      return;
+    }
+    if (path.length === 3 && Array.isArray(held)) {
+      held.forEach(function (entry) {
+        if (isRecord(entry) && String(entry.name) === path[1]) { delete entry[path[2]]; }
+      });
+    }
+  }
+
+  /* Every checkpoint's state in order, rebuilt where the bundle stores a delta,
+     and null where it could not be — which is a finding for the grader and a
+     beat the player leaves to the event fold. Computed once per bundle by both
+     of them, because a chain read from the middle is not a chain. */
+  function checkpointStates(payload) {
+    var chained = CHAINED_FORMAT_VERSIONS.indexOf(payload.format_version) !== -1;
+    var states = [];
+    (payload.checkpoints || []).forEach(function (checkpoint, index) {
+      var record = isRecord(checkpoint) ? checkpoint : {};
+      var held = index ? states[index - 1] : null;
+      if (!chained || index === 0) {
+        states.push(isRecord(record.state) ? record.state : null);
+      } else if (held && isRecord(record.state_delta)) {
+        states.push(applyStateDelta(held, record.state_delta, STATE_ROSTERS, STATE_ENTRIES));
+      } else {
+        states.push(null);
+      }
+    });
+    return states;
+  }
+
+  /* The authoritative state a beat lands on, or null where none does. It reads
+     the rebuilt chain rather than the file, which is the whole of what v3 cost
+     this page: `checkpoint.state` used to be the answer and is now only
+     sometimes present. */
+  function checkpointStateAt(eventCount) {
     var checkpoints = bundle.checkpoints || [];
     for (var i = 0; i < checkpoints.length; i++) {
-      var checkpoint = checkpoints[i];
-      if (Number(checkpoint.event_count) === eventCount) { return checkpoint; }
+      if (Number(checkpoints[i].event_count) === eventCount) {
+        return checkpointStateList[i] || null;
+      }
     }
     return null;
   }
@@ -528,8 +668,8 @@ if (typeof FiveeRenderer === "undefined") {
          the whole log. */
       current.terrainOverrides = overridesFor(current.featureStates);
     }
-    var checkpoint = checkpointAt(eventCount);
-    if (checkpoint) { applyAuthoritative(current, checkpoint.state); }
+    var authoritative = checkpointStateAt(eventCount);
+    if (authoritative) { applyAuthoritative(current, authoritative); }
     return current;
   }
 
@@ -1180,13 +1320,18 @@ if (typeof FiveeRenderer === "undefined") {
     if (payload.content.sha256 !== contentHash || integrity.content !== contentHash) {
       errors.push("integrity.content does not match content");
     }
+    /* Over the state a checkpoint stands for, never over what the file happens
+       to store — which is what keeps a v3 chain's hashes meaning what a v2
+       stack's meant, and is what makes a tampered delta a caught tamper rather
+       than an unhashed field. */
+    var states = checkpointStates(payload);
     payload.checkpoints.forEach(function (checkpoint, index) {
-      if (checkpoint.state_hash !== sha256Hex(canonicalJson(checkpoint.state))) {
+      if (checkpoint.state_hash !== sha256Hex(canonicalJson(states[index]))) {
         errors.push("checkpoints." + index + ".state_hash does not match state");
       }
     });
     if (payload.checkpoints.length) {
-      var finalState = payload.checkpoints[payload.checkpoints.length - 1].state;
+      var finalState = states[states.length - 1];
       if (canonicalJson(finalState) !== canonicalJson(payload.latest_state)) {
         errors.push("latest_state does not match the final checkpoint");
       }
@@ -1452,7 +1597,7 @@ if (typeof FiveeRenderer === "undefined") {
         }
       });
     }
-    if (version === 2) {
+    if (ENVELOPED_FORMAT_VERSIONS.indexOf(version) !== -1) {
       if (!payload.encounter || typeof payload.encounter !== "object") {
         errors.push("encounter must be an object");
       } else {
@@ -1508,9 +1653,25 @@ if (typeof FiveeRenderer === "undefined") {
         });
       }
       if (Array.isArray(payload.checkpoints)) {
+        /* Graded against the rebuilt chain, so `checkpoints.N.state` means the
+           state that checkpoint stands for in every version — carried whole in
+           v2 and in v3's keyframe, computed from the one before it after that.
+           A chain that breaks is named where it broke and then left alone: the
+           checkpoints after it have no baseline, and grading them against a
+           baseline that is not theirs would bury the one real finding. */
+        var states = checkpointStates(payload);
         payload.checkpoints.forEach(function (checkpoint, index) {
-          if (!checkpoint || typeof checkpoint !== "object" || Array.isArray(checkpoint)) {
+          if (!isRecord(checkpoint)) {
             errors.push("checkpoints." + index + " must be an object");
+          } else if (CHAINED_FORMAT_VERSIONS.indexOf(version) !== -1 && index) {
+            if (!isRecord(checkpoint.state_delta)) {
+              errors.push("checkpoints." + index + ".state_delta must be an object");
+            } else if (states[index] === null) {
+              errors.push("checkpoints." + index + ".state_delta cannot be applied: "
+                + "the checkpoint before it did not reconstruct");
+            } else {
+              validateState(states[index], "checkpoints." + index + ".state", errors, mode);
+            }
           } else {
             validateState(checkpoint.state, "checkpoints." + index + ".state", errors, mode);
           }
@@ -1535,6 +1696,9 @@ if (typeof FiveeRenderer === "undefined") {
     }
     stopPlaying();
     bundle = payload;
+    /* Rebuilt here rather than per beat: a scrub drag replays the whole log per
+       frame, and a chain rebuilt from the middle is not a chain. */
+    checkpointStateList = checkpointStates(payload);
     offset = [0, 0];
     cellFeet = (payload.map && payload.map.grid && payload.map.grid.cell_feet) || 5;
     configureLevels();

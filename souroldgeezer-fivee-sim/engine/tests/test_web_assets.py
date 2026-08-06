@@ -45,8 +45,19 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.model.encounter import ActionKind, EncounterMode, TurnState
-from fivee_sim.service.replay import READABLE_FORMAT_VERSIONS, validate_replay
+from fivee_sim.model.encounter import (
+    STATE_ENTRIES,
+    STATE_ROSTERS,
+    ActionKind,
+    EncounterMode,
+    TurnState,
+)
+from fivee_sim.service.replay import (
+    CHAINED_FORMAT_VERSIONS,
+    ENVELOPED_FORMAT_VERSIONS,
+    READABLE_FORMAT_VERSIONS,
+    validate_replay,
+)
 from fivee_sim.web.http_server import CONFIG_MARKER
 from fivee_sim.web.routes import API_PREFIX, api_routes, operation_id
 from fivee_sim.web.routes import PAGES as SERVED_PAGES
@@ -382,6 +393,89 @@ class TestViewerReadableVersions:
         ]
         assert refusals == [f"must be {joined}"]
         assert self.declared_in_the_page() == sorted(READABLE_FORMAT_VERSIONS)
+
+
+def declared_array(name: str, page: str = "viewer.html") -> list[str]:
+    """One ``var NAME = [...];`` array literal, read out of a shipped page.
+
+    The generalisation of ``TestViewerReadableVersions.declared_in_the_page``,
+    extracted when a second and a third version set arrived. It carries that
+    method's vacuity guard with it, which is the whole difference between this
+    and no test: a renamed or reformatted declaration must fail loudly here
+    rather than yield an empty list that agrees with everything. An empty
+    declaration is allowed only where the owner is genuinely empty, so the
+    caller decides — this returns the raw members and grades nothing.
+    """
+    found = re.search(rf"var {re.escape(name)} = \[([^\]]*)\];", read(page))
+    assert found is not None, (
+        f"{page} no longer declares {name} as a single array literal; this test "
+        "cannot read the page's set and so cannot hold it against Python's — "
+        "restore the declaration or reanchor it"
+    )
+    return [one.strip().strip('"') for one in found.group(1).split(",") if one.strip()]
+
+
+class TestViewerEnvelopedVersions:
+    """The second version set the page copies, and the defect that earned it.
+
+    ``READABLE_FORMAT_VERSIONS`` above says which bundles the page will open.
+    This one says which of them carry an ``encounter``, ``actions``,
+    ``checkpoints`` and component hashes — everything below the
+    version-agnostic prefix — and it exists in both languages because both were
+    once written as ``version === 2``. On the Python side that literal survived
+    the arrival of version 3 and silently skipped every envelope check for a v3
+    bundle: a missing ``state_delta``, a tampered chain and a ``latest_state``
+    nothing reached all validated clean.
+
+    So the page's copy is pinned the same way the readable set is, and for the
+    sharper reason: this is the set that decides whether a shared bundle is
+    graded at all.
+    """
+
+    def test_the_page_envelopes_the_versions_python_does(self) -> None:
+        assert [int(one) for one in declared_array("ENVELOPED_FORMAT_VERSIONS")] == sorted(
+            ENVELOPED_FORMAT_VERSIONS
+        )
+
+    def test_the_page_grades_a_bundle_through_that_declaration(self) -> None:
+        """A declared array the validator ignores would pin nothing."""
+        source = read("viewer.html")
+        assert "ENVELOPED_FORMAT_VERSIONS.indexOf(version) !== -1" in source
+        assert "if (version === 2)" not in source, (
+            "the literal that skipped every envelope check for v3 is back"
+        )
+
+    def test_the_chained_versions_match_pythons(self) -> None:
+        """Which bundles store a keyframe and a chain rather than whole states.
+
+        A page reading this set too narrowly plays a v3 bundle as if every
+        checkpoint carried a whole state, finds none after the keyframe, and
+        draws the fight frozen at its first beat — with no diagnostic, because
+        nothing was malformed. Too widely and it refuses a v2 bundle for
+        lacking deltas it never had.
+        """
+        assert [int(one) for one in declared_array("CHAINED_FORMAT_VERSIONS")] == sorted(
+            CHAINED_FORMAT_VERSIONS
+        )
+
+    def test_the_pages_delta_shape_is_the_models(self) -> None:
+        """Which keys of a state a delta treats as a roster, and which as an entry.
+
+        The page applies deltas now, so it carries a copy of the argument the
+        engine passes its own applier. Getting ``combatants`` out of that list
+        would make every roster overlay a whole-value replacement: a delta
+        naming one creature would silently drop the rest of the cast, and the
+        ``state_hash`` beside it would then refuse the bundle — a correct file
+        rejected on a stranger's machine, which is the failure the readable set
+        above exists to prevent in its own dimension.
+
+        ``STATE_ENTRIES`` is empty in the model, so the page's copy is empty
+        too, and this is the one place a declaration is *allowed* to read
+        empty — asserted against the owner rather than against a literal, so
+        the day a single-entry key joins the state the page has to follow.
+        """
+        assert declared_array("STATE_ROSTERS") == sorted(STATE_ROSTERS)
+        assert declared_array("STATE_ENTRIES") == sorted(STATE_ENTRIES)
 
 
 class TestViewerInterludeChapters:
@@ -1844,8 +1938,13 @@ class TestFacingAndCompass:
         initial = source[
             source.index("function initialState") : source.index("function applyAuthoritative")
         ]
+        # Bounded by whatever declaration follows `applyAuthoritative`, which is
+        # `isRecord` since v3's chain receiver landed between the two. The slice
+        # is an anchor, not a claim about ordering — it just has to end before
+        # the next function so a `token.facing` written anywhere else cannot
+        # satisfy this.
         authoritative = source[
-            source.index("function applyAuthoritative") : source.index("function checkpointAt")
+            source.index("function applyAuthoritative") : source.index("function isRecord")
         ]
         frame = source[source.index("function renderFrame") : source.index("var framePending")]
         assert "facing: creature.facing" in initial

@@ -15,7 +15,8 @@ All provenance: SRD 5.2.1 (see NOTICE).
 from __future__ import annotations
 
 import heapq
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, MutableMapping, Sequence
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from random import Random
@@ -719,6 +720,91 @@ def _thinned_entry(
         for field, value in current.items()
         if before.get(field, _ABSENT) != value
     }
+
+
+def apply_state_delta(
+    baseline: Mapping[str, Any],
+    delta: Mapping[str, Any],
+    *,
+    rosters: Sequence[str] = (),
+    entries: Sequence[str] = (),
+) -> dict[str, Any]:
+    """:func:`state_delta` run backwards — the payload a delta describes.
+
+    It exists for one caller. A **v3 replay bundle** stores its checkpoints as a
+    keyframe and a chain of deltas, and ``validate_replay`` has to rebuild each
+    one before it can say whether the state in it is a legal state or whether the
+    hash beside it is the right hash. A validator that could not reconstruct
+    could only assert that a delta is an object, which is most of what validating
+    a checkpoint is for.
+
+    **It lives here rather than in the validator**, beside the function it
+    inverts and taking the same ``rosters``/``entries`` arguments, because the
+    two are one rule read in two directions and a receiver written anywhere else
+    would be free to drift from the sender. What it is *not* is the published
+    contract's only reader: ``tests/test_state_views.py`` keeps its own applier,
+    written from the paragraph the skills publish rather than from this code, and
+    grades this one against it. A round trip through a single function proves
+    only that the function is its own inverse.
+
+    **It shares nothing with either argument.** A validator walks a chain whose
+    baseline is a checkpoint it has already hashed and asserted against, so an
+    applier that overlaid into that baseline would rewrite the evidence behind
+    the assertion that just passed.
+
+    Junk is carried rather than refused — a roster entry that is not a mapping,
+    or one with no ``name``, passes through as it arrived. The caller is
+    validating untrusted bytes and has a diagnostic vocabulary for saying so;
+    this function's refusal would be a stack trace instead.
+    """
+    result: dict[str, Any] = deepcopy(dict(baseline))
+    patch: dict[str, Any] = deepcopy(dict(delta))
+    dropped = patch.pop("dropped", [])
+    if isinstance(dropped, list):
+        for path in dropped:
+            _drop_path(result, str(path).split("/"))
+    for key, value in patch.items():
+        if key in rosters and isinstance(value, list):
+            result[key] = _overlaid_roster(result.get(key), value)
+        elif key in entries and isinstance(value, Mapping):
+            held = result.get(key)
+            result[key] = (dict(held) if isinstance(held, Mapping) else {}) | dict(value)
+        else:
+            result[key] = value
+    return result
+
+
+def _overlaid_roster(held: Any, incoming: list[Any]) -> list[Any]:
+    """The delta's cast, in its order, each entry laid over the one held."""
+    previous = {
+        str(one["name"]): one
+        for one in (held if isinstance(held, list) else [])
+        if isinstance(one, Mapping) and "name" in one
+    }
+    overlaid: list[Any] = []
+    for entry in incoming:
+        if not isinstance(entry, Mapping) or "name" not in entry:
+            overlaid.append(entry)
+            continue
+        was = previous.get(str(entry["name"]))
+        overlaid.append((dict(was) if was is not None else {}) | dict(entry))
+    return overlaid
+
+
+def _drop_path(payload: MutableMapping[str, Any], path: Sequence[str]) -> None:
+    """Remove one path, whose only shapes are ``key``, ``you/key``, ``r/name/key``."""
+    if len(path) == 1:
+        payload.pop(path[0], None)
+        return
+    held = payload.get(path[0])
+    if len(path) == 2:
+        if isinstance(held, MutableMapping):
+            held.pop(path[1], None)
+        return
+    if len(path) == 3 and isinstance(held, list):
+        for entry in held:
+            if isinstance(entry, MutableMapping) and str(entry.get("name")) == path[1]:
+                entry.pop(path[2], None)
 
 
 #: The action kinds that can put the *actor's* own d20 on the table, and so the

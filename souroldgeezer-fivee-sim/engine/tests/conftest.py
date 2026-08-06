@@ -237,6 +237,31 @@ def mapless_fight(seed: int = 41) -> str:
     return str(created["encounter_id"])
 
 
+def eventful_fight(seed: int = 55, turns: int = 24) -> str:
+    """The shared fixture, run far enough to have a history worth compressing.
+
+    :func:`mapless_fight` creates and stops, so its bundle holds one checkpoint
+    and a chain of deltas over it is vacuous. This runs until somebody is down
+    or the turns run out, which is what puts hit points, conditions and a death
+    on the wire between consecutive checkpoints.
+    """
+    encounter_id = mapless_fight(seed=seed)
+    for _ in range(turns):
+        whole = api.encounter_state(encounter_id)
+        if whole["over"]:
+            break
+        acting = whole["turn"]
+        targets = [
+            one["name"]
+            for one in whole["combatants"]
+            if one["name"] != acting and one["conscious"]
+        ]
+        if targets:
+            api.encounter_act(encounter_id, "attack", target=targets[0], view="full")
+        api.encounter_advance(encounter_id, view="full")
+    return encounter_id
+
+
 def fighter(
     name: str = "Thora",
     *,

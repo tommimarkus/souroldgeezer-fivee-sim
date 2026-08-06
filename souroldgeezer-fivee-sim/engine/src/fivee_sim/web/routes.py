@@ -902,7 +902,7 @@ ROUTES: tuple[Route, ...] = (
                 "path": {"type": ["string", "null"], "default": None,
                          "maxLength": MAX_PATH_TEXT},
                 "embed": {"type": "boolean", "default": False},
-                "format_version": {"type": "integer", "default": 2},
+                "format_version": {"type": "integer", "default": 3},
             },
         },
         handler="encounter_replay",

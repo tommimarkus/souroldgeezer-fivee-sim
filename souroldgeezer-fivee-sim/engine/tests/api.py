@@ -379,7 +379,7 @@ def replay_export(
     encounter_id: str,
     path: str | None = None,
     embed: bool = False,
-    format_version: int = 2,
+    format_version: int = 3,
 ) -> dict[str, Any]:
     """Export a replay with no viewer link.
 

@@ -39,9 +39,9 @@ will otherwise assume:
   state, the run would stop hanging together while the integrity hashes went on
   agreeing with themselves. **Chapters freeze at `encounter.finalize`**; composing
   only stacks them.
-- **It is always a file, never inline.** One realistic v2 bundle already exceeds
-  the ceiling a single export inlines under, and an envelope holds several. Quote
-  the path.
+- **It is always a file, never inline.** An envelope holds a whole chapter's
+  bundle per fight, so a run of any length clears the ceiling a single export
+  inlines under. Quote the path.
 - **`replay.list` will not list it, and no `viewer_url` comes back.** Both filter
   on the single-encounter replay format, so a composed run stays absent from the
   listing and out of the served chooser even though it lands in the replays root

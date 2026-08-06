@@ -122,11 +122,12 @@ map is written, because no flag grammar should try to spell one.
    encounter when the new layout should apply. Running the fight is the
    encounter-sim skill's ground.
 8. **After the fight, `fivee encounter.finalize <id>` or `fivee encounter.replay
-   <id>`.** Finalization writes replay v2 and retains the encounter's hash-chained
-   journal. A direct export defaults to the same v2 contract: the seed, normalized
+   <id>`.** Finalization writes replay v3 and retains the encounter's hash-chained
+   journal. A direct export defaults to the same v3 contract: the seed, normalized
    roster, captured content, the captured map (including inline maps and every
-   storey), timestamped events and attempts, authoritative state checkpoints, and
-   integrity hashes. Bundles land in the configured **replays root**, independently
+   storey), timestamped events and attempts, state checkpoints — the first whole
+   and each later one as what moved since the one before it — and integrity
+   hashes. Bundles land in the configured **replays root**, independently
    of the maps root.
 
    Two ways to show a fight, and they answer different asks. If a server is

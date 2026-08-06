@@ -177,7 +177,7 @@ fivee encounter.state enc-1                                    # the authoritati
 fivee encounter.act enc-1 --kind move --to-position '[5, 0]'
 fivee encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
 fivee encounter.advance enc-1                                  # end the turn
-fivee encounter.finalize enc-1                                 # export replay v2 when done
+fivee encounter.finalize enc-1                                 # export replay v3 when done
 ```
 
 The two calls a fight makes hundreds of times answer with what *changed*:

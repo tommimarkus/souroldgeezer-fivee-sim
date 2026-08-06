@@ -1,9 +1,13 @@
 """Replay bundles: one fight as one portable, verifiable JSON document.
 
-Version 2 is the default service contract. It is self-contained: normalized
+Version 3 is the default service contract. It is self-contained: normalized
 starting combatants, captured map and content, successful actions, all audited
 attempts, timestamped events, authoritative state checkpoints, and component
-hashes. Version 1 remains available byte-for-shape for legacy consumers::
+hashes. It differs from version 2 in one field: a checkpoint after the first
+carries ``state_delta`` — what moved since the previous one — where v2 wrote
+every state out whole, which for a fight of any length was over half the file.
+Both remain writable for a caller who names one, and version 1 remains
+available byte-for-shape for legacy consumers::
 
     {
       "format": "fivee-sim-replay",
@@ -31,9 +35,13 @@ with no server and no sibling assets.
 **An adventure's replay is a second format, not a third version of this one.**
 :func:`validate_replay`'s version-agnostic prefix demands ``seed``,
 ``initial.creatures``, ``initial.map_open_features``, ``map`` and ``events``
-*before* it reaches the v1 early return, and an envelope carrying whole fights
-as chapters has none of them — so ``format_version: 3`` would be a document that
-fails its own validator on every field. :data:`ADVENTURE_FORMAT` says what it is
+*before* it reaches :data:`ENVELOPED_FORMAT_VERSIONS`' early return, and an
+envelope carrying whole fights
+as chapters has none of them — so a run recorded as another ``format_version``
+of this format would be a document that fails its own validator on every field.
+That the number it would have taken has since been spent on a real fight version
+is the argument arriving on time: a version counter says how one format changed,
+never that a second format exists. :data:`ADVENTURE_FORMAT` says what it is
 instead, :func:`adventure_replay_bundle` composes one and
 :func:`validate_adventure_replay` grades it.
 
@@ -61,7 +69,14 @@ from typing import Any
 from ..kernel.grid import FEET_PER_SQUARE, as_point
 from ..kernel.rules import Ability
 from ..model.creature import AttackOption, Creature
-from ..model.encounter import EncounterMode, sheet_of
+from ..model.encounter import (
+    STATE_ENTRIES,
+    STATE_ROSTERS,
+    EncounterMode,
+    apply_state_delta,
+    sheet_of,
+    state_delta,
+)
 from ..paths import (
     REPLAYS_ENV,
     REPLAYS_SUBDIR,
@@ -75,7 +90,9 @@ __all__ = [
     "ADVENTURE_FORMAT",
     "ADVENTURE_FORMAT_VERSION",
     "ADVENTURE_INTEGRITY_KEYS",
+    "CHAINED_FORMAT_VERSIONS",
     "EMBED_SLOT",
+    "ENVELOPED_FORMAT_VERSIONS",
     "FORMAT",
     "FORMAT_VERSION",
     "LATEST_FORMAT_VERSION",
@@ -93,6 +110,7 @@ __all__ = [
     "normalized_combatant_payload",
     "replay_bundle",
     "replay_bundle_v2",
+    "replay_bundle_v3",
     "replays_root",
     "serialize_bundle",
     "sha256_bytes",
@@ -103,7 +121,7 @@ __all__ = [
 
 FORMAT = "fivee-sim-replay"
 FORMAT_VERSION = 1
-LATEST_FORMAT_VERSION = 2
+LATEST_FORMAT_VERSION = 3
 
 #: Every ``format_version`` :func:`validate_replay` accepts, read by the
 #: validator instead of a bare literal so the two version constants above and
@@ -114,12 +132,42 @@ LATEST_FORMAT_VERSION = 2
 #: ``journal_version`` bumps refuse the previous format outright, because
 #: nothing outside the engine ever holds one. A bundle a user already
 #: exported keeps sitting on their disk after the writer moves on, so the
-#: engine writes exactly one version, :data:`LATEST_FORMAT_VERSION`, but
-#: reads every version it has ever written. ``LATEST_FORMAT_VERSION`` is
+#: engine defaults to :data:`LATEST_FORMAT_VERSION` and reads — and, for a
+#: caller who names one, still writes — every version it has ever written.
+#: ``map_ops.WRITABLE_FORMAT_VERSIONS`` is the producible set and is a
+#: subset of this one, never the same declaration. ``LATEST_FORMAT_VERSION`` is
 #: always a member of this set: that is the property that turns "the writer
 #: moved and the reader forgot" into a failing test rather than a bundle the
 #: engine writes and then refuses.
-READABLE_FORMAT_VERSIONS: frozenset[int] = frozenset({1, 2})
+READABLE_FORMAT_VERSIONS: frozenset[int] = frozenset({1, 2, 3})
+
+#: The readable versions carrying the full encounter envelope: everything
+#: :data:`READABLE_FORMAT_VERSIONS` holds except the legacy
+#: :data:`FORMAT_VERSION`, whose bundle is the bare shape documented above and
+#: has no ``encounter``, no ``actions``, no ``attempts`` and no checkpoints.
+#:
+#: :func:`validate_replay` reads it rather than naming a version, and that is
+#: the fix for a real defect: the gate was written as ``!= 2`` when 2 was the
+#: only enveloped version, so version 3 — added by the phase that split
+#: checkpoints into a keyframe and a chain of deltas — returned after the
+#: version-agnostic prefix and every envelope check below was silently skipped.
+#: A bundle with a missing ``state_delta``, a tampered chain or a
+#: ``latest_state`` nothing reaches validated clean.
+#:
+#: A version this build does not read at all falls out here too, and
+#: deliberately: grading an unknown shape against the newest envelope would
+#: bury the one diagnostic that matters under twenty that do not.
+ENVELOPED_FORMAT_VERSIONS: frozenset[int] = READABLE_FORMAT_VERSIONS - {FORMAT_VERSION}
+
+#: The enveloped versions whose checkpoints are a keyframe and a chain of
+#: deltas rather than a stack of whole states. Read by :func:`_checkpoint_state`
+#: and mirrored in ``viewer.html``, so "does this bundle chain?" has one answer
+#: on each side of the language boundary rather than a literal per reader.
+#:
+#: A set rather than a floor, because "3 and everything after it" is a claim
+#: about versions nobody has designed. A v4 that keeps chaining joins this set
+#: deliberately; one that does not, does not.
+CHAINED_FORMAT_VERSIONS: frozenset[int] = frozenset({3})
 
 #: The embedded map's own discriminator, mirrored from ``map_document.FORMAT``
 #: rather than imported: :func:`_validate_map` deliberately stays terrain-blind
@@ -406,7 +454,147 @@ def replay_bundle_v2(
     attempts: Sequence[Mapping[str, Any]],
     content_snapshot: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Compose the additive, reconstructible replay-v2 envelope."""
+    """Compose the additive, reconstructible replay-v2 envelope.
+
+    Every checkpoint carries its state whole. That is what v3 changes and the
+    only thing it changes, so this stays as the writer for a caller who names
+    version 2 — a viewer somebody already has a copy of reads the version it
+    was written for.
+    """
+    return _envelope(
+        version=2,
+        name=name,
+        engine_version=engine_version,
+        encounter_id=encounter_id,
+        seed=seed,
+        movement_rule=movement_rule,
+        mode=mode,
+        map_payload=map_payload,
+        initial_creatures=initial_creatures,
+        normalized_combatants=normalized_combatants,
+        initial_state=initial_state,
+        map_open_features=map_open_features,
+        actions=actions,
+        events=events,
+        event_timestamps=event_timestamps,
+        latest_state=latest_state,
+        checkpoints=checkpoints,
+        attempts=attempts,
+        content_snapshot=content_snapshot,
+    )
+
+
+def replay_bundle_v3(
+    *,
+    name: str,
+    engine_version: str,
+    encounter_id: str,
+    seed: int,
+    movement_rule: str,
+    mode: str,
+    map_payload: Mapping[str, Any] | None,
+    initial_creatures: Sequence[Mapping[str, Any]],
+    normalized_combatants: Sequence[Mapping[str, Any]],
+    initial_state: Mapping[str, Any],
+    map_open_features: Sequence[str],
+    actions: Sequence[Mapping[str, Any]],
+    events: Sequence[Mapping[str, Any]],
+    event_timestamps: Sequence[str],
+    latest_state: Mapping[str, Any],
+    checkpoints: Sequence[Mapping[str, Any]],
+    attempts: Sequence[Mapping[str, Any]],
+    content_snapshot: Mapping[str, Any],
+) -> dict[str, Any]:
+    """The v2 envelope with its checkpoints thinned to a keyframe and a chain.
+
+    It takes the same whole-state ``checkpoints`` v2 does and does the thinning
+    here, because the shape of a v3 checkpoint is this format's business and
+    :func:`validate_replay`, three hundred lines below, is what has to undo it.
+    A caller that thinned them on the way in would put the two halves of one
+    rule in two modules.
+
+    ``state_hash`` keeps its v2 meaning exactly — the digest of the state the
+    checkpoint stands for, not of the delta that expresses it — so a reader
+    reconstructs and compares against the same number the version that wrote
+    every state out in full would have recorded.
+    """
+    return _envelope(
+        version=3,
+        name=name,
+        engine_version=engine_version,
+        encounter_id=encounter_id,
+        seed=seed,
+        movement_rule=movement_rule,
+        mode=mode,
+        map_payload=map_payload,
+        initial_creatures=initial_creatures,
+        normalized_combatants=normalized_combatants,
+        initial_state=initial_state,
+        map_open_features=map_open_features,
+        actions=actions,
+        events=events,
+        event_timestamps=event_timestamps,
+        latest_state=latest_state,
+        checkpoints=_chained_checkpoints(checkpoints),
+        attempts=attempts,
+        content_snapshot=content_snapshot,
+    )
+
+
+def _chained_checkpoints(
+    checkpoints: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """The first checkpoint whole, every later one as what moved since the last.
+
+    Deltas run against the *previous checkpoint's state* rather than against the
+    keyframe, so a reader applies them in order and holds one payload rather
+    than a growing pile of patches to compose.
+    """
+    chained: list[dict[str, Any]] = []
+    previous: Mapping[str, Any] | None = None
+    for checkpoint in checkpoints:
+        entry = dict(checkpoint)
+        state = entry.get("state")
+        if previous is not None and isinstance(state, Mapping):
+            entry.pop("state")
+            entry["state_delta"] = state_delta(
+                previous, state, rosters=STATE_ROSTERS, entries=STATE_ENTRIES
+            )
+        if isinstance(state, Mapping):
+            previous = state
+        chained.append(entry)
+    return chained
+
+
+def _envelope(
+    *,
+    version: int,
+    name: str,
+    engine_version: str,
+    encounter_id: str,
+    seed: int,
+    movement_rule: str,
+    mode: str,
+    map_payload: Mapping[str, Any] | None,
+    initial_creatures: Sequence[Mapping[str, Any]],
+    normalized_combatants: Sequence[Mapping[str, Any]],
+    initial_state: Mapping[str, Any],
+    map_open_features: Sequence[str],
+    actions: Sequence[Mapping[str, Any]],
+    events: Sequence[Mapping[str, Any]],
+    event_timestamps: Sequence[str],
+    latest_state: Mapping[str, Any],
+    checkpoints: Sequence[Mapping[str, Any]],
+    attempts: Sequence[Mapping[str, Any]],
+    content_snapshot: Mapping[str, Any],
+) -> dict[str, Any]:
+    """The block v2 and v3 share, stamped with the version that asked for it.
+
+    ``version`` is passed rather than read off :data:`LATEST_FORMAT_VERSION`,
+    which is what this composer used to do. That was correct only while there
+    was one writer: bumping the constant would otherwise have had the v2 writer
+    stamp its v2 checkpoints as v3.
+    """
     stamped_events = []
     for index, event in enumerate(events):
         stamped = dict(event)
@@ -418,7 +606,7 @@ def replay_bundle_v2(
     content["sha256"] = canonical_sha256(content_snapshot)
     bundle: dict[str, Any] = {
         "format": FORMAT,
-        "format_version": LATEST_FORMAT_VERSION,
+        "format_version": version,
         "name": name,
         "seed": seed,
         "map": dict(map_payload) if map_payload is not None else None,
@@ -739,6 +927,50 @@ def _validate_map(value: Any, found: list[dict[str, str]]) -> None:
             )
 
 
+def _checkpoint_state(
+    checkpoint: Mapping[str, Any],
+    index: int,
+    version: Any,
+    held: Mapping[str, Any] | None,
+    found: list[dict[str, str]],
+) -> dict[str, Any] | None:
+    """The state a checkpoint stands for — carried whole, or rebuilt from the last.
+
+    v1 and v2 write every checkpoint out in full, so validating one is a
+    comparison. v3 writes a keyframe and then only what moved, so the state a
+    checkpoint claims a ``state_hash`` over is not in the file and the validator
+    has to build it. That is the point rather than a cost of the format: a
+    validator that shrugged at a delta it could not apply would accept a bundle
+    no viewer can play, which is the one thing this operation exists to rule out.
+
+    A chain that has already broken says so once per link rather than reporting
+    a mismatched hash for every checkpoint downstream of the real fault.
+    """
+    if version not in CHAINED_FORMAT_VERSIONS or index == 0:
+        state = checkpoint.get("state")
+        if not isinstance(state, Mapping):
+            found.append(_diagnostic(f"checkpoints.{index}.state", "must be an object"))
+            return None
+        return dict(state)
+    delta = checkpoint.get("state_delta")
+    if not isinstance(delta, Mapping):
+        found.append(
+            _diagnostic(f"checkpoints.{index}.state_delta", "must be an object")
+        )
+        return None
+    if held is None:
+        found.append(
+            _diagnostic(
+                f"checkpoints.{index}.state_delta",
+                "cannot be applied: the checkpoint before it did not reconstruct",
+            )
+        )
+        return None
+    return apply_state_delta(
+        held, delta, rosters=STATE_ROSTERS, entries=STATE_ENTRIES
+    )
+
+
 def validate_replay(payload: Any) -> list[dict[str, str]]:
     """Validate a replay bundle and verify v2 component hashes.
 
@@ -788,7 +1020,7 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
                 found.append(
                     _diagnostic(f"events.{index}.kind", "must be a non-empty string")
                 )
-    if version != 2:
+    if version not in ENVELOPED_FORMAT_VERSIONS:
         return found
 
     encounter = payload.get("encounter")
@@ -853,11 +1085,13 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
     checkpoints = payload.get("checkpoints")
     if isinstance(checkpoints, list):
         previous_count = -1
+        held: Mapping[str, Any] | None = None
         for index, checkpoint in enumerate(checkpoints):
             if not isinstance(checkpoint, Mapping):
                 found.append(
                     _diagnostic(f"checkpoints.{index}", "must be an object")
                 )
+                held = None
                 continue
             event_count = checkpoint.get("event_count")
             if (
@@ -874,37 +1108,34 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
                 )
             else:
                 previous_count = event_count
-            state = checkpoint.get("state")
-            if not isinstance(state, Mapping):
-                found.append(
-                    _diagnostic(f"checkpoints.{index}.state", "must be an object")
-                )
-            else:
-                _validate_state(state, f"checkpoints.{index}.state", found, mode=mode)
-                try:
-                    state_hash = canonical_sha256(state)
-                except (TypeError, ValueError):
-                    state_hash = None
-                if state_hash is None:
-                    found.append(
-                        _diagnostic(
-                            f"checkpoints.{index}.state_hash",
-                            "state is not canonical JSON",
-                        )
-                    )
-                elif checkpoint.get("state_hash") != state_hash:
-                    found.append(
-                        _diagnostic(
-                            f"checkpoints.{index}.state_hash", "does not match state"
-                        )
-                    )
-        if checkpoints and isinstance(checkpoints[-1], Mapping):
-            if checkpoints[-1].get("state") != payload.get("latest_state"):
+            state = _checkpoint_state(checkpoint, index, version, held, found)
+            held = state
+            if state is None:
+                continue
+            _validate_state(state, f"checkpoints.{index}.state", found, mode=mode)
+            try:
+                state_hash = canonical_sha256(state)
+            except (TypeError, ValueError):
+                state_hash = None
+            if state_hash is None:
                 found.append(
                     _diagnostic(
-                        "latest_state", "must equal the final authoritative checkpoint"
+                        f"checkpoints.{index}.state_hash",
+                        "state is not canonical JSON",
                     )
                 )
+            elif checkpoint.get("state_hash") != state_hash:
+                found.append(
+                    _diagnostic(
+                        f"checkpoints.{index}.state_hash", "does not match state"
+                    )
+                )
+        if checkpoints and held is not None and held != payload.get("latest_state"):
+            found.append(
+                _diagnostic(
+                    "latest_state", "must equal the final authoritative checkpoint"
+                )
+            )
     integrity = payload.get("integrity")
     if not isinstance(integrity, Mapping):
         found.append(_diagnostic("integrity", "must be an object"))

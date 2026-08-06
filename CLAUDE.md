@@ -546,17 +546,45 @@ contains `LATEST_FORMAT_VERSION`; a phase that bumps the writer and forgets the
 reader is what would falsify that invariant, and a test pins it.
 
 **Every place that names a bundle version is pinned to the declaration that owns
-it**, and there are four, because *readable* and *writable* are different sets
-and two of the namers cannot import the owner. `map_ops.py`'s
+it**, because *readable*, *writable*, *enveloped* and *chained* are four
+different sets and two of the namers cannot import the owner. `map_ops.py`'s
 `WRITABLE_FORMAT_VERSIONS` is read off `_BUNDLE_WRITERS`, the export dispatch
 itself, so a version with no writer function cannot be claimed; `viewer.html`
 and the route table's `format_version` default each keep a literal copy — the
 page grades a dropped file offline with no engine to ask, and `routes.py` may
 not reach into `service/` — with a test holding each to its owner. Adding a
-version means touching all four or going red. The invariant across them runs one
-way only, `writable ⊆ readable`: a build that reads three versions and writes
-one is the normal end state of this policy, and pointing the writer at the
-reader's set is how a build starts advertising a version it can only parse.
+version means touching all of them or going red. The invariant across them runs
+one way only, `writable ⊆ readable`: a build that reads three versions and
+writes one is the normal end state of this policy, and pointing the writer at
+the reader's set is how a build starts advertising a version it can only parse.
+
+**The two sets inside `readable` are the ones a phase forgets, and forgetting
+one has already shipped a hole.** `validate_replay` grades a bare v1 bundle
+against the version-agnostic prefix and stops there, and the gate that stopped
+it was written as `!= 2` when 2 was the only enveloped version. Adding v3
+therefore returned at that line: a bundle with a missing `state_delta`, a
+tampered chain, or a `latest_state` nothing in the chain reaches all validated
+clean, because every envelope check below was silently skipped. So the gate
+reads `ENVELOPED_FORMAT_VERSIONS`, which is `READABLE_FORMAT_VERSIONS` minus the
+bare `FORMAT_VERSION` and needs no edit for v4; `CHAINED_FORMAT_VERSIONS` is the
+matching declaration for "checkpoints are a keyframe and a chain of deltas", a
+**set rather than a floor** because "3 and everything after" is a claim about
+versions nobody has designed. A version this build cannot read at all still
+falls out at that early return deliberately: grading an unknown shape against
+the newest envelope buries the one diagnostic that matters under twenty that do
+not.
+
+**There are now three independent appliers of a state delta, and that is the
+design rather than duplication.** `tests/test_state_views.py`,
+`scripts/check-api-smoke.py` and `viewer.html` each write one from the
+*published prose* — never ported from `model.apply_state_delta`, which is graded
+against them — because a round trip through one function proves only that it is
+its own inverse. The viewer's is the one that had to exist anyway: it reads
+bundles it did not write, on a machine that may have no engine at all, so a v3
+checkpoint chain is something the page reconstructs offline or not at all. Its
+`STATE_ROSTERS` / `STATE_ENTRIES` are the fourth and fifth literal copies the
+page keeps, pinned to `model/encounter.py`'s by the same kind of test that
+pins its version arrays.
 
 **Seven concern modules sit beside the packages, and that tier is deliberate.**
 `catalog.py`, `content.py`, `map_document.py`, `map_types.py`, `validation.py`,
@@ -866,8 +894,9 @@ make the next run lie.
 Its fight constants are **golden values for one seed**, so a change to the rules
 or the dice stream turns it red on purpose; reproduce, then recalibrate
 deliberately. One thing it deliberately does *not* compare is the whole-file
-sha256 of an exported replay: a v2 bundle stamps every event and checkpoint with
-the wall clock, so it is not byte-reproducible and never will be. The
+sha256 of an exported replay: an enveloped bundle stamps every event and
+checkpoint with the wall clock, so it is not byte-reproducible and never will
+be. The
 timestamp-free integrity hashes — initial state, actions, latest state, map,
 content — are compared instead, and those are what the seed determines.
 
