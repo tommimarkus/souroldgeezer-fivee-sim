@@ -333,7 +333,10 @@ When the fight is running, drive a fixture with `fivee encounter.act <id> --kind
 interact --feature <id> --set-open true|false`. Use `--set-open` whenever you are
 working a chain: `interact` on its own **toggles**, so telling the engine to "open
 the sluice" when it already stands open silently closes it. Running the fight is
-the encounter-sim skill's ground.
+the encounter-sim skill's ground — including the fact that `encounter.act` now
+answers with `state_delta` rather than `state` by default, so add `--view full`
+if you are reading a fixture's new open/closed state straight off the response
+instead of applying the delta. The map block is in both.
 
 For the document format, the editor's API model, and the replay bundle schema,
 read [`../../docs/MAPS.md`](../../docs/MAPS.md).

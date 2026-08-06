@@ -179,6 +179,14 @@ fivee encounter.advance enc-1                                  # end the turn
 fivee encounter.finalize enc-1                                 # export replay v2 when done
 ```
 
+The two calls a fight makes hundreds of times answer with what *changed*:
+`encounter.act` and `encounter.advance` default to `--view delta` and carry
+`state_delta` rather than `state`, with `state_sha256` over the state it stands
+for. `encounter.create` and `encounter.resume` answer whole, because they are
+what a delta is measured against, and `--view full` gets that payload from any
+of the four. A roster inside a delta is the complete cast with each entry cut to
+what moved, so a name that is missing is gone rather than unchanged.
+
 Every event carries its arithmetic in a `detail` field, which is what makes a
 fight auditable rather than asserted:
 

@@ -119,6 +119,17 @@ and `encounter.resume`, so a seat's own result comes back already narrowed
 instead of arriving whole and needing you to look away. Omit it and those
 operations answer exactly as they always did.
 
+`--view` composes with it and is applied second: `encounter.act` and
+`encounter.advance` default to `--view delta` and answer with `state_delta` —
+what has moved since the payload that chair was last served — rather than the
+fight entire. The seat is applied first, so a delta can only ever narrow what
+`--as` already allowed; it will never name a creature that seat cannot see.
+Events are never a delta and arrive whole. **Pass `--view full` whenever you
+want the payload described in the rest of this file**, and read the `view` field
+rather than assuming, because the engine answers `full` any time it no longer
+holds what it last sent you. The encounter-sim skill has the rule for applying
+one.
+
 **None of this is a permission system.** `--as` is asserted by the caller and
 authenticated by nothing, so it keeps you from leaking by accident — it does not
 stop a player who holds the launch token from asking the engine for the whole

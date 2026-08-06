@@ -293,6 +293,12 @@ transcript you have to be trusted about:
 - **Move people rather than describing movement.** `fivee encounter.act <id>
   --kind move --actor <name> --to-position '[x, y]'` — an interlude has no
   initiative, so every act names its actor, and there is no `advance` to call.
+- **A write answers with what changed.** `encounter.act` and
+  `encounter.advance` default to `--view delta`: `state_delta` in place of
+  `state`, and the roster in it is the complete cast with each entry cut to what
+  moved. Pass `--view full` when a seat is reading the whole fight off the
+  response rather than tracking it; the encounter-sim skill has the rule for
+  applying one and the reason a missing name means gone rather than unchanged.
 - **Finalize the interlude before the next chapter is linked.** An unfinalized
   chapter refuses the whole composition, so a walk left open at the end of the
   day costs you the run's replay.

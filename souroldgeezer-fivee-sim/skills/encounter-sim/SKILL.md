@@ -114,6 +114,62 @@ narrating from memory puts it straight back.
    creatures are rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
 
+### A write answers with what changed, not the whole fight
+
+`encounter.act` and `encounter.advance` default to **`--view delta`**. The
+response carries `state_delta` where it used to carry `state`, plus
+`state_sha256` over the whole state that delta stands for and `view` naming
+what you actually got. `encounter.create` and `encounter.resume` default to
+`--view full`, because those are the calls that *establish* the payload a later
+delta is measured against.
+
+**If you are not tracking the fight in your own head, pass `--view full`.** It
+is the payload this skill has always described, byte for byte, and nothing else
+about the call changes. The default exists because a fight is mostly things
+that did not move, and repeating all of it every turn is what fills a context
+window that could have held the fight instead.
+
+To apply one, three rules:
+
+- **Every key in `state_delta` replaces the key you hold.** A key that is not
+  there did not change.
+- **A roster is the complete cast, not a list of changes.** `combatants` —
+  `allies` and `enemies` in a brief — arrives in full, in order, each entry cut
+  to the fields that moved. Merge each entry onto the one you hold with the same
+  `name`. A name you have not seen is arriving and comes whole. A name that is
+  **missing is gone**: dead, departed, or no longer visible from this seat. Drop
+  it; do not carry it forward because the delta did not mention it.
+- **`dropped` names keys that went away**, as `"round"` or
+  `"combatants/Thora/temp_hp"`. Remove each one.
+
+**`events` are never a delta.** An event is a thing that happened, not a value
+that changed, so there is nothing to diff it against; events arrive whole on
+every view, and a seat's events are narrowed by `--as` exactly as before.
+
+**`state_sha256` is for a program, not for you.** It is the digest of the full
+state the delta stands for, so a client that applied the patch can prove it
+landed. You cannot compute a SHA-256 in your head, and should not pretend to:
+what it means for you is that **the engine, not your reconstruction, is the
+authority** — the rule at the top of this skill has not changed. If anything you
+are about to narrate does not follow from what the last delta said, call
+`encounter.state` (or `encounter.brief --as`) and continue from that.
+
+**A delta needs the server to still be holding what it last sent you.** A
+restart, a second server, a fresh seat, or a retried call all lose that, and
+when it is lost the engine answers `full` and says so in `view` rather than
+sending you a patch against nothing. So always read `view` rather than assuming
+which shape arrived.
+
+`--view live` is the middle setting: every combatant present, with the printed
+half of the sheet replaced by a `sheet_sha256`. It needs no baseline — only that
+you saw the sheets once, at creation — so it is what to reach for when you
+cannot promise you are in step.
+
+`--view` composes with `--as`: the seat is applied first and the delta is taken
+over the brief, so a delta can only ever narrow what that seat was already
+entitled to see. It never mentions a creature the seat cannot see, because the
+brief it was computed from did not.
+
 **One encounter id has one writer at a time.** Every server on the machine shares
 the encounter journals, so if another session has advanced this fight since you
 last acted, your next call is refused with an error saying the encounter *has
