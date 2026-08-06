@@ -49,6 +49,17 @@ def _markdown_section(markdown: str, heading: str) -> str:
     return match.group("body")
 
 
+def _packaged_reference(
+    skill_relative_path: str, section: str, target: str
+) -> str:
+    """Return a Markdown leaf that an entry-skill section conditionally loads."""
+    skill_path = PLUGIN_ROOT / skill_relative_path
+    assert f"]({target})" in section, f"{skill_relative_path} does not point at {target}"
+    reference = skill_path.parent / target
+    assert reference.is_file(), f"packaged skill reference is missing: {reference}"
+    return reference.read_text(encoding="utf-8")
+
+
 def test_the_codex_manifest_points_at_the_shared_skills() -> None:
     manifest = _json(".codex-plugin/plugin.json")
 
@@ -105,6 +116,42 @@ def test_the_launcher_the_skills_name_is_there_and_runnable() -> None:
     for skill in ("encounter-sim", "map-forge"):
         text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
         assert "../../scripts/fivee.py" in text, skill
+
+
+def test_encounter_analysis_guidance_is_conditionally_packaged() -> None:
+    skill_path = "skills/encounter-sim/SKILL.md"
+    section = _markdown_section(_text(skill_path), "## Analysis rather than play")
+
+    assert re.search(
+        r"\bDPR\b.{0,100}\bwin-rate\b.{0,100}\brepeated seeded analysis\b",
+        section,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"\bdo not load\b.{0,100}\bturn-by-turn play\b",
+        section,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    analysis = _packaged_reference(skill_path, section, "references/analysis.md")
+    analysis_plain = " ".join(
+        analysis.replace("*", "").replace("`", "").split()
+    )
+    for obligation in (
+        "# Analysis rather than play",
+        "fivee analytics.rounds",
+        "fivee analytics.dpr",
+        "seed + i",
+        "highest expected damage this turn",
+        "floor for a control build",
+        "never operates a map fixture",
+        "does not husband spell slots",
+        "closes with Dash",
+        "greedy, not tactical",
+        "actions breakdown",
+        "p10, median, p90",
+    ):
+        assert obligation in analysis_plain
 
 
 def test_host_manifests_identify_the_same_plugin() -> None:
