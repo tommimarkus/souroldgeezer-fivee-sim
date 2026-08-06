@@ -268,6 +268,17 @@ def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> Non
     policy = _markdown_section(seating, "## Player tool policy")
     assert "`require-none`" in policy
     assert re.search(r"`require-none`.{0,500}\b(?:pause|stop)\b", policy, flags=re.DOTALL)
+    assert "Read (player-visible/** only)" in policy
+    assert re.search(
+        r"Claude Code.{0,300}Read \(player-visible/\*\* only\).{0,300}\baccept",
+        policy,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"Codex.{0,200}\bnone\b",
+        policy,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
     assert "`allow-reported`" in policy
     assert "explicit" in policy.lower()
     assert "record" in policy.lower()
@@ -291,6 +302,8 @@ def test_require_none_is_a_gate_not_a_capability_claim() -> None:
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert "Under `require-none`, agent seats hold no engine access" not in skill
+    assert "tools: []" not in skill
+    assert "Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)" in skill
 
 
 def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:
@@ -326,12 +339,73 @@ def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:
     )
 
 
-def test_packaged_player_profile_still_declares_no_tools() -> None:
+def test_packaged_player_profile_has_only_the_inert_read_scope() -> None:
     player = _text("agents/typical-player.md")
     frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", player, flags=re.DOTALL)
 
     assert frontmatter is not None
-    assert re.search(r"^tools:\s*\[\]\s*$", frontmatter.group("body"), flags=re.MULTILINE)
+    metadata = frontmatter.group("body")
+    tools = re.search(r"^tools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE)
+    disallowed = re.search(
+        r"^disallowedTools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE
+    )
+
+    assert tools is not None
+    assert tools.group("value") == "Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)"
+    assert (PLUGIN_ROOT / "player-visible").is_dir()
+    assert re.search(
+        r"Claude Code.{0,300}\bRead\b.{0,300}\bother hosts\b"
+        r".{0,300}\bfrontmatter\b",
+        player[frontmatter.end() :],
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    assert disallowed is not None
+    assert {tool.strip() for tool in disallowed.group("value").split(",")} == {
+        "Agent",
+        "Artifact",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EndConversation",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "Glob",
+        "Grep",
+        "ListMcpResourcesTool",
+        "LSP",
+        "Monitor",
+        "NotebookEdit",
+        "PowerShell",
+        "PushNotification",
+        "ReadMcpResourceTool",
+        "RemoteTrigger",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendMessage",
+        "SendUserFile",
+        "ShareOnboardingGuide",
+        "Skill",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskOutput",
+        "TaskStop",
+        "TaskUpdate",
+        "TodoWrite",
+        "ToolSearch",
+        "WaitForMcpServers",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write",
+        "mcp__*",
+    }
 
 
 def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> None:

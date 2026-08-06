@@ -107,14 +107,18 @@ with reported tools as structurally isolated.
 ### The player-information gate
 
 Give no player the module path, filename, directory, text, or game-master prep.
-Ask for no tools. The canonical `typical-player` profile declares `tools: []`,
-which Claude Code applies; Codex does not apply that frontmatter.
+Ask for no player-capable tools. The canonical `typical-player` profile declares
+`tools: Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)`, explicitly denies every
+other current built-in and `mcp__*`, and ships no adventure or rules content in
+that directory. Claude Code applies that frontmatter; Codex does not.
 
-Each agent player's first response must list every tool it received or say
-`none`. Record the answer in `roster.json` as `tool_check`. Under the default
-`require-none` policy, any reported tool pauses the run before the first
-player-facing scene or brief. Continue only after the user explicitly accepts
-`allow-reported`; record that approval and label the run honour-system.
+Each agent player's first response must list every tool and scope it received or
+say `none`. Record the answer in `roster.json` as `tool_check`. Under the default
+`require-none` policy, accept only `Read (player-visible/** only)` from a Claude
+Code seat or `none` from a Codex seat. Any other tool, or a broader Read scope,
+pauses the run before the first player-facing scene or brief. Continue only after
+the user explicitly accepts `allow-reported`; record that approval and label the
+run honour-system.
 
 `require-none` does not remove or disable tools. It is a fail-closed gate on
 what a fresh seat reports. Read

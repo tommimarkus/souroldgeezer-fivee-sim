@@ -29,9 +29,12 @@ follows from it.
 ## Player tool policy
 
 `tool_policy` defaults to `require-none`. Every agent player's first response
-must list every tool it has or say `none`; record that response under
-`tool_check`. Under `require-none`, stop the run on any reported tool before the
-first player-facing scene or brief. Do not silently downgrade and continue.
+must list every tool and scope it has or say `none`; record that response under
+`tool_check`. For Claude Code, the expected profile exposes only
+`Read (player-visible/** only)`; accept that exact inventory. For Codex, accept
+only `none`. Under `require-none`, stop the run before the first player-facing
+scene or brief on any other tool, or on a broader Read scope. Do not silently
+downgrade and continue.
 
 Continue only when the user explicitly approves the weaker boundary. Change
 `tool_policy` in `roster.json` to `allow-reported` and append the approval, seat,
@@ -46,8 +49,9 @@ Re-ask every agent player after a re-spawn or resume, update `tool_check`, and
 apply the gate again before sending new player-facing material. A new child may
 have different tools from the one whose answer is on disk. `allow-reported`
 remains explicit for the run, but every new non-`none` tool list still belongs
-in the transcript and, in playtest mode, `findings.jsonl` and the report. A new
-`none` answer belongs only in `tool_check`.
+in the transcript and, in playtest mode, `findings.jsonl` and the report unless
+it is the exact expected Claude Code inventory above. A conforming answer belongs
+only in `tool_check`.
 
 `kind` is `agent` or `human`, and it is the only thing that changes how a seat is
 asked for a decision. `game_master.kind` may be `human`, in which case there is

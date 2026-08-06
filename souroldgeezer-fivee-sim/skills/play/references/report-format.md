@@ -114,9 +114,13 @@ Two short lists, in this order:
    not evidence about fun or tone. One run is one path.
 
 State the seat guarantee in that second list, from `roster.json`'s `tool_check`
-rather than from intent — one line, either way:
+rather than from intent — one line matching the host and result:
 
-> Every player seat confirmed it held no tools, and none was told where the
+> Every Claude Code player seat reported only Read, confined to the plugin's
+> player-visible directory, and none was told where the module lives. The
+> players' ignorance of the adventure is structural.
+
+> Every Codex player seat reported holding no tools, and none was told where the
 > module lives. The players' ignorance of the adventure is structural.
 
 > **Kesh reported holding Read and Bash.** That seat's ignorance of the module
