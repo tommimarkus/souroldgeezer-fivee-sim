@@ -61,12 +61,17 @@ maps = ["maps", "../shared-maps"]
 replays = "replays"
 scenes = "scenes"
 encounters = "encounters"
+blobs = "blobs"
 ```
 
 Relative paths resolve against the directory containing `config.toml` — normally
 `.fivee-sim/`. `maps` and `replays` may each be a string or an array of strings;
-`scenes` and `encounters` take one string each. When omitted, all four default to
-the sibling `maps/`, `replays/`, `scenes/`, and `encounters/` directories.
+`scenes`, `encounters` and `blobs` take one string each. When omitted, all five
+default to the sibling `maps/`, `replays/`, `scenes/`, `encounters/`, and
+`blobs/` directories. `blobs` holds the content and map payloads an encounter
+journal names rather than carries; it is a sibling of `encounters` because one
+blob is shared by every journal that names it, so moving a journal without it
+leaves that fight unable to recover.
 
 The first configured maps root is where `map.put` and
 `map.generate --save-as` write (`<id>.json`); reads and `map.list` cover all map
@@ -75,8 +80,8 @@ maps roots.
 
 A selected file owns these project-facing settings. For compatibility, and only
 when no file is selected, the deprecated `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_MAPS`,
-`FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, and `FIVEE_SIM_ENCOUNTERS` retain their
-previous meanings. `fivee content.status` names the configuration source and
+`FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, `FIVEE_SIM_ENCOUNTERS`, and
+`FIVEE_SIM_BLOBS` retain their previous meanings. `fivee content.status` names the configuration source and
 path; `fivee serve` and `fivee server.ping` report the resolved storage roots.
 
 ## The document, field by field

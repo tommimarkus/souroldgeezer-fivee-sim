@@ -359,3 +359,39 @@ def test_moving_any_storage_key_moves_the_configuration_identity(tmp_path: Path)
         )
         visited.add(key)
     assert visited == set(keys)
+
+
+#: The three documents that spell the ``[storage]`` table out for a reader, and
+#: so the three that go silently stale when a key joins it. They are checked
+#: against :data:`_STORAGE_KEYS` rather than against each other: one declaration,
+#: three renderings, which is the same arrangement the coverage and rulings
+#: reports are held to.
+_STORAGE_DOCS = (
+    Path(__file__).resolve().parents[3] / "README.md",
+    Path(__file__).resolve().parents[2] / "docs" / "MAPS.md",
+    Path(__file__).resolve().parents[2] / "skills" / "map-forge" / "SKILL.md",
+)
+
+
+def test_every_storage_key_is_written_down_where_a_reader_would_look() -> None:
+    """A configurable root nobody documented is a root nobody configures.
+
+    ``_reject_unknown_keys`` makes the failure sharp — a ``[storage]`` line for
+    an undocumented key is refused as unrecognized, so a reader working from the
+    published table cannot even discover the setting by guessing at it. This is
+    the checkpoint enforced by nothing until now; it was found by grep, and grep
+    is not something the next person will think to run.
+    """
+    keys = sorted(_STORAGE_KEYS)
+    assert keys, "there is nothing to check; _STORAGE_KEYS is the declaration"
+    for document in _STORAGE_DOCS:
+        assert document.is_file(), f"{document} is not where this test looks for it"
+        text = document.read_text(encoding="utf-8")
+        for key in keys:
+            assert key in text, f"{document.name} never mentions storage.{key}"
+        # And the legacy variable, which every one of these three also lists —
+        # the compatibility fallback a caller reaches for when no file is
+        # selected, and the half most easily forgotten.
+        for key in keys:
+            variable = f"FIVEE_SIM_{key.upper()}"
+            assert variable in text, f"{document.name} never mentions {variable}"

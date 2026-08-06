@@ -294,15 +294,17 @@ maps = "maps"
 replays = "replays"
 scenes = "scenes"
 encounters = "encounters"
+blobs = "blobs"
 
 [development]
 reload = false
 ```
 
 `content.builtin` is `include` or `exclude`. `storage.maps` and
-`storage.replays` may each be one string or an array of strings; `storage.scenes`
-and `storage.encounters` are one string each. Omitted settings default to the
-sibling `maps/`, `replays/`, `scenes/`, and `encounters/` directories, bundled
+`storage.replays` may each be one string or an array of strings; `storage.scenes`,
+`storage.encounters` and `storage.blobs` are one string each. Omitted settings
+default to the sibling `maps/`, `replays/`, `scenes/`, `encounters/` and
+`blobs/` directories, bundled
 content included, development reload off, and the sibling `content/` directory
 when it exists.
 
@@ -316,12 +318,14 @@ The resulting project layout is:
 | `.fivee-sim/replays/` | exported replay bundles |
 | `.fivee-sim/scenes/` | saved scene documents |
 | `.fivee-sim/encounters/` | hash-chained encounter journals |
+| `.fivee-sim/blobs/` | payloads those journals name, one file per digest |
 
 A selected configuration file owns all project-facing settings; environment
 variables are not merged over it. For compatibility, and only when no file is
 selected, the deprecated `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, `FIVEE_SIM_BUILTIN`,
 `FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`,
-`FIVEE_SIM_ENCOUNTERS`, and `FIVEE_SIM_RELOAD` retain their previous meanings.
+`FIVEE_SIM_ENCOUNTERS`, `FIVEE_SIM_BLOBS`, and `FIVEE_SIM_RELOAD` retain their
+previous meanings.
 Variables supplied by a plugin host for its own bootstrap are process plumbing,
 not project configuration. `fivee content.status` reports the selected
 configuration source and path (and marks the environment fallback deprecated);
