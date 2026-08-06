@@ -970,8 +970,12 @@ if (typeof FiveeRenderer === "undefined") {
         row.title = (attempt.operation || "attempt")
           + (entry.timestamp ? " · " + entry.timestamp : "");
         at = reached;
+        /* A refused note stays on the timeline — the journal recorded the
+           attempt and the audit trail is the point — but it marks no square.
+           Nobody said it, so drawing it at the speaker's feet would put a line
+           on the map that the engine turned down. */
         var speaker = noteSpeaker(attempt);
-        if (speaker) {
+        if (speaker && attempt.status !== "refused") {
           (noteSpeakers[at] = noteSpeakers[at] || []).push(speaker);
         }
       }

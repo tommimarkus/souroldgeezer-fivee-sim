@@ -2581,6 +2581,25 @@ await suite("viewer.html: notes on the timeline", "the page sandbox in makePage(
       quietRows[1].textContent === "dialogue: The wheel still turns."
         && atBo(quiet).length === 0,
       show([quietRows[1].textContent, quiet.last().overlays.marks]));
+
+    /* A refused note stays in the audit trail — that is what an audit trail is
+     * for — but nobody said it, so it puts nothing on the map. */
+    const unsaid = interludeV2();
+    unsaid.attempts[0].status = "refused";
+    unsaid.attempts[0].error = "no combatant named 'Bo' in this encounter";
+    sealReplayV2(unsaid);
+    const refusedNote = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" },
+    });
+    refusedNote.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await refusedNote.drop(unsaid, "refused-note.json");
+    const refusedRows = refusedNote.element("ticker").children;
+    refusedRows[1].click();
+    check("a refused note stays on the timeline and marks no square",
+      refusedRows.length === 2 && atBo(refusedNote).length === 0
+        && refusedRows[1].className.indexOf("audit-refused") !== -1,
+      show([refusedRows.map((each) => each.className),
+        refusedNote.last().overlays.marks]));
   });
 
 /* Cross-chapter scrubbing, which is what makes a run of walks and fights one
