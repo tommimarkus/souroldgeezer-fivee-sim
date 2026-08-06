@@ -35,6 +35,7 @@ from fivee_sim.service import content_ops as _content_ops
 from fivee_sim.service import encounters as _encounters
 from fivee_sim.service import map_ops as _map_ops
 from fivee_sim.service import primitives as _primitives
+from fivee_sim.service import rulings as _rulings
 from fivee_sim.service import scenes as _scenes
 from fivee_sim.service import sessions as _sessions
 
@@ -94,6 +95,10 @@ def save(
         STATE, modifier, dc, advantage, auto_fail, seed, encounter_id, request_id, ability,
         natural,
     )
+
+
+def rules_rulings(code: str = "", kind: str = "") -> dict[str, Any]:
+    return _rulings.listing(code=code, kind=kind)
 
 
 def lookup_rule(topic: str = "") -> dict[str, Any]:

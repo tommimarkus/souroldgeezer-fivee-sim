@@ -1804,6 +1804,45 @@ class TestDiceAndRules:
         )
 
 
+class TestRulings:
+    """The register over HTTP, which is the surface the ``fivee`` command reads."""
+
+    def test_the_whole_register_is_served(self, editor: Editor) -> None:
+        answer = editor.request("GET", "/api/v1/rulings").json()
+        assert answer["count"] == len(answer["rulings"]) >= 1
+        codes = {entry["code"] for entry in answer["rulings"]}
+        assert "loading_capped_per_turn" in codes
+
+    def test_an_entry_carries_the_trigger_that_would_overturn_it(
+        self, editor: Editor
+    ) -> None:
+        answer = editor.request("GET", "/api/v1/rulings?code=loading_capped_per_turn").json()
+        entry = answer["rulings"][0]
+        assert entry["kind"] == "approximation"
+        assert "Bonus Action attack" in entry["revisit"]
+
+    def test_a_kind_narrows_the_register(self, editor: Editor) -> None:
+        answer = editor.request("GET", "/api/v1/rulings?kind=srd_silent").json()
+        assert answer["count"] >= 1
+        assert {entry["kind"] for entry in answer["rulings"]} == {"srd_silent"}
+
+    def test_an_unknown_code_is_404_not_400(self, editor: Editor) -> None:
+        # Same distinction the rules lookup draws: a miss is an id that is not
+        # there, not an argument the caller got wrong.
+        assert_problem(
+            editor.request("GET", "/api/v1/rulings?code=no_such_ruling"),
+            404,
+            "no ruling with code 'no_such_ruling'",
+        )
+
+    def test_an_unknown_kind_is_400_and_lists_the_legal_ones(self, editor: Editor) -> None:
+        assert_problem(
+            editor.request("GET", "/api/v1/rulings?kind=probably"),
+            400,
+            "unknown ruling kind 'probably'",
+        )
+
+
 class TestCatalogAndContent:
     def test_a_search_pages_and_reports_where_the_next_page_starts(
         self, editor: Editor

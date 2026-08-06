@@ -73,6 +73,7 @@ from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
 from ..service import maps as map_service
 from ..service import replay as replay_service
+from ..service import rulings as rulings_ops
 from ..service import scenes as scene_service
 from ..service.common import slugify
 from ..service.errors import (
@@ -827,6 +828,12 @@ class _Handler(BaseHTTPRequestHandler):
             ),
         )
 
+    def _h_rules_rulings(self, request: _Request) -> None:
+        self._send_json(
+            HTTPStatus.OK,
+            rulings_ops.listing(code=request.query["code"], kind=request.query["kind"]),
+        )
+
     # -- content -------------------------------------------------------------
     def _h_content_status(self, request: _Request) -> None:
         self._send_json(HTTPStatus.OK, content_ops.status(self.state))
@@ -1353,6 +1360,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "dice_check": _Handler._h_dice_check,
     "dice_save": _Handler._h_dice_save,
     "rules_lookup": _Handler._h_rules_lookup,
+    "rules_rulings": _Handler._h_rules_rulings,
     "catalog_search": _Handler._h_catalog_search,
     "catalog_get": _Handler._h_catalog_get,
     "catalog_table": _Handler._h_catalog_table,

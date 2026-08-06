@@ -101,6 +101,7 @@ class Spell:
     #: cylinder (SRD 5.2.1 names both), but the engine's areas are 2-D and
     #: resolution never reads it — declared explicitly rather than silently
     #: ignored, per ``SpellShape.CYLINDER``.
+    # ruling: cylinder_height_unread
     height: int = 0
     range_feet: int = 0
     max_targets: int = 1

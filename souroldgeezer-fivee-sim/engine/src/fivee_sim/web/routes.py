@@ -563,6 +563,21 @@ ROUTES: tuple[Route, ...] = (
         handler="rules_lookup",
     ),
     Route(
+        "GET", f"{API_PREFIX}/rulings", "rules.rulings",
+        "Where the SRD does not decide, what this engine decided, and what would change it.",
+        params=(
+            Param(
+                "code", "query", {"type": "string", "default": ""},
+                description="one ruling code; omit for the whole register",
+            ),
+            Param(
+                "kind", "query", {"type": "string", "default": ""},
+                description="srd_silent, approximation, schema_ceiling, out_of_scope, superseded",
+            ),
+        ),
+        handler="rules_rulings",
+    ),
+    Route(
         "GET", f"{API_PREFIX}/catalog/search", "catalog.search",
         "Search catalog identities and loaded custom content, ranked and paged.",
         params=(
