@@ -118,17 +118,29 @@ The record schema has no field for these, so transcribing harder produces nothin
 
 Basis: SRD 5.2.1, Monsters.
 
-### `no_skill_or_proficiency_concept`
+### `skills_are_printed_absolutes`
 
-**Question.** 216 of 336 stat blocks print skills. Ability checks take a proficiency.
+**Question.** A skill bonus is a Proficiency Bonus, possibly doubled by Expertise, added to an ability modifier, and Help can grant Advantage on the check.
 
-**Decision.** No skill or proficiency concept exists anywhere in the engine. The check primitive takes a skill name as a label and its modifier from the caller.
+**Decision.** A creature carries a flat printed total per skill. No proficiency bonus, Expertise, or Help exists, and only a map-fixture check can name a skill — the standalone check operation still takes its modifier from the caller.
 
-**Why.** Combat resolution never needed one, so nothing forced the design. The label keeps the caller honest about what it is rolling without the engine pretending to know.
+**Why.** Stat blocks print the total, so a transcriber never has the breakdown to enter, and deriving one would mean inventing a level the monster does not have. The same shape save_bonuses already used carries it.
 
-**Revisit when.** A transcribed creature silently drops its skills and its passive Perception. Any content that turns on being good at something — hiding, spotting an ambush — cannot be expressed.
+**Revisit when.** A player character whose Proficiency Bonus rises cannot be modelled by changing one number, and nothing can grant Advantage by helping. Hide, Search and Study remain unbuildable for the same reason.
 
 Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
+
+### `passive_perception_transcribed_only`
+
+**Question.** 333 of 336 stat blocks print a Passive Perception.
+
+**Decision.** A creature record may carry the printed number and nothing reads it. The bundled records that print one still declare it as an omission.
+
+**Why.** There is no Hide, Search, or Study action for it to be compared against, so a consumer would have to be invented before the field could do anything. Carrying it keeps a faithful transcription from being re-derived later; declaring it keeps the coverage report from claiming a simulation that does not exist.
+
+**Revisit when.** The moment a hidden creature is expressible, this number is what an onlooker's passive Perception must beat, and the omission codes on five bundled records become closable.
+
+Basis: SRD 5.2.1, Perception; SRD 5.2.1, Monsters.
 
 ### `touch_range_transcribed_as_five_feet`
 
@@ -153,18 +165,6 @@ Basis: SRD 5.2.1, Spells, Range.
 **Revisit when.** Any creature whose threat is its breath weapon is unsimulatable — it either never uses it or uses it every round, and neither is the fight.
 
 Basis: SRD 5.2.1, Monsters, Recharge.
-
-### `no_round_clock_for_durations`
-
-**Question.** 225 SRD spells carry a real duration and 133 are Concentration. Durations are printed in rounds, minutes and hours.
-
-**Decision.** An ongoing effect expires on a turn boundary — a phase and the creature whose turn ends it — or it lasts until something releases it. There is no elapsed-time clock, so a printed duration has nowhere to go.
-
-**Why.** Turn-boundary anchors are what an attack rider's condition actually needs, and they were enough for every effect the engine could resolve when the ledger was written.
-
-**Revisit when.** A concentration spell runs until concentration breaks rather than until its minute is up, so it is strictly more powerful here than in print. Hold Person is the bundled case.
-
-Basis: SRD 5.2.1, Spells, Duration; SRD 5.2.1, Rules Glossary, Concentration.
 
 ## Outside what this engine simulates
 
@@ -197,6 +197,30 @@ Basis: SRD 5.2.1, Spells, Casting Time; SRD 5.2.1, Resting.
 ## Closed
 
 Kept because earlier reviews still cite them, and because a reopened question should find its own history.
+
+### `no_skill_or_proficiency_concept`
+
+**Question.** 216 of 336 stat blocks print skills. Ability checks take a proficiency.
+
+**Decision.** A creature carries printed skill bonuses and a map-fixture check may name the skill it wants, so the bundled records that dropped their skills no longer declare an unsupported_creature_skills omission. Passive Perception stayed unmodelled and is now its own entry.
+
+**Why.** The ceiling was one field and one consumer wide, not a design question: stat blocks print skill totals rather than proficiencies, so the same printed-absolute shape save_bonuses already used carried them, and the engine's one ability-check site only needed to be able to name a skill.
+
+**Closed in.** 2026.08.68
+
+Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
+
+### `no_round_clock_for_durations`
+
+**Question.** 225 SRD spells carry a real duration and 133 are Concentration. Durations are printed in rounds, minutes and hours.
+
+**Decision.** A spell may declare a duration in rounds, and an ongoing effect it creates is released when that many rounds have passed. Hold Person carries its 1-minute cap and no longer declares it as an omission.
+
+**Why.** The round counter the encounter already advanced was the whole missing half: nothing in the effect ledger read it. A concentration spell now ends on whichever arrives first, its cap or a broken concentration.
+
+**Closed in.** 2026.08.68
+
+Basis: SRD 5.2.1, Spells, Duration; SRD 5.2.1, Rules Glossary, Concentration.
 
 ### `surprise_had_no_initiative_rider`
 

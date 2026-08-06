@@ -320,26 +320,70 @@ RULINGS: tuple[Ruling, ...] = (
     ),
     _ruling(
         code="no_skill_or_proficiency_concept",
-        omission_codes=(
-            "unsupported_creature_skills",
-            "unsupported_passive_perception",
-        ),
-        kind=RulingKind.SCHEMA_CEILING,
+        kind=RulingKind.SUPERSEDED,
         question="216 of 336 stat blocks print skills. Ability checks take a proficiency.",
         decision=(
-            "No skill or proficiency concept exists anywhere in the engine. The check "
-            "primitive takes a skill name as a label and its modifier from the caller."
+            "A creature carries printed skill bonuses and a map-fixture check may name "
+            "the skill it wants, so the bundled records that dropped their skills no "
+            "longer declare an unsupported_creature_skills omission. Passive Perception "
+            "stayed unmodelled and is now its own entry."
         ),
         because=(
-            "Combat resolution never needed one, so nothing forced the design. The "
-            "label keeps the caller honest about what it is rolling without the engine "
-            "pretending to know."
+            "The ceiling was one field and one consumer wide, not a design question: "
+            "stat blocks print skill totals rather than proficiencies, so the same "
+            "printed-absolute shape save_bonuses already used carried them, and the "
+            "engine's one ability-check site only needed to be able to name a skill."
+        ),
+        basis=("SRD 5.2.1, Proficiency", "SRD 5.2.1, Monsters"),
+        superseded_by="2026.08.68",
+    ),
+    _ruling(
+        code="skills_are_printed_absolutes",
+        kind=RulingKind.SCHEMA_CEILING,
+        question=(
+            "A skill bonus is a Proficiency Bonus, possibly doubled by Expertise, added "
+            "to an ability modifier, and Help can grant Advantage on the check."
+        ),
+        decision=(
+            "A creature carries a flat printed total per skill. No proficiency bonus, "
+            "Expertise, or Help exists, and only a map-fixture check can name a skill — "
+            "the standalone check operation still takes its modifier from the caller."
+        ),
+        because=(
+            "Stat blocks print the total, so a transcriber never has the breakdown to "
+            "enter, and deriving one would mean inventing a level the monster does not "
+            "have. The same shape save_bonuses already used carries it."
         ),
         basis=("SRD 5.2.1, Proficiency", "SRD 5.2.1, Monsters"),
         revisit=(
-            "A transcribed creature silently drops its skills and its passive "
-            "Perception. Any content that turns on being good at something — hiding, "
-            "spotting an ambush — cannot be expressed."
+            "A player character whose Proficiency Bonus rises cannot be modelled by "
+            "changing one number, and nothing can grant Advantage by helping. Hide, "
+            "Search and Study remain unbuildable for the same reason."
+        ),
+    ),
+    _ruling(
+        code="passive_perception_transcribed_only",
+        omission_codes=(
+            "unsupported_passive_perception",
+        ),
+        kind=RulingKind.SCHEMA_CEILING,
+        question="333 of 336 stat blocks print a Passive Perception.",
+        decision=(
+            "A creature record may carry the printed number and nothing reads it. The "
+            "bundled records that print one still declare it as an omission."
+        ),
+        because=(
+            "There is no Hide, Search, or Study action for it to be compared against, "
+            "so a consumer would have to be invented before the field could do "
+            "anything. Carrying it keeps a faithful transcription from being re-derived "
+            "later; declaring it keeps the coverage report from claiming a simulation "
+            "that does not exist."
+        ),
+        basis=("SRD 5.2.1, Perception", "SRD 5.2.1, Monsters"),
+        revisit=(
+            "The moment a hidden creature is expressible, this number is what an "
+            "onlooker's passive Perception must beat, and the omission codes on five "
+            "bundled records become closable."
         ),
     ),
     _ruling(
@@ -392,30 +436,23 @@ RULINGS: tuple[Ruling, ...] = (
     ),
     _ruling(
         code="no_round_clock_for_durations",
-        omission_codes=(
-            "unsupported_concentration_duration",
-        ),
-        kind=RulingKind.SCHEMA_CEILING,
+        kind=RulingKind.SUPERSEDED,
         question=(
             "225 SRD spells carry a real duration and 133 are Concentration. "
             "Durations are printed in rounds, minutes and hours."
         ),
         decision=(
-            "An ongoing effect expires on a turn boundary — a phase and the creature "
-            "whose turn ends it — or it lasts until something releases it. There is "
-            "no elapsed-time clock, so a printed duration has nowhere to go."
+            "A spell may declare a duration in rounds, and an ongoing effect it "
+            "creates is released when that many rounds have passed. Hold Person "
+            "carries its 1-minute cap and no longer declares it as an omission."
         ),
         because=(
-            "Turn-boundary anchors are what an attack rider's condition actually "
-            "needs, and they were enough for every effect the engine could resolve "
-            "when the ledger was written."
+            "The round counter the encounter already advanced was the whole missing "
+            "half: nothing in the effect ledger read it. A concentration spell now "
+            "ends on whichever arrives first, its cap or a broken concentration."
         ),
         basis=("SRD 5.2.1, Spells, Duration", "SRD 5.2.1, Rules Glossary, Concentration"),
-        revisit=(
-            "A concentration spell runs until concentration breaks rather than until "
-            "its minute is up, so it is strictly more powerful here than in print. "
-            "Hold Person is the bundled case."
-        ),
+        superseded_by="2026.08.68",
     ),
     # --- deliberately outside what this engine simulates --------------------
     _ruling(
