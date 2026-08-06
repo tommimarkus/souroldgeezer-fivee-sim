@@ -805,6 +805,23 @@ lets a live server survive its plugin root being retired.
 
 ## Conventions
 
+git-workflow-policy: feature branches in dedicated worktrees, clean worktree,
+explicit-path staging, rebase before integration, fast-forward-only integration,
+no merge commits, no direct `main`. A feature branch stays linear: never merge
+`main` into it and never use `git pull` in a mode that can create a merge commit.
+After the branch's documented verification passes, rebase it onto the current
+`main`, resolve and rerun affected verification, then integrate from `main` with
+`git merge --ff-only`. If `main` moves before integration, repeat the
+rebase-and-verification step rather than adding a merge commit.
+
+Rebase only local, unpublished, single-owner branches. A pushed, reviewed,
+shared, or otherwise externally consumed branch is published history: do not
+rewrite it or force-push it; stop and coordinate a replacement or an explicit
+exception. Project-local exceptions are the `release-policy` main-only version
+commit below and an explicit current-task user instruction permitting direct
+`main`. The character-device checks, worktree closeout procedure, and staging
+discipline above remain required environment-specific runbooks.
+
 planning-policy: default — before new feature or build work, brainstorm the
 approach in plan mode and get it approved (`ExitPlanMode`) before implementing.
 The approved plan names who implements it, and the strong default is subagents:
