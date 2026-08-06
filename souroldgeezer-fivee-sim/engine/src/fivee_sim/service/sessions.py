@@ -627,6 +627,7 @@ def recover_session(
                 str(arguments["target"]),
                 str(arguments["condition"]),
                 applied=bool(arguments.get("applied", True)),
+                levels=int(arguments.get("levels", 1)),
             )
             timestamp = str(record["timestamp"])
             session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))

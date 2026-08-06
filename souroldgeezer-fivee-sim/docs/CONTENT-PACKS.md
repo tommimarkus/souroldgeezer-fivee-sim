@@ -90,15 +90,28 @@ Every section is optional, and record shapes match the bundled files.
 ### `creatures`
 
 Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
-`climb_speed`, `swim_speed`, `fly_speed`, `terrain_cost_overrides`, `darkvision`,
-`blindsight`, `death_rule`, `hit_dice`, `abilities`, `save_bonuses`, `attacks`,
+`climb_speed`, `swim_speed`, `fly_speed`, `burrow_speed`,
+`terrain_cost_overrides`, `darkvision`,
+`blindsight`, `tremorsense`, `truesight`, `death_rule`, `hit_dice`, `abilities`,
+`save_bonuses`, `attacks`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
 `spell_attack_bonus`, `spellcasting_ability`, `items`, `conditions`,
-`condition_immunities`, `initiative_bonus`,
+`condition_immunities`, `initiative_bonus`, `passive_perception`,
+`skill_bonuses`,
 `unmodelled_facts`, legacy
 `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
+
+`skill_bonuses` maps a skill name to the stat block's printed *absolute*
+modifier — SRD stat blocks print totals such as "Perception +5", and this
+engine models no character level or proficiency bonus to derive one from, so
+the printed total is what ships. Keys are plain strings, never a closed enum:
+`service/primitives.check` already accepts a free-form `skill` label validated
+only for non-blankness, and a pack's skill stays as open a name as a pack's
+condition. Consumed by a map fixture's `check`, whose optional `skill` field
+is documented in [MAPS.md](MAPS.md); a creature with no printed bonus for the
+named skill rolls its raw ability modifier, unchanged.
 
 `initiative_bonus` is a stat block's printed Initiative score, used in place of
 the Dexterity modifier when present — SRD 5.2.1, *Initiative*: "Your
@@ -112,6 +125,49 @@ tie-break on equal initiative totals always reads the Dexterity modifier,
 never this field: that is the SRD's own tie-break rule, not a stand-in for the
 bonus.
 
+`passive_perception` is a stat block's printed Passive Perception, carried but
+never consumed — there is no Hide, Search, Stealth, or Perception action
+anywhere in this engine for it to reach. It is transcription-only, in the same
+standing `hit_dice` holds: a printed Passive Perception does not always equal
+`10 + Wisdom modifier`, which is why it is a fact to write down rather than a
+number to derive, and it is accepted and validated (a plain integer, `None`
+when omitted rather than defaulted to `0`) so a pack can carry it faithfully
+even though nothing yet reads it. Adding this field does **not** satisfy a
+record's `unsupported_passive_perception` omission code — that code means the
+engine cannot *act on* the fact, and a field nothing consumes has not changed
+that.
+
+`burrow_speed` is wired in exactly like `climb_speed`, `swim_speed`, and
+`fly_speed`: it counts toward the turn's movement budget and is a selectable
+`movement_mode` (`"burrow"`) at ordinary terrain cost. This engine models no
+terrain gating for *any* movement mode — a swim speed already applies on dry
+land, and a fly speed applies regardless of what is underneath — so `burrow`
+does not invent a "digging through solid ground" mechanic either; that
+consistency, not a gap specific to burrowing, is why none exists.
+
+`truesight` adds a rung to the sight rule (`Encounter._can_see`), above the
+rung `blindsight` already granted. SRD 5.2.1, *Truesight* — within range,
+vision "pierces through" Darkness (including magical) and Invisibility (the
+only two of its five listed effects with any mechanical presence here; visual
+illusions, transformations, and the Ethereal Plane are not modelled). Unlike
+Blindsight, Truesight carries no SRD "even if you have the Blinded condition"
+exemption, so this engine's blinded observer gets nothing from it even in
+range; Total Cover still blocks both.
+
+`tremorsense` is transcription-only, in the same standing `passive_perception`
+holds — carried and validated, never consumed. It is deliberately **not** a
+rung on the sight ladder: SRD 5.2.1, *Tremorsense* — "Tremorsense can't detect
+creatures or objects in the air, and it doesn't count as a form of sight."
+That pinpoints a location without granting sight of what's there, a third
+state between "can see" and "cannot see" that this engine has no channel for.
+Treating it as a sight rung would cancel the unseen-target Disadvantage
+against an Invisible creature the observer has merely pinpointed but still
+cannot see — a live wrong answer on a core mechanic, not just an unmodelled
+detail. `tremorsense` is kept and reported for the same reason
+`passive_perception` is: an accepted key that does nothing must say so, not
+pretend to, until this engine gains a pinpoint-without-sight concept to spend
+it on.
+
 `condition_immunities` is a plain list of condition names, never validated
 against the active condition table: an immunity is a declarative refusal, not
 a lookup, so a stat block can be immune to a condition this engine has no
@@ -120,9 +176,13 @@ Exhaustion, which this engine does not model). A creature carrying one of
 these names never gains that condition from an attack rider, a spell, an item,
 or a GM ruling.
 
-There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
-placement, and reinforcement timing are per-instance — set them when adding a
-combatant to an encounter, not in its reusable stat block.
+There is deliberately no `hp`, `temp_hp`, `position`, or `arrival_round`.
+Starting damage, a starting Temporary Hit Points buffer, placement, and
+reinforcement timing are all per-instance — set them when adding a combatant
+to an encounter, not in its reusable stat block. `temp_hp` follows `hp`'s
+precedent rather than `skill_bonuses`': no SRD 5.2.1 stat block prints a
+starting damage buffer any more than it prints a starting hit-point total, so
+it belongs on a combatant spec, not here.
 
 `hit_dice` is accepted and validated as a string but consumed by no rule: the
 engine rolls no hit points and models no rest, so it is kept as a faithful part
@@ -224,14 +284,15 @@ Older campaign packs may keep using the legacy `unmodelled` string list.
 
 Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
-`heal`, `half_on_save`, `upcast_damage`, `upcast_heal`,
+`heal`, `temp_hp`, `half_on_save`, `upcast_damage`, `upcast_heal`,
+`upcast_temp_hp`,
 `add_spellcasting_modifier`, `shape`, `radius`, `length`, `size`, `width`,
 `height`,
 `range_feet` — optional, but a named-target spell that omits it is warned about
 (see below) — `max_targets`, `action_cost` (`action` by default or
 `bonus_action`),
-`condition`, `concentration`, `unmodelled_facts`, legacy `unmodelled`,
-`overrides`.
+`condition`, `concentration`, `duration_rounds`, `unmodelled_facts`, legacy
+`unmodelled`, `overrides`.
 
 A spell cannot both require an attack roll and offer a saving throw. `shape` is
 one of `sphere`, `cone`, `line`, `cube`, `emanation`, or `cylinder`, and pairs
@@ -262,6 +323,28 @@ melee spell attacks do not.
 `upcast_heal` adds its dice for every slot level above the spell's base level.
 Healing a creature at 0 HP restores it to the fight and the slot is spent by the
 same cast that produced the healing — no parallel item charge is needed.
+
+`temp_hp` grants Temporary Hit Points, mirroring `heal` exactly — one dice
+expression, rolled once and shared by every chosen target, scaled by
+`upcast_temp_hp` for every slot level above the base like `upcast_heal` scales
+`heal` — but it is a separate field, not a flag on `heal`. SRD 5.2.1,
+*Temporary Hit Points*: they "can't be added to your Hit Points, healing
+can't restore them, and receiving Temporary Hit Points doesn't count as
+healing" — so a shared field would collapse two numbers a stat block or a
+spell can print separately into one, and every existing `heal` record would
+need to keep meaning only healing. `add_spellcasting_modifier` never reaches
+`temp_hp`, only `heal`: no bundled SRD spell scales a temp-HP grant by the
+caster's modifier, and the pairing above is opt-in on both sides for exactly
+that reason. **They Don't Stack** on the *engine's* side of the grant: a
+target already carrying Temporary Hit Points keeps whichever total is higher
+rather than adding the two together. SRD 5.2.1 gives the choice to the
+*recipient* when some remain and more arrive; this engine has no
+player-choice channel at grant time, so "take the higher" is a deliberate
+simplification of that rule, not the rule itself. A grant never restores a
+creature at 0 Hit Points to consciousness, and it is reported as its own
+`grant_temp_hp` event rather than folded into `heal`'s — a log entry that
+read "heal" for something the SRD says is explicitly not healing would be
+the exact confusion the rule is warning about.
 
 `add_spellcasting_modifier` adds the **caster's** ability modifier to the
 healing, once, however high the slot. SRD healing spells are written that way —
@@ -300,6 +383,19 @@ Bonus Action" — Healing Word and Mass Healing Word among them. It spends the
 matching budget regardless of `as_bonus_action`; that flag only ever refuses an
 ordinary spell cast as a bonus action, the same way an item's does.
 
+`duration_rounds` caps how long an ongoing effect this spell imposes lasts,
+counted in this engine's **rounds** — never in the minutes or hours SRD 5.2.1
+prints. A round is 6 seconds, so an SRD minute is 10 rounds: transcribe by that
+conversion, not by copying the printed number. Hold Person is "Concentration,
+up to 1 minute", so its record carries `"duration_rounds": 10`, not `1`. `0`
+means no cap, the same reading `range_feet`'s `0` gives — a spell with no
+ongoing effect has nothing to cap, and a record written before this field
+existed reads exactly as unbounded as it always did. Concentration and this cap
+are independent constraints on the same effect: whichever release reaches it
+first — a failed Constitution save, the caster's own Incapacitated or death,
+starting a second Concentration effect, or the round counter reaching the cap —
+is the one that ends it.
+
 ### `conditions`
 
 Required: `name`, `provenance`. Optional: `effects`, `description`,
@@ -323,7 +419,35 @@ consequences the rules engine already knows how to apply:
 `initiative_disadvantage`, `cannot_see`, `unseen`,
 `auto_fail_strength_saves`, `auto_fail_dexterity_saves`,
 `advantage_on_dexterity_saves`, `disadvantage_on_dexterity_saves`,
-`melee_hits_are_critical`, `resists_all_damage`.
+`melee_hits_are_critical`, `resists_all_damage`, `cumulative`,
+`d20_test_penalty_per_level`, `speed_reduction_feet_per_level`.
+
+Every flag above `cumulative` is `true`/`false`; `d20_test_penalty_per_level` and
+`speed_reduction_feet_per_level` are the two numeric flags, each a whole number of
+`0` or more (a negative value is refused — a bonus wearing a penalty's name, and
+this engine has no channel to apply one through). Both are **per level**, not
+flat: a held condition is always at some level (an ordinary one is permanently 1,
+see `cumulative` below), and each total is the flag times the level.
+
+SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the game: ability
+checks, attack rolls, and saving throws. If something in the game affects D20
+Tests, it affects all three" — so `d20_test_penalty_per_level` reaches every one
+of them, never a subset. A weary condition declaring `2` held at level 3
+subtracts 6 from every ability check, attack roll, and saving throw its bearer
+makes — including Initiative and a death saving throw, both of which are D20
+Tests even though neither routes through an ordinary ability-check or save
+modifier.
+
+`speed_reduction_feet_per_level` comes off **every movement mode** a creature
+has — walk, climb, swim, fly, and burrow alike, clamped at 0 and never negative —
+not the walking Speed alone. SRD 5.2.1 does not settle this directly, but the
+identical wording on Grappled ("Your Speed is 0") already reaches every mode in
+this engine, and the Speed glossary entry says a creature with more than one
+Speed chooses which to use for a given move; both point at the same reading. See
+`Creature.speed_for` and the `speed_reduction_reaches_every_movement_mode` entry
+in the rulings register (`fivee rules.rulings`) for the full argument and its
+`revisit` trigger. A weary condition declaring `5` held at level 2 takes 10 ft
+off every Speed its bearer prints.
 
 Ability-check flags apply to initiative and to checks made while interacting with
 a map fixture. The standalone `check` tool takes only a caller-supplied modifier,
@@ -376,6 +500,22 @@ as well as weapon ones, because the rules treat both as the same D20 Test.
 A condition with no flags is legal, and is tracked without combat consequences —
 useful for something narration cares about and dice do not.
 
+A held condition carries a **level**, always at least 1. SRD 5.2.1 p.179: "A
+condition doesn't stack with itself; a recipient either has a condition or
+doesn't. The Exhaustion condition is an exception to that rule." `cumulative`
+is that exception, generalised: a `true` value means a second imposition
+*increments* the level instead of leaving it at 1, which is what every
+non-cumulative condition still does — reimposing one changes nothing
+observable. `cumulative` and the two numeric flags are independent —
+a condition can decline to stack while still carrying a numeric effect at
+its permanent level of 1, or stack without carrying one at all — but they
+combine naturally: a cumulative condition with a nonzero
+`d20_test_penalty_per_level` or `speed_reduction_feet_per_level` is what makes
+each fresh imposition bite harder.
+`Encounter.state()` reports each
+combatant's `condition_levels`, a name-to-level mapping that always answers —
+`{}` on a fight with nothing leveled — restricted to the entries above level 1.
+
 ### `terrain`
 
 Required: `name`, `provenance`. Optional: `effects`, `description`,
@@ -392,14 +532,19 @@ Required: `name`, `use`, `provenance`. Optional: `description`,
 `unmodelled_facts`, legacy `unmodelled`, `overrides`.
 
 An item is a **use with a known effect**, and nothing more. Inside `use`: `heal`,
-`damage` with `damage_type`, `save_ability` with `save_dc` and `half_on_save`, and
-`condition`, plus optional `action_cost` (`action` by default or `bonus_action`).
-At least one of `heal`, `damage`, or `condition` must be present — an
-item that does nothing costs an action for no reason, so it is refused.
+`temp_hp`, `damage` with `damage_type`, `save_ability` with `save_dc` and
+`half_on_save`, and `condition`, plus optional `action_cost` (`action` by
+default or `bonus_action`). At least one of `heal`, `temp_hp`, `damage`, or
+`condition` must be present — an item that does nothing costs an action for no
+reason, so it is refused. `temp_hp` mirrors `heal`'s shape and defaults to the
+user the same way, but is never routed through it — see the `temp_hp` entry
+under `spells` above for why a shared field would be wrong.
 
 ```json
 [
   { "name": "Potion of Healing", "use": { "heal": "2d4+2" },
+    "provenance": "Original content" },
+  { "name": "Ward Tonic", "use": { "temp_hp": "2d4+2" },
     "provenance": "Original content" },
   { "name": "Alchemist's Fire",
     "use": { "damage": "1d4", "damage_type": "fire",
@@ -414,8 +559,9 @@ Give a creature items with `"items": { "Potion of Healing": 2 }`. **Quantity is 
 charge count** — modelling both would be two ways of saying one thing.
 
 Use one with `encounter.act --kind use_item --item "Potion of Healing"`. It spends
-its declared action budget. Healing defaults to the user; damage and conditions need a `target`.
-Targeting another creature requires being within 5 ft.
+its declared action budget. Healing and a temp HP grant default to the user;
+damage and conditions need a `target`. Targeting another creature requires
+being within 5 ft.
 
 **The same `items` map holds two different kinds of entry, and only one of
 them is "an item" in this section's sense.** A `use_item` entry needs a

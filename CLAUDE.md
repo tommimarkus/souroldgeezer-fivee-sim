@@ -93,8 +93,22 @@ removed — not by `remove`, not by `prune`, not by hand. `remove` does delete
 `git worktree list` never shows them: it reads `gitdir`. Expected under this
 devcontainer, not a failed closeout. Leave them, and do not try to unmount them.
 
-A worktree's own checkout is clean — no character devices anywhere inside it.
-Only its `.git/worktrees/<name>/` registration is mounted over.
+**A worktree's checkout is usually clean, but do not rely on it.** This section
+used to say the mounts were confined to `.git/worktrees/<name>/`. They are not:
+a worktree removed on 2026-08-06 had 11 character devices *inside its checkout*
+— `.mcp.json` and most of `.claude/` — so `git worktree remove --force` failed
+on the **checkout directory** rather than only on the registration, and left the
+whole tree behind.
+
+Same cause and same remedy: a bind-mounted file cannot be unlinked, so the
+directory holding it cannot be removed. Expect a leftover checkout at
+`.worktrees/<name>` after some closeouts, leave it, and do not try to unmount
+it or `rm -rf` it into a half-deleted husk. It is invisible to `git worktree
+list` and `git branch`, so it misleads no tooling — it is only disk.
+
+The mounts come and go with other sessions, which is why the old flat claim was
+true when written. **Verify closeout by `git worktree list` and `git branch`,
+never by whether the directory is gone.**
 
 ### Staging discipline
 
@@ -403,6 +417,46 @@ the SRD **condition table lives in `kernel/conditions.py`**, because it is the
 default every kernel function falls back to and the kernel may not do I/O.
 `content.py` renders that table as a synthetic pack so it still goes through the
 same validation.
+
+**A new `Creature` field crosses eight checkpoints, and a survey of its *type*
+finds two of them.** Five consecutive steps rediscovered this list one miss at a
+time, so it is written down rather than relearned. `grep save_bonuses` walks the
+whole of it and is the fastest way to see a worked example:
+
+| # | Checkpoint | Applies |
+|---|---|---|
+| 1 | `Creature` dataclass and `from_record` (`model/creature.py`) | always |
+| 2 | `_CREATURE_KEYS` and `_parse_creature` (`content.py`) | only if a **stat block** can print it |
+| 3 | `DESCRIBED_SPEC_KEYS` and `creature_from_spec` (`service/specs.py`) | always |
+| 4 | `normalized_combatant_payload` (`service/replay.py`) | always |
+| 5 | `docs/CONTENT-PACKS.md` | always — enforced by nothing |
+| 6 | `ENEMY_VISIBLE_KEYS` / `ENEMY_WITHHELD_KEYS` | only if `_creature_state` emits it as a **top-level** key |
+| 7 | `CARRIED_STATE_KEYS` (`service/adventures.py`) | only if the **fight changes it** |
+| 8 | a `validation.py` reader primitive | only if none of the existing ones fits |
+
+Two of those conditions are the ones that get missed. **Checkpoint 2 is not
+automatic**: `hp`, `position` and `temp_hp` are per-instance and deliberately
+absent from `_CREATURE_KEYS`, because a stat block never prints them. And
+**checkpoints 6 and 7 travel together** — a field the fight changes must be
+classified in the brief *and* listed in `CARRIED_STATE_KEYS`, or it silently
+fails to survive an adventure chapter boundary. A field nested inside the
+existing `speeds`/`senses` dicts needs neither, because the brief test
+classifies top-level keys only.
+
+Definition of done: `uv run pytest` green with the field exercised end to end,
+and every row above either edited or consciously ruled out. Checkpoints 3 and 4
+are already pinned to each other by `tests/test_replay_export.py`; the unguarded
+seams are `content.py` ↔ `model/creature.py` ↔ `service/specs.py`, and a field
+that reaches only some of them is accepted, validated, and then dropped — which
+is the `hit_dice` defect, not a new one.
+
+**A field nothing reads is a defect unless it is declared.** `hit_dice`,
+`passive_perception` and `tremorsense` are all carried and unconsumed, and each
+says so in its field comment, in `docs/CONTENT-PACKS.md`, and in `rulings.py`.
+Declaring keeps a faithful transcription from being re-derived later; silence is
+what makes `COVERAGE.md` claim a simulation that does not exist. A declared
+transcription-only field therefore does **not** close a record's
+`unmodelled_facts` code.
 
 **Conditions are strings, not enum members.** `Condition` remains as constants for
 the SRD set, but a pack's condition is a plain `str`. Two consequences: never call

@@ -124,6 +124,42 @@ Sources:
 
 ---
 
+## `speed_reduction_reaches_every_movement_mode`
+
+**Question.** Exhaustion reduces "your Speed" by 5 feet per level. A creature
+that prints more than one Speed — walking and flying, say — has to be told
+which one a clause stated once, in the singular, comes off.
+
+**Authoritative.** Not searched: this environment has no network access beyond
+its package index, so no attempt was made to check errata or the Sage Advice
+Compendium for this entry. Recorded here rather than left silent, so a later
+pass with real access knows this one is still owed a look.
+
+**Community.** Not surveyed, for the same reason.
+
+**Verdict: `no_external_ruling`.** No outside reading was consulted, so this
+cannot honestly claim to match or diverge from one — `no_external_ruling` is
+the only verdict this survey can support. The decision itself is argued
+entirely from material already inside the engine: Grappled's Speed clause
+("Your Speed is 0") reads identically to Exhaustion's, and this codebase
+already reads Grappled as reaching every movement mode — `_do_move` refuses a
+Grappled creature's move whatever `movement_mode` it names, not only a walk.
+Reading Exhaustion's clause differently would make the same three words mean
+two things in one condition table. The Speed glossary entry adds a second,
+independent argument: a creature with more than one Speed chooses which one to
+use for a given move, which only makes sense if the modes are alternatives
+drawing on one budget rather than independent totals — a reduction a creature
+could dodge just by choosing to fly would not be much of a reduction.
+
+**Consequence recorded in the register.** No authoritative or community
+reading backs this yet; the `revisit` trigger names both what would overturn
+it (a printed clause that names one Speed specifically) and that a real survey
+of this question is still owed.
+
+Sources: none consulted for this entry.
+
+---
+
 ## What the survey concluded overall
 
 The useful output was mostly negative, and that is worth stating plainly: for

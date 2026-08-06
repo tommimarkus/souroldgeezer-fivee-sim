@@ -10,6 +10,7 @@ register makes about the code is derived from the code here, never restated.
 from __future__ import annotations
 
 import ast
+import json
 import re
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from fivee_sim.rulings import (
     RulingKind,
     render_markdown,
 )
+from fivee_sim.service import rulings as rulings_service
 
 #: The source tree, not the imported package — the register names definition
 #: sites, and ``test_layering.py`` reads the same way for the same reason.
@@ -124,6 +126,32 @@ def test_every_entry_cites_the_srd_by_section_not_by_quotation() -> None:
             )
             assert len(citation) <= 80, (
                 f"{ruling.code} citation {citation!r} is too long to be a citation"
+            )
+
+
+def test_no_entry_carries_a_quotation_in_its_prose_fields() -> None:
+    """The prose fields ship too, and ``basis`` was never where prose lives.
+
+    The companion above checks ``basis``, which is the one field that is
+    *only* ever a citation — so it was the easy half.  ``question``,
+    ``decision`` and ``because`` are the fields somebody actually writes a
+    sentence into, they are served verbatim at ``GET /api/v1/rulings`` and
+    rendered into the shipped ``docs/RULINGS.md``, and until this test existed
+    nothing looked at them.  One entry had already reproduced a full sentence
+    of SRD 5.2.1 by the time it was written.
+
+    A double quote is the whole rule, deliberately.  A mechanical tripwire
+    cannot tell a quotation of the printed rules from a quotation of our own
+    caller-facing phrasing, and it should not try: paraphrasing costs a
+    sentence and keeps the boundary a thing nobody has to adjudicate.  Single
+    quotes are *not* checked here, because an apostrophe is ordinary prose.
+    """
+    for ruling in RULINGS:
+        for field_name in ("question", "decision", "because"):
+            text = getattr(ruling, field_name)
+            assert '"' not in text, (
+                f"{ruling.code}.{field_name} carries a quotation: {text!r}. "
+                "Rules prose does not ship — paraphrase it."
             )
 
 
@@ -251,17 +279,57 @@ def test_the_report_carries_every_entry_and_its_trigger() -> None:
         assert ruling.revisit in report, f"{ruling.code}'s revisit trigger is not rendered"
 
 
-def test_the_report_names_no_third_party_source() -> None:
-    """The licence split, asserted on the artifact that actually ships.
+def test_the_report_carries_no_link_of_any_kind() -> None:
+    """The half that needs no survey present, so it can never quietly stop.
 
-    The survey names sources and stays in the repo-root ``docs/``; this file
-    goes to every install and carries our own classification only.
+    A URL is the one shape of external reference that is recognisable without
+    knowing which sources were consulted.
     """
     report = render_markdown().lower()
-    for forbidden in ("http://", "https://", "sage advice", "d&d", "dnd", "wizards"):
-        assert forbidden not in report, (
-            f"the shipped rulings report must not contain {forbidden!r}"
-        )
+    for scheme in ("http://", "https://", "www."):
+        assert scheme not in report, f"the shipped rulings report must not contain {scheme!r}"
+
+
+def _sources_named_in_the_survey() -> set[str]:
+    """Every host and bare source name the survey cites, read out of the survey.
+
+    Derived rather than listed.  A hand-kept denylist of forbidden words only
+    catches the sources somebody thought of; the set that actually matters is
+    the one the survey consulted, and that set is written down already.
+    """
+    text = _research_text()
+    hosts = {
+        host.lower().removeprefix("www.")
+        for host in re.findall(r"https?://([^/\s)]+)", text)
+    }
+    # The registrable label on its own — "enworld", "demiplane" — because a
+    # prose mention carries no scheme and a link check would miss it.
+    #
+    # Second-to-last label rather than the first: the first is the *subdomain*,
+    # so ``app.demiplane.com`` yielded "app", which matches ordinary English and
+    # made this check fail on the register's own wording. A guard that fires on
+    # a common word gets deleted rather than fixed.
+    labels = {host.split(".")[-2] for host in hosts if host.count(".") >= 1}
+    return hosts | labels
+
+
+def test_no_source_the_survey_consulted_appears_in_the_shipped_register() -> None:
+    """The licence split, asserted on the artifact that actually ships.
+
+    The survey names third-party sources and stays in the repo-root ``docs/``;
+    the register goes to every install and carries our own classification only.
+    Both halves of the shipped surface are checked — the generated report and
+    the JSON the API serves — because they are rendered separately.
+    """
+    named = _sources_named_in_the_survey()
+    assert named, "the survey cites no sources; this check would prove nothing"
+    shipped = {
+        "docs/RULINGS.md": render_markdown().lower(),
+        "GET /api/v1/rulings": json.dumps(rulings_service.listing()).lower(),
+    }
+    for surface, text in shipped.items():
+        leaked = sorted(source for source in named if source in text)
+        assert not leaked, f"{surface} names third-party sources: {', '.join(leaked)}"
 
 
 # --- the survey behind the concurrence verdicts ----------------------------

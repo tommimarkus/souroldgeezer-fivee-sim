@@ -77,6 +77,14 @@ class Spell:
     damage: Dice | None = None
     damage_type: DamageType | None = None
     heal: Dice | None = None
+    #: Temporary Hit Points granted on a successful cast, resolved once and
+    #: shared by every target — mirrors ``heal``'s shape exactly, but stays a
+    #: separate field rather than reusing it: SRD 5.2.1, *Temporary Hit
+    #: Points*, are never Hit Points and receiving them is never healing, and
+    #: a shared field would collapse the two numbers a stat block prints
+    #: separately (Aid's healing versus Heroism's temp HP) into one. See
+    #: ``Creature.grant_temp_hp``.
+    temp_hp: Dice | None = None
     #: Default False because SRD 5.2.1 grants half damage per spell, in the spell's
     #: own text — Fireball says "half as much damage on a successful save", Sacred
     #: Flame says only "take 1d8 Radiant damage". So a record that omits this is a
@@ -86,6 +94,7 @@ class Spell:
     #: Dice added per slot level above the spell's base level.
     upcast_damage: Dice | None = None
     upcast_heal: Dice | None = None
+    upcast_temp_hp: Dice | None = None
     #: Whether the caster's spellcasting ability modifier is added to the healing,
     #: as SRD 5.2.1 Cure Wounds and Healing Word both are. Opt-in and healing-only:
     #: this record is shared by everyone who knows the spell, so the modifier
@@ -112,6 +121,16 @@ class Spell:
     #: Word are SRD 5.2.1's "Casting Time: Bonus Action" exceptions. Mirrors
     #: ``ItemEffect.action_cost``, which solved the same problem for items first.
     action_cost: ActionCost = ActionCost.ACTION
+    #: How long an ongoing effect this spell imposes lasts, in **rounds** — never
+    #: minutes or hours, which is how SRD 5.2.1 prints it. This engine's round is
+    #: 6 seconds, so 1 SRD minute is 10 rounds; a record transcribes the printed
+    #: duration by that conversion (Hold Person's "Concentration, up to 1
+    #: minute" is ``duration_rounds=10``), not by copying the printed number.
+    #: ``0`` means no cap, mirroring ``range_feet``'s "0 means no check": a spell
+    #: with no ongoing effect has nothing to cap, and a record predating this
+    #: field reads exactly as unbounded as it always has. Concentration and this
+    #: cap are independent; an effect with both ends at whichever comes first.
+    duration_rounds: int = 0
 
     @property
     def is_area(self) -> bool:
@@ -155,6 +174,21 @@ class Spell:
             modifier=self.heal.modifier,
         )
 
+    def temp_hp_at(self, slot_level: int) -> Dice | None:
+        """Temporary Hit Points dice for a given slot, scaled for upcasting.
+        Mirrors :meth:`healing_at` exactly.
+        """
+        if self.temp_hp is None:
+            return None
+        if self.upcast_temp_hp is None or slot_level <= self.level:
+            return self.temp_hp
+        extra_levels = slot_level - self.level
+        return Dice(
+            count=self.temp_hp.count + self.upcast_temp_hp.count * extra_levels,
+            faces=self.temp_hp.faces,
+            modifier=self.temp_hp.modifier,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class SpellTarget:
@@ -188,12 +222,13 @@ class SpellTargetResult:
     damage_dealt: int = 0
     condition_applied: str | None = None
     healed: int = 0
+    temp_hp_granted: int = 0
 
     @property
     def affected(self) -> bool:
         if self.attack is not None:
             return self.attack.hit
-        if self.healed:
+        if self.healed or self.temp_hp_granted:
             return True
         if self.save is not None:
             return not self.save.success
@@ -210,6 +245,8 @@ class SpellTargetResult:
             parts.append(f"{self.damage_dealt} damage")
         if self.healed:
             parts.append(f"{self.healed} healing")
+        if self.temp_hp_granted:
+            parts.append(f"{self.temp_hp_granted} temp HP")
         if self.condition_applied is not None:
             parts.append(f"gains {self.condition_applied}")
         return f"{self.name}: " + "; ".join(parts) if parts else f"{self.name}: no effect"
@@ -221,6 +258,7 @@ class SpellResolution:
     slot_level: int
     damage_roll: DiceRoll | None = None
     healing_roll: DiceRoll | None = None
+    temp_hp_roll: DiceRoll | None = None
     results: tuple[SpellTargetResult, ...] = field(default_factory=tuple)
     concentration_started: bool = False
 
@@ -261,6 +299,7 @@ def resolve_spell(
         )
     dice = spell.damage_at(slot_level)
     healing_dice = spell.healing_at(slot_level)
+    temp_hp_dice = spell.temp_hp_at(slot_level)
     if healing_dice is not None and spell.add_spellcasting_modifier:
         # Folded into the dice rather than added to the total, so the roll
         # describes itself the way the table reads it: "2d8+3".
@@ -306,6 +345,7 @@ def resolve_spell(
     # Save-based: one damage roll shared by every creature in the area.
     damage_roll = roll_dice(dice, rng) if dice is not None else None
     healing_roll = roll_dice(healing_dice, rng) if healing_dice is not None else None
+    temp_hp_roll = roll_dice(temp_hp_dice, rng) if temp_hp_dice is not None else None
     results = []
     for target in targets:
         save: D20Test | None = None
@@ -339,6 +379,9 @@ def resolve_spell(
                 damage_dealt=dealt,
                 condition_applied=spell.condition if failed else None,
                 healed=max(0, healing_roll.total) if healing_roll is not None else 0,
+                temp_hp_granted=(
+                    max(0, temp_hp_roll.total) if temp_hp_roll is not None else 0
+                ),
             )
         )
     return SpellResolution(
@@ -346,6 +389,7 @@ def resolve_spell(
         slot_level=slot_level,
         damage_roll=damage_roll,
         healing_roll=healing_roll,
+        temp_hp_roll=temp_hp_roll,
         results=tuple(results),
         concentration_started=spell.concentration,
     )

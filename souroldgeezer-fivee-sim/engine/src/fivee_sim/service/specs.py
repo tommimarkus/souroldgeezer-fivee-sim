@@ -198,16 +198,17 @@ LOOKUP_SPEC_KEYS = frozenset({
     "facing",
 })
 DESCRIBED_SPEC_KEYS = frozenset({
-    "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
-    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
-    "size", "abilities", "save_bonuses", "attacks", "attacks_per_action",
+    "name", "team", "ac", "max_hp", "hp", "temp_hp", "speed", "climb_speed", "swim_speed",
+    "fly_speed", "burrow_speed", "terrain_cost_overrides", "darkvision", "blindsight",
+    "tremorsense", "truesight", "death_rule",
+    "size", "abilities", "save_bonuses", "skill_bonuses", "attacks", "attacks_per_action",
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
-    "initiative_bonus",
+    "initiative_bonus", "passive_perception",
     "resistances", "immunities", "condition_immunities",
-    "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
-    "provenance", "facing",
+    "vulnerabilities", "items", "conditions", "condition_levels", "position", "level",
+    "arrival_round", "provenance", "facing",
     # Carried-over state: the condition a combatant walked out of the *previous*
     # fight in. Every one of these is reported by ``Encounter.state()`` and was,
     # until adventures spanned more than one encounter, reportable and not
@@ -364,6 +365,34 @@ def _closed(kind: type[_EnumT], value: Any, key: str) -> _EnumT:
         ) from error
 
 
+def _conditions_from_spec(spec: dict[str, Any]) -> dict[str, int]:
+    """Build ``Creature.conditions`` from a spec's ``conditions`` and
+    ``condition_levels`` keys.
+
+    ``conditions`` stays a flat list of names, each defaulting to level 1;
+    ``condition_levels`` overlays a level onto a name already in that list — it
+    may not introduce one, because a level naming a condition the creature does
+    not hold has nothing to be a level *of*.
+    """
+    conditions = {str(entry): 1 for entry in spec.get("conditions", [])}
+    for name, level in spec.get("condition_levels", {}).items():
+        name = str(name)
+        if name not in conditions:
+            raise RequestError(
+                f"condition_levels names {name!r}, which is not in this "
+                f"combatant's conditions"
+            )
+        stated = int(level)
+        if stated < 1:
+            raise RequestError(
+                f"condition_levels[{name!r}] is {stated}, and a level must be "
+                f"at least 1 — a numeric condition effect scales by the level, "
+                f"so one below it inverts the effect rather than weakening it"
+            )
+        conditions[name] = stated
+    return conditions
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -416,15 +445,19 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             ac=int(spec["ac"]),
             max_hp=max_hp_value,
             hp=hp_value,
+            temp_hp=int(spec.get("temp_hp", 0)),
             speed=int(spec.get("speed", 30)),
             climb_speed=int(spec.get("climb_speed", 0)),
             swim_speed=int(spec.get("swim_speed", 0)),
             fly_speed=int(spec.get("fly_speed", 0)),
+            burrow_speed=int(spec.get("burrow_speed", 0)),
             terrain_cost_overrides=frozenset(
                 str(value) for value in spec.get("terrain_cost_overrides", [])
             ),
             darkvision=int(spec.get("darkvision", 0)),
             blindsight=int(spec.get("blindsight", 0)),
+            tremorsense=int(spec.get("tremorsense", 0)),
+            truesight=int(spec.get("truesight", 0)),
             facing=parse_facing(spec.get("facing")),
             # Read here rather than only accepted above: a key on the allow-list
             # that no constructor consumes is the same silent drop by another
@@ -437,6 +470,10 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             save_bonuses={
                 _closed(Ability, key, "save_bonuses"): int(value)
                 for key, value in spec.get("save_bonuses", {}).items()
+            },
+            skill_bonuses={
+                str(key): int(value)
+                for key, value in spec.get("skill_bonuses", {}).items()
             },
             attacks=tuple(attack_from_spec(entry) for entry in spec.get("attacks", [])),
             attacks_per_action=int(spec.get("attacks_per_action", 1)),
@@ -459,6 +496,11 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
                 if spec.get("initiative_bonus") is not None
                 else None
             ),
+            passive_perception=(
+                int(spec["passive_perception"])
+                if spec.get("passive_perception") is not None
+                else None
+            ),
             resistances=frozenset(
                 _closed(DamageType, entry, "resistances")
                 for entry in spec.get("resistances", [])
@@ -475,7 +517,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
                 str(entry) for entry in spec.get("condition_immunities", [])
             ),
             items={str(k): int(v) for k, v in spec.get("items", {}).items()},
-            conditions={str(entry) for entry in spec.get("conditions", [])},
+            conditions=_conditions_from_spec(spec),
             condition_effects=registry.condition_effects,
             position=parse_point(spec.get("position", 0), "position"),
             level=int(spec.get("level", 0)),

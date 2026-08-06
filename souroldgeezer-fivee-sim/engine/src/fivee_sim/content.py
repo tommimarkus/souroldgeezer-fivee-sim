@@ -147,14 +147,19 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     # value is a faithful part of the SRD stat block and re-deriving it later
     # would be wasted work, not because anything reads it.
     "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
-    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
-    "size", "abilities", "save_bonuses",
+    "fly_speed", "burrow_speed", "terrain_cost_overrides", "darkvision", "blindsight",
+    "tremorsense", "truesight", "death_rule",
+    "size", "abilities", "save_bonuses", "skill_bonuses",
     "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
     "redirect_attack",
     "spells", "spell_slots", "spell_save_dc", "spellcasting_ability",
     "spell_attack_bonus", "items", "conditions", "condition_immunities",
     "immunities", "resistances", "vulnerabilities", "pack_tactics", "undead_fortitude",
     "initiative_bonus",
+    # Accepted and validated, like "hit_dice" above, but consumed by nothing:
+    # this engine has no Hide, Search, Stealth, or Perception action for a
+    # printed Passive Perception to feed.
+    "passive_perception",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
@@ -166,17 +171,19 @@ _ATTACK_KEYS = frozenset({
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
-    "damage_type", "heal",
-    "half_on_save", "upcast_damage", "upcast_heal", "add_spellcasting_modifier",
+    "damage_type", "heal", "temp_hp",
+    "half_on_save", "upcast_damage", "upcast_heal", "upcast_temp_hp",
+    "add_spellcasting_modifier",
     "shape", "radius", "length",
     "size", "width", "height",
     "range_feet", "max_targets", "condition", "concentration", "action_cost",
+    "duration_rounds",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _ITEM_KEYS = _COMMON_RECORD_KEYS | {"use", "description"}
 _USE_KEYS = frozenset({
-    "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
+    "heal", "temp_hp", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
     "condition", "action_cost",
 })
 _CATALOG_KEYS = frozenset({
@@ -792,9 +799,12 @@ def _parse_creature(
     reader.integer("climb_speed", default=0, minimum=0)
     reader.integer("swim_speed", default=0, minimum=0)
     reader.integer("fly_speed", default=0, minimum=0)
+    reader.integer("burrow_speed", default=0, minimum=0)
     reader.string_list("terrain_cost_overrides")
     reader.integer("darkvision", default=0, minimum=0)
     reader.integer("blindsight", default=0, minimum=0)
+    reader.integer("tremorsense", default=0, minimum=0)
+    reader.integer("truesight", default=0, minimum=0)
     reader.enum("death_rule", DeathRule)
     reader.enum("size", Size)
     reader.integer("attacks_per_action", default=1, minimum=1)
@@ -818,6 +828,12 @@ def _parse_creature(
     # fields above: a stat block's printed Initiative bonus and "not printed"
     # are different facts, and a defaulted 0 would erase that distinction.
     reader.optional_integer("initiative_bonus")
+    # Also ``None`` when absent, and also transcription-only: unlike
+    # "hit_dice" above, this one is validated to the same discipline as
+    # "initiative_bonus" — a printed Passive Perception is not always
+    # ``10 + Wisdom modifier`` — but it is consumed by nothing, since this
+    # engine has no Hide, Search, Stealth, or Perception action.
+    reader.optional_integer("passive_perception")
     reader.string("team")
     # Validated as a faithful transcription and then discarded: no field on
     # Creature carries it, and Creature.from_record never reads it. See the
@@ -826,6 +842,12 @@ def _parse_creature(
     reader.string("hit_dice")
     reader.enum_keyed_ints("abilities", Ability)
     reader.enum_keyed_ints("save_bonuses", Ability)
+    # A plain string-keyed mapping, never validated against a closed skill
+    # set: the engine already treats a skill name as an open string wherever
+    # it appears (``service/primitives.check``'s ``skill`` parameter, for
+    # one), so a stat block can print a bonus for a skill this engine has no
+    # table row for.
+    reader.string_keyed_ints("skill_bonuses")
     for key in ("immunities", "resistances", "vulnerabilities"):
         reader.enum_list(key, DamageType)
     reader.string_list("spells")
@@ -995,9 +1017,11 @@ def _parse_spell(
         damage=reader.dice("damage"),
         damage_type=reader.enum("damage_type", DamageType),
         heal=reader.dice("heal"),
+        temp_hp=reader.dice("temp_hp"),
         half_on_save=reader.boolean("half_on_save", default=False),
         upcast_damage=reader.dice("upcast_damage"),
         upcast_heal=reader.dice("upcast_heal"),
+        upcast_temp_hp=reader.dice("upcast_temp_hp"),
         add_spellcasting_modifier=reader.boolean("add_spellcasting_modifier"),
         shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
@@ -1011,6 +1035,7 @@ def _parse_spell(
         concentration=reader.boolean("concentration"),
         provenance=provenance,
         action_cost=reader.enum("action_cost", ActionCost) or ActionCost.ACTION,
+        duration_rounds=reader.integer("duration_rounds", minimum=0),
     )
     if spell.damage is not None and spell.damage_type is None:
         reader.fail("damage_type", "a spell that deals damage must name a damage type")
@@ -1107,7 +1132,13 @@ def _parse_condition(
     reader.unknown_keys(_CONDITION_KEYS)
     _common_fields(reader)
     reader.string("description")
-    flags: dict[str, bool] = {}
+    defaults = ConditionEffect()
+    # ``Any`` rather than ``bool | int``: ``ConditionEffect``'s fields are of
+    # mixed type, and mypy cannot match a splatted mixed-value dict against a
+    # dataclass whose ``__init__`` takes each field at its own type. The
+    # branches above already enforce the real per-field type before a value
+    # ever lands here.
+    flags: dict[str, Any] = {}
     for flag, value in reader.mapping("effects").items():
         if flag not in EFFECT_FLAGS:
             reader.fail(
@@ -1117,9 +1148,28 @@ def _parse_condition(
                 f"{', '.join(EFFECT_FLAGS)}",
             )
             continue
-        if not isinstance(value, bool):
-            reader.fail("effects", f"{flag} must be true or false, got {value!r}")
-            continue
+        # ``isinstance(True, int)`` is ``True`` in Python, so the bool check must
+        # come first: an int-first check would silently accept ``true`` as the
+        # number 1 on a numeric field. The expected type is derived from the
+        # dataclass default rather than a hardcoded list, for the reason
+        # ``_parse_terrain``'s hardcoded ``("passable", "opaque", "underwater")``
+        # tuple does not: a new boolean field added there would fall through to
+        # its numeric branch unnoticed. That defect is not fixed here — it is
+        # out of scope for this change — but it is not repeated here either.
+        expected_bool = isinstance(getattr(defaults, flag), bool)
+        if expected_bool:
+            if not isinstance(value, bool):
+                reader.fail("effects", f"{flag} must be true or false, got {value!r}")
+                continue
+        else:
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                reader.fail(
+                    "effects",
+                    f"{flag} must be a whole number of 0 or more, got {value!r}. A "
+                    f"negative number would be a bonus wearing a penalty's name, and "
+                    f"this engine has no D20 bonus channel to apply it through.",
+                )
+                continue
         flags[flag] = value
     if not reader.ok:
         return None
@@ -1193,6 +1243,7 @@ def _parse_item(
     sub = _Reader(use, diagnostics, source=source, section="items", name=name)
     sub.unknown_keys(_USE_KEYS)
     heal = sub.dice("heal")
+    temp_hp = sub.dice("temp_hp")
     damage = sub.dice("damage")
     damage_type = sub.enum("damage_type", DamageType)
     save_ability = sub.enum("save_ability", Ability)
@@ -1205,6 +1256,7 @@ def _parse_item(
     try:
         effect = ItemEffect(
             heal=heal,
+            temp_hp=temp_hp,
             damage=damage,
             damage_type=damage_type,
             save_ability=save_ability,
@@ -1435,7 +1487,15 @@ def _builtin_condition_payload() -> dict[str, Any]:
     perform I/O. Rendering it as a pack here keeps a single parse path — the
     built-in conditions go through exactly the validation a campaign's do, which
     also means a malformed row could never ship unnoticed.
+
+    Rendered as a defaults-diff, the same shape :func:`_builtin_terrain_payload`
+    already uses, rather than ``{flag: True for flag in EFFECT_FLAGS if
+    getattr(effect, flag)}``: that formula would coerce a numeric
+    ``d20_test_penalty_per_level`` of, say, ``2`` down to ``True``. Every
+    bundled ``ConditionEffect`` field defaults to ``False``, so for every row
+    below this emits a byte-identical payload to the formula it replaced.
     """
+    defaults = ConditionEffect()
     return {
         "pack": "srd-5.2.1-conditions",
         "version": "1.0",
@@ -1449,7 +1509,9 @@ def _builtin_condition_payload() -> dict[str, Any]:
                 "name": str(name),
                 "provenance": "SRD 5.2.1",
                 "effects": {
-                    flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)
+                    flag: getattr(effect, flag)
+                    for flag in EFFECT_FLAGS
+                    if getattr(effect, flag) != getattr(defaults, flag)
                 },
             }
             for name, effect in EFFECTS.items()

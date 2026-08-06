@@ -36,6 +36,7 @@ from ..kernel.conditions import (
     compute_ability_check_advantage,
     compute_initiative_advantage,
     compute_save_advantage,
+    d20_test_penalty,
     effect_of,
     is_incapacitated,
     speed_is_zero,
@@ -208,9 +209,12 @@ ENEMY_VISIBLE_KEYS: frozenset[str] = frozenset({
     # names has already happened.
     "name", "team", "position", "level", "elevation", "facing", "present",
     "arrival_round",
-    # What anybody at the table can see about its state.
-    "conditions", "conscious", "dying", "dead", "stable", "surrendered",
-    "dodging", "disengaged",
+    # What anybody at the table can see about its state. ``condition_levels``
+    # is the same public fact ``conditions`` already is — a level is not a
+    # number a stat block hides, it is how far along a condition anyone can
+    # already see has progressed.
+    "conditions", "condition_levels", "conscious", "dying", "dead", "stable",
+    "surrendered", "dodging", "disengaged",
     # Where it sits in the order. Initiative is called out loud.
     "initiative",
     # Visible while it holds, and the reason a caster is worth interrupting.
@@ -219,8 +223,15 @@ ENEMY_VISIBLE_KEYS: frozenset[str] = frozenset({
 
 #: The other half: what a stat block says and a table does not get to read.
 ENEMY_WITHHELD_KEYS: frozenset[str] = frozenset({
-    # The numbers the whole redaction exists for.
-    "hp", "max_hp", "ac",
+    # The numbers the whole redaction exists for. `temp_hp` sits beside `hp`
+    # rather than the visible half: it is the same sheet arithmetic wearing a
+    # different name, a second number of exactly the kind a health band
+    # exists to replace. Withholding it does not lie about the fight — the
+    # health band a withheld enemy already gets is computed off raw `hp`, so a
+    # buffered foe is described no more favourably than an unbuffered one at
+    # the same hit points, exactly as an ordinary player at the table would
+    # read them: harder to say "I've done it" about, not literally unharmed.
+    "hp", "max_hp", "temp_hp", "ac",
     # Resources, and therefore what it can still do to you.
     "spell_slots", "items", "attacks", "spells", "bonus_actions",
     "reaction_available", "redirect_attack",
@@ -363,7 +374,10 @@ EVENT_VISIBLE_KEYS: frozenset[str] = frozenset({
 #: watches an arrow leave the bow; it does not get to count what is left in the
 #: ambusher's quiver.
 EVENT_WITHHELD_KEYS: frozenset[str] = frozenset({
-    "hp", "max_hp", "natural", "total", "advantage", "attack", "spell",
+    # `temp_hp` beside `hp` and `max_hp`, for the reason it sits beside them
+    # in `ENEMY_WITHHELD_KEYS`: a running buffer total is the same sheet
+    # number, arriving one grant event at a time instead of on the snapshot.
+    "hp", "max_hp", "temp_hp", "natural", "total", "advantage", "attack", "spell",
     "slot_level", "item", "remaining", "successes", "failures", "movement_left",
     "ammunition_remaining",
     "damage", "bonus_damage", "advantage_bonus_damage", "advantage_bonus_reason",
@@ -445,7 +459,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
     "attach", "attached_damage", "detach", "surrender", "redirect_attack", "arrival",
-    "turn_end", "turn_start", "undead_fortitude", "use_item",
+    "turn_end", "turn_start", "undead_fortitude", "use_item", "grant_temp_hp",
 })
 
 
@@ -614,6 +628,17 @@ class OngoingEffect:
     #: strings mean no timer — the effect lasts until something else releases it.
     expires_phase: str = ""
     expires_anchor: str = ""
+    #: A separate field rather than a third :class:`~fivee_sim.kernel.actions.
+    #: RiderExpiry` member, on purpose: a printed duration cap (SRD 5.2.1's
+    #: "Concentration, up to 1 minute") is a round count, not a turn-boundary
+    #: anchor, and folding it into that enum would need every ``is`` chain
+    #: switching on ``RiderExpiry`` — none of which mypy would flag as
+    #: non-exhaustive — to learn the new member or silently ignore it. The round
+    #: number on which :meth:`Encounter.advance` releases this effect, or
+    #: ``None`` for no cap. Set from :attr:`~fivee_sim.kernel.spells.Spell.
+    #: duration_rounds` at cast time as ``self.round + duration_rounds``, so it
+    #: names an absolute round rather than a remaining count.
+    expires_round: int | None = None
 
 
 @dataclass(slots=True)
@@ -976,6 +1001,12 @@ class Encounter:
                     if creature.initiative_bonus is not None
                     else creature.ability_mod(Ability.DEXTERITY)
                 )
+                # Initiative is a Dexterity ability check (SRD 5.2.1,
+                # *Initiative*) and so a D20 Test (p.180); it does not route
+                # through ``Creature.check_modifier`` because it never consults
+                # a skill, so the penalty is applied explicitly here rather than
+                # folded away.
+                modifier -= d20_test_penalty(creature.conditions, self.condition_effects)
                 self.initiative[creature.name] = roll.natural + modifier
             self.order = sorted(
                 names,
@@ -1785,7 +1816,9 @@ class Encounter:
             raise EncounterError(f"no combatant named {as_name!r} in this encounter")
         return seats
 
-    def set_condition(self, target_name: str, condition: str, *, applied: bool) -> None:
+    def set_condition(
+        self, target_name: str, condition: str, *, applied: bool, levels: int = 1
+    ) -> None:
         """Impose or lift a condition by the table's ruling rather than by a rule.
 
         Every other condition here arrives from something that models its own
@@ -1805,6 +1838,10 @@ class Encounter:
         Lifting also clears any ongoing effect sustaining the same condition on
         the same creature, so a ruling ends a spell's grip rather than being
         quietly reimposed by the ledger the next time it is consulted.
+
+        ``levels`` is forwarded to :meth:`Creature.add_condition` unchanged: it
+        only accumulates when the effect row marks the condition ``cumulative``,
+        so a ruling on an ordinary condition needs no opinion about it.
         """
         if target_name not in self.creatures:
             known = ", ".join(sorted(self.creatures)[:MAX_LISTED_COMBATANTS])
@@ -1813,12 +1850,13 @@ class Encounter:
             )
         target = self.creatures[target_name]
         if applied:
+            was_dead = target.dead
             # ``add_condition`` looks the name up before recording it, so an
             # unknown condition is refused here rather than carried. It is
             # also the immunity gate: a ruling is a fourth path into it, and
             # gets no exemption from what an attack, a spell or an item
             # already cannot do to this target.
-            if not target.add_condition(condition):
+            if not target.add_condition(condition, levels=levels):
                 self._emit(
                     "effect_apply", "", target_name,
                     f"{condition} not imposed by ruling — {target_name} is immune",
@@ -1830,6 +1868,14 @@ class Encounter:
                 f"{condition} imposed by ruling",
                 condition=condition, applied=True, ruling=True,
             )
+            # See ``_apply_condition``'s matching reading: a condition can
+            # kill outright, and the state going right with the log staying
+            # silent is the one event a narrator cannot do without.
+            if target.dead and not was_dead:
+                self._emit(
+                    "death", target_name,
+                    detail=f"{condition} reaches a lethal level by ruling",
+                )
             return
         self._effects[:] = [
             effect for effect in self._effects
@@ -1875,6 +1921,7 @@ class Encounter:
                     "stacked": effect.stacked,
                     "expires_phase": effect.expires_phase,
                     "expires_anchor": effect.expires_anchor,
+                    "expires_round": effect.expires_round,
                 }
                 for effect in self._effects
             ],
@@ -2002,16 +2049,25 @@ class Encounter:
             "team": creature.team,
             "hp": creature.hp,
             "max_hp": creature.max_hp,
+            "temp_hp": creature.temp_hp,
             "ac": creature.ac,
+            # A held condition's Speed reduction is folded in here — the
+            # movement budget spends the reduced value, so reporting the
+            # printed one would be a lie to every reader of the brief.
+            # ``service/replay.py``'s creation-input payload keeps the
+            # printed speeds; this one is fight state, not creation input.
             "speeds": {
-                "walk": creature.speed,
-                "climb": creature.climb_speed,
-                "swim": creature.swim_speed,
-                "fly": creature.fly_speed,
+                "walk": creature.speed_for(MovementMode.WALK),
+                "climb": creature.speed_for(MovementMode.CLIMB),
+                "swim": creature.speed_for(MovementMode.SWIM),
+                "fly": creature.speed_for(MovementMode.FLY),
+                "burrow": creature.speed_for(MovementMode.BURROW),
             },
             "senses": {
                 "darkvision": creature.darkvision,
                 "blindsight": creature.blindsight,
+                "tremorsense": creature.tremorsense,
+                "truesight": creature.truesight,
             },
             "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
             "death_rule": creature.death_rule.value,
@@ -2030,6 +2086,14 @@ class Encounter:
             # arguing about a field that is sometimes there.
             "initiative": self.initiative.get(creature.name),
             "conditions": sorted(creature.conditions),
+            # Unconditional, never omitted when empty: ``adventures.carry_forward``
+            # overlays by key presence, and a combatant that shed every leveled
+            # condition mid-fight must still supply an empty dict to clear
+            # whatever the previous chapter captured — an absent key would leave
+            # the old, non-empty value standing.
+            "condition_levels": {
+                name: level for name, level in creature.conditions.items() if level != 1
+            },
             "concentrating_on": creature.concentrating_on,
             "dodging": self._dodging[creature.name],
             "disengaged": self._disengaged[creature.name],
@@ -2099,12 +2163,9 @@ class Encounter:
         a turn grants: an interlude that quietly stopped honouring an attachment
         or a lost consciousness would be a second, weaker copy of this rule.
         """
-        maximum_speed = max(
-            creature.speed,
-            creature.climb_speed,
-            creature.swim_speed,
-            creature.fly_speed,
-        )
+        # ruling: movement_mode_ungated_by_terrain — the highest mode wins with
+        # no check that its terrain is actually there.
+        maximum_speed = max(creature.speed_for(mode) for mode in MovementMode)
         if any(link.source == creature.name for link in self._attachments):
             maximum_speed = 0
         return TurnState(
@@ -2225,7 +2286,20 @@ class Encounter:
     def _death_save(
         self, creature: Creature, rng: Random, natural: tuple[int, ...] = ()
     ) -> None:
+        # SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the
+        # game: ability checks, attack rolls, and saving throws. If something
+        # in the game affects D20 Tests, it affects all three." p.17, *Death
+        # Saving Throws*: "Unlike other saving throws, this one isn't tied to
+        # an ability score" — which presupposes it is one, so it takes the
+        # same penalty. But it is not tied to an ability score, so it does not
+        # route through ``Creature.save_modifier``; the penalty is applied
+        # explicitly, as a plain total, here.
         roll = roll_d20(rng, supplied=natural or None)
+        total = roll.natural - d20_test_penalty(creature.conditions, self.condition_effects)
+        # The natural 20 and natural 1 rulings read the die's face, not the
+        # total — SRD 5.2.1 p.17 states both as consequences of the face
+        # rolled ("you roll a 20" / "you roll a 1 on the d20"), not of a
+        # modified result.
         if roll.natural == 20:
             creature.heal(1)
             self._emit("death_save", creature.name,
@@ -2240,24 +2314,24 @@ class Encounter:
                        natural=1,
                        successes=creature.death_save_successes,
                        failures=creature.death_save_failures)
-        elif roll.natural >= DEATH_SAVE_DC:
+        elif total >= DEATH_SAVE_DC:
             creature.death_save_successes += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success",
+                       detail=f"{total} vs DC {DEATH_SAVE_DC} — success",
                        natural=roll.natural,
                        successes=creature.death_save_successes,
                        failures=creature.death_save_failures)
         else:
             creature.death_save_failures += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure",
+                       detail=f"{total} vs DC {DEATH_SAVE_DC} — failure",
                        natural=roll.natural,
                        successes=creature.death_save_successes,
                        failures=creature.death_save_failures)
 
         if creature.death_save_failures >= DEATH_SAVES_TO_DIE:
             creature.dead = True
-            creature.conditions.discard(Condition.UNCONSCIOUS)
+            creature.conditions.pop(Condition.UNCONSCIOUS, None)
             self._emit("death", creature.name, detail="three failed death saves")
         elif creature.death_save_successes >= DEATH_SAVES_TO_STABILISE:
             creature.stable = True
@@ -2317,6 +2391,7 @@ class Encounter:
                     self.round += 1
                     self._emit("round", detail=f"round {self.round} begins",
                                round=self.round)
+                    self._expire_duration()
                     self._arrive_for_round()
                 if (
                     not self.creatures[self.current_name].dead
@@ -2694,7 +2769,7 @@ class Encounter:
         cover_bonus = cover_ac_bonus(grade)
         resolution = resolve_attack(
             rng,
-            attack_bonus=option.attack_bonus,
+            attack_bonus=actor.attack_modifier(option.attack_bonus),
             target_ac=target.ac + cover_bonus,
             damage=option.damage,
             advantage=advantage,
@@ -2903,14 +2978,56 @@ class Encounter:
         )
 
     def _can_see(self, observer: Creature, subject: Creature) -> bool:
-        """Whether ``observer`` can see ``subject`` for a rule that requires sight."""
+        """Whether ``observer`` can see ``subject`` for a rule that requires sight.
+
+        A ladder of three rungs, in order:
+
+        1. **Truesight** — SRD 5.2.1, *Truesight*: within range, vision
+           "pierces through" Darkness (including magical) and Invisibility.
+           Checked first because it is the most literal sight of the two
+           senses below, but it is not a strict superset of Blindsight: the
+           SRD text carries no clause exempting it from the observer's own
+           Blinded condition (unlike Blindsight's explicit "even if you have
+           the Blinded condition"), so a blinded observer gets nothing from it
+           here, and Total Cover still blocks it.
+        2. **Blindsight** — the one sense the SRD says works "even if you have
+           the Blinded condition or are in Darkness"; only Total Cover stops
+           it.
+        3. The ordinary path below: an observer that cannot see at all is
+           blind to everything, an Invisible subject is unseen, Total Cover
+           blocks regardless of light, and Darkness needs Darkvision.
+
+        **Tremorsense is deliberately not a rung here.** SRD 5.2.1,
+        *Tremorsense*: it pinpoints a creature or object "within a specific
+        range" but "doesn't count as a form of sight". That is a *location*
+        without *sight* of it — a third state this engine has no channel for,
+        since every consumer of ``_can_see`` (attack gating, the
+        unseen-attacker/unseen-target Disadvantage pair, movement's
+        opportunity-attack check) only has "can see" and "cannot see" to
+        choose between. Answering ``True`` here would silently hand a
+        Tremorsense-only observer the same benefit as Truesight or Blindsight
+        — cancelling the unseen-target Disadvantage against an Invisible
+        creature it has pinpointed but still cannot see — which is wrong on
+        its own terms, not merely narrower than the SRD. So ``Creature.tremorsense``
+        is carried and reported (see its field comment) but unconsumed here,
+        the same declared-but-inert posture as ``passive_perception``, until
+        this engine has a pinpoint-without-sight concept to spend it on.
+        """
         distance = observer.distance_to(subject, self.movement_rule)
-        if observer.blindsight > 0 and distance <= observer.blindsight:
-            return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
-        if any(
+        observer_blind = any(
             effect_of(condition, self.condition_effects).cannot_see
             for condition in observer.conditions
+        )
+        if (
+            observer.truesight > 0
+            and distance <= observer.truesight
+            and not observer_blind
+            and self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
         ):
+            return True
+        if observer.blindsight > 0 and distance <= observer.blindsight:
+            return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
+        if observer_blind:
             return False
         if any(
             effect_of(condition, self.condition_effects).unseen
@@ -3137,6 +3254,15 @@ class Encounter:
                        detail=f"{target.hp - before} hit points restored, "
                               f"{target.hp}/{target.max_hp}",
                        amount=target.hp - before, hp=target.hp, max_hp=target.max_hp)
+        if resolution.temp_hp_granted:
+            # Never through ``heal``: a grant is not healing and must not clear
+            # death saves, ``stable``, or Unconscious. See ``Creature.
+            # grant_temp_hp``.
+            target.grant_temp_hp(resolution.temp_hp_granted)
+            self._emit("grant_temp_hp", target=target.name,
+                       detail=f"{resolution.temp_hp_granted} temporary hit points "
+                              f"offered, {target.temp_hp} held",
+                       amount=resolution.temp_hp_granted, temp_hp=target.temp_hp)
         if resolution.damage_dealt:
             self._apply_damage(
                 target, resolution.damage_dealt, rng,
@@ -3280,7 +3406,7 @@ class Encounter:
             spell,
             slot_level=slot_level,
             save_dc=actor.spell_save_dc,
-            spell_attack_bonus=actor.spell_attack_bonus,
+            spell_attack_bonus=actor.attack_modifier(actor.spell_attack_bonus),
             spellcasting_modifier=actor.spellcasting_modifier,
             targets=tuple(
                 SpellTarget(
@@ -3319,6 +3445,8 @@ class Encounter:
             detail += f", damage {resolution.damage_roll.describe()}"
         if resolution.healing_roll is not None:
             detail += f", healing {resolution.healing_roll.describe()}"
+        if resolution.temp_hp_roll is not None:
+            detail += f", temp HP {resolution.temp_hp_roll.describe()}"
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
@@ -3381,10 +3509,28 @@ class Encounter:
                     hp=target.hp,
                     max_hp=target.max_hp,
                 )
+            if result.temp_hp_granted:
+                # Never through ``heal``, for the same reason ``use_item``
+                # above keeps the two apart: see ``Creature.grant_temp_hp``.
+                target.grant_temp_hp(result.temp_hp_granted)
+                self._emit(
+                    "grant_temp_hp",
+                    actor.name,
+                    target.name,
+                    detail=f"{result.temp_hp_granted} temporary hit points "
+                    f"offered, {target.temp_hp} held",
+                    spell=spell.name,
+                    amount=result.temp_hp_granted,
+                    temp_hp=target.temp_hp,
+                )
             if result.condition_applied is not None and target.conscious:
                 self._apply_condition(
                     actor, target, result.condition_applied,
                     effect_name=spell.name, concentration=spell.concentration,
+                    expires_round=(
+                        self.round + spell.duration_rounds
+                        if spell.duration_rounds else None
+                    ),
                 )
 
     def auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
@@ -3574,12 +3720,21 @@ class Encounter:
         reachable — a Restrained creature may still Dodge, and gains nothing by it,
         so its Dexterity save stays at Disadvantage instead of cancelling to a
         straight roll.
+
+        Speed 0 has two routes here, and both are checked: the ``speed_zero``
+        flag Restrained, Grappled, Paralyzed and their kin declare outright,
+        and a numeric reduction — Exhaustion's own shape — that lands a
+        creature's walking Speed at 0 without any row ever setting the flag.
+        Consulting the flag alone left a numerically-reduced creature holding
+        a benefit the SRD denies it the moment the number, not the name,
+        reaches zero.
         """
         if not self._dodging[creature.name]:
             return False
         return not (
             is_incapacitated(creature.conditions, self.condition_effects)
             or speed_is_zero(creature.conditions, self.condition_effects)
+            or creature.speed_for(MovementMode.WALK) == 0
         )
 
     def _spell_targets(
@@ -3983,14 +4138,8 @@ class Encounter:
         if to_level != level:
             actor.level = to_level
 
-    @staticmethod
-    def _movement_speed(actor: Creature, mode: MovementMode) -> int:
-        speed = {
-            MovementMode.WALK: actor.speed,
-            MovementMode.CLIMB: actor.climb_speed,
-            MovementMode.SWIM: actor.swim_speed,
-            MovementMode.FLY: actor.fly_speed,
-        }[mode]
+    def _movement_speed(self, actor: Creature, mode: MovementMode) -> int:
+        speed = actor.speed_for(mode)
         if speed <= 0:
             raise EncounterError(f"{actor.name} has no {mode.value} speed")
         return speed
@@ -4150,11 +4299,14 @@ class Encounter:
         verb = "open" if wants_open else "close"
         extras: dict[str, Any] = {"linked": linked} if linked else {}
         if feature.check is not None:
-            # A raw ability check: creatures carry no skill proficiencies, so a
-            # DC here was set as if untrained.
+            # An ability check; the actor's printed skill bonus replaces the
+            # ability modifier when the check names a skill it has one for —
+            # creatures still carry no proficiency bonus, Expertise, or Help,
+            # so an untrained DC is still the right default for a target that
+            # lacks the named skill.
             test = make_d20_test(
                 rng,
-                modifier=actor.ability_mod(feature.check.ability),
+                modifier=actor.check_modifier(feature.check.ability, feature.check.skill),
                 dc=feature.check.dc,
                 advantage=check_advantage,
                 supplied=action.natural or None,
@@ -4248,9 +4400,11 @@ class Encounter:
         SRD 5.2.1, Rules Glossary, "Prone": the condition ends when the creature
         stands, "which costs an amount of movement equal to half your Speed."
         Movement is tracked in whole feet, so an odd Speed rounds the cost down.
-        Public because the auto-play policy prices the act before taking it.
+        Public because the auto-play policy prices the act before taking it. A
+        held condition's Speed reduction is applied first — a reduced Speed
+        *is* your Speed.
         """
-        return self.creatures[actor_name].speed // 2
+        return self.creatures[actor_name].speed_for(MovementMode.WALK) // 2
 
     def can_stand(self, actor_name: str) -> bool:
         """Whether the named creature could legally take the stand act right now.
@@ -4264,7 +4418,7 @@ class Encounter:
         return (
             Condition.PRONE in creature.conditions
             and creature.conscious
-            and creature.speed > 0
+            and creature.speed_for(MovementMode.WALK) > 0
             and not speed_is_zero(creature.conditions, self.condition_effects)
             and self._turn.movement_left >= self.stand_cost(actor_name)
         )
@@ -4282,7 +4436,7 @@ class Encounter:
         """
         if Condition.PRONE not in actor.conditions:
             raise EncounterError(f"{actor.name} is not prone")
-        if actor.speed == 0:
+        if actor.speed_for(MovementMode.WALK) == 0:
             raise EncounterError(f"{actor.name} has a speed of 0 and cannot stand")
         if speed_is_zero(actor.conditions, self.condition_effects):
             held = ", ".join(sorted(actor.conditions))
@@ -4377,7 +4531,7 @@ class Encounter:
         )
         resolution = resolve_attack(
             rng,
-            attack_bonus=melee.attack_bonus,
+            attack_bonus=attacker.attack_modifier(melee.attack_bonus),
             target_ac=mover.ac,
             damage=melee.damage,
             advantage=advantage,
@@ -4427,6 +4581,7 @@ class Encounter:
         concentration: bool,
         expires_phase: str = "",
         expires_anchor: str = "",
+        expires_round: int | None = None,
     ) -> bool:
         """Impose ``condition`` and record what is imposing it.
 
@@ -4447,6 +4602,7 @@ class Encounter:
         """
         held_by_ledger = self._holders(target.name, condition)
         already_held = condition in target.conditions
+        was_dead = target.dead
         if not target.add_condition(condition):
             self._emit(
                 "effect_apply", source.name, target.name,
@@ -4466,8 +4622,17 @@ class Encounter:
                 stacked=already_held and not held_by_ledger,
                 expires_phase=expires_phase,
                 expires_anchor=expires_anchor,
+                expires_round=expires_round,
             )
         )
+        # A condition can kill outright — Exhaustion's ``death_at_level`` — and
+        # the state going right with the log staying silent is exactly the
+        # defect ``_apply_damage``'s own ``was_dead`` reading exists to avoid.
+        if target.dead and not was_dead:
+            self._emit(
+                "death", target.name,
+                detail=f"{effect_name} reaches a lethal level of {condition}",
+            )
         return True
 
     def _apply_attack_rider(
@@ -4562,6 +4727,43 @@ class Encounter:
             expiry=str(option.on_hit_expiry),
         )
 
+    def _expire_duration(self) -> None:
+        """Release every ongoing effect whose printed duration cap has arrived.
+
+        Checked once per round rather than per turn: SRD 5.2.1 durations this
+        engine models are printed in whole minutes or coarser, never inside a
+        single round, so the round counter :meth:`advance` already owns is the
+        boundary that matters, not a turn slot the way :meth:`_expire_timed`'s
+        riders are.
+
+        A Concentration effect still being actively sustained when its cap
+        arrives ends anyway — "Concentration, up to 1 minute" is the cap
+        *and* the Concentration requirement, not a substitute for one another,
+        so whichever release reaches an effect first is the one that ends it.
+        The caster is freed to concentrate on something else only once no
+        other entry of the same name still holds its Concentration, mirroring
+        :meth:`_end_concentration`.
+        """
+        expiring = [
+            effect for effect in self._effects
+            if effect.expires_round is not None and self.round >= effect.expires_round
+        ]
+        for effect in expiring:
+            self._release_effect(effect)
+        for effect in expiring:
+            if not effect.concentration:
+                continue
+            source = self.creatures.get(effect.source)
+            if source is None or source.concentrating_on != effect.name:
+                continue
+            if not any(
+                other.source == effect.source
+                and other.name == effect.name
+                and other.concentration
+                for other in self._effects
+            ):
+                source.concentrating_on = None
+
     def _expire_timed(self, phase: str, anchor: str) -> None:
         """Release every timed effect whose turn boundary has just passed.
 
@@ -4606,6 +4808,8 @@ class Encounter:
                 f"{effect.name} ends; {effect.condition} persists ({reason})",
             )
             return
+        # ruling: effect_release_drops_the_whole_condition — a full removal, not
+        # a decrement by this effect's own contribution.
         target.remove_condition(effect.condition)
         self._emit(
             "effect_end", effect.source, effect.target,
@@ -4683,6 +4887,11 @@ class Encounter:
             # Point instead." It never reaches 0, so none of the drop's machinery
             # runs: no Unconscious, no Prone, no death saves — and the
             # concentration check below still fires, because damage was taken.
+            # Temporary Hit Points are still spent first, exactly as the top of
+            # ``take_damage`` spends them — this branch bypasses that method
+            # entirely, so the buffer has to be consumed here instead.
+            absorbed = min(target.temp_hp, amount)
+            target.temp_hp -= absorbed
             target.hp = 1
         else:
             # ``critical`` only matters for a target already at 0 hit points, where
@@ -4761,17 +4970,27 @@ class Encounter:
         randomness exactly when a replay would consume it. The save itself goes
         through the same machinery as every other save the fight rolls, with
         the target's own advantage and auto-fail circumstances.
+
+        ``amount`` is read through :meth:`Creature.damage_after_temp_hp` before
+        anything else runs, both for the eligibility gate and for the DC:
+        Temporary Hit Points are spent before hit points, so damage a buffer
+        fully absorbs never reduces the target at all, and a save gated on "damage
+        that reduces it to 0" must neither roll for that damage nor be sized by
+        it. A save this target was never going to be asked for is a roll the
+        RNG stream must not spend, the same standing radiant, critical and
+        overkill already hold.
         """
         if not target.undead_fortitude or not target.conscious:
             return None
-        if amount < target.hp or amount - target.hp >= target.max_hp:
+        effective = target.damage_after_temp_hp(amount)
+        if effective < target.hp or effective - target.hp >= target.max_hp:
             return None
         if critical or DamageType.RADIANT in damage_types:
             return None
         return make_d20_test(
             rng,
             modifier=target.save_modifier(Ability.CONSTITUTION),
-            dc=UNDEAD_FORTITUDE_BASE_DC + amount,
+            dc=UNDEAD_FORTITUDE_BASE_DC + effective,
             advantage=self.save_advantage(target, Ability.CONSTITUTION),
             auto_fail=self.auto_fails_save(target, Ability.CONSTITUTION),
         )

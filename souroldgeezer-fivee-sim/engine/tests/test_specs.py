@@ -210,6 +210,83 @@ class TestConditionImmunitySpec:
         assert built.condition_immunities == frozenset()
 
 
+class TestConditionLevelsSpec:
+    """``condition_levels`` on an inline spec, overlaid onto ``conditions``."""
+
+    def test_a_level_overlays_onto_a_held_condition(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec(
+            {
+                **HERO,
+                "conditions": ["poisoned"],
+                "condition_levels": {"poisoned": 3},
+            },
+            registry,
+        )
+
+        assert built.conditions == {"poisoned": 3}
+
+    def test_a_condition_with_no_level_stated_defaults_to_one(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "conditions": ["poisoned"]}, registry)
+
+        assert built.conditions == {"poisoned": 1}
+
+    @pytest.mark.parametrize("level", [0, -1, -100])
+    def test_a_level_below_one_is_refused(
+        self, registry: ContentRegistry, level: int
+    ) -> None:
+        """A held condition is held at level 1 or more, and nothing else.
+
+        Not a tidiness rule.  Every numeric condition effect is applied as
+        ``per_level * level``, so a negative level does not weaken a penalty —
+        it *inverts* it.  Before this refusal existed, a combatant spec
+        carrying ``{"exhaustion": -100}`` produced a creature with +200 on
+        every saving throw and 530 feet of walking speed.
+        """
+        with pytest.raises(RequestError, match="condition_levels.*at least 1"):
+            creature_from_spec(
+                {
+                    **HERO,
+                    "conditions": ["poisoned"],
+                    "condition_levels": {"poisoned": level},
+                },
+                registry,
+            )
+
+    def test_a_level_naming_a_condition_not_held_is_refused(
+        self, registry: ContentRegistry
+    ) -> None:
+        with pytest.raises(
+            RequestError, match="condition_levels names 'frightened'.*not in"
+        ):
+            creature_from_spec(
+                {
+                    **HERO,
+                    "conditions": ["poisoned"],
+                    "condition_levels": {"frightened": 2},
+                },
+                registry,
+            )
+
+    def test_an_explicitly_empty_overlay_is_not_an_error(
+        self, registry: ContentRegistry
+    ) -> None:
+        """Distinct from omitting the key: a round-tripped spec carries ``{}``.
+
+        ``Encounter.state()`` emits ``condition_levels`` unconditionally, so
+        every carried combatant arrives with the key present and usually
+        empty. Sending it back must be as legal as never having sent it.
+        """
+        built = creature_from_spec(
+            {**HERO, "conditions": ["poisoned"], "condition_levels": {}}, registry
+        )
+
+        assert built.conditions == {"poisoned": 1}
+
+
 class TestInitiativeBonusSpec:
     """``initiative_bonus`` on an inline spec: the same separate construction
     path as ``TestConditionImmunitySpec`` above.
@@ -226,6 +303,43 @@ class TestInitiativeBonusSpec:
         built = creature_from_spec(dict(HERO), registry)
 
         assert built.initiative_bonus is None
+
+
+class TestSkillBonusesSpec:
+    """``skill_bonuses`` on an inline spec: the same separate construction
+    path as ``TestConditionImmunitySpec`` above.
+    """
+
+    def test_an_inline_spec_carrying_skill_bonuses_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "skill_bonuses": {"perception": 5}}, registry)
+
+        assert built.skill_bonuses == {"perception": 5}
+
+    def test_skill_bonuses_defaults_to_empty(self, registry: ContentRegistry) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.skill_bonuses == {}
+
+
+class TestPassivePerceptionSpec:
+    """``passive_perception`` on an inline spec: the same separate
+    construction path as ``TestInitiativeBonusSpec`` above, whose shape it
+    follows exactly.
+    """
+
+    def test_an_inline_spec_carrying_passive_perception_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "passive_perception": 15}, registry)
+
+        assert built.passive_perception == 15
+
+    def test_passive_perception_defaults_to_none(self, registry: ContentRegistry) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.passive_perception is None
 
 
 SHORTBOW: dict[str, Any] = {

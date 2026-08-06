@@ -123,7 +123,7 @@ class TestEventIndexing:
         that starts the fight dying: its death save lands after the round-1
         announcement and its own turn_start, never into a bare log."""
         thora = fighter("Thora", hp=0)
-        thora.conditions.add("unconscious")
+        thora.conditions["unconscious"] = 1
         ogre = make_monster("Ogre", label="Ogre", position=30)
         # Seed 0 puts Thora first in initiative; the guard below pins that.
         encounter, _ = build_encounter([thora, ogre], seed=0)
@@ -136,7 +136,7 @@ class TestEventIndexing:
         assert all(event.round == 1 and event.turn == "Thora" for event in opening)
 
     def test_every_emitted_kind_is_a_declared_kind(self) -> None:
-        assert len(EVENT_KINDS) == 30
+        assert len(EVENT_KINDS) == 31
         encounter, _ = played_out()
         seen = {event.kind for event in encounter.log}
         assert seen <= EVENT_KINDS, f"undeclared kinds: {sorted(seen - EVENT_KINDS)}"

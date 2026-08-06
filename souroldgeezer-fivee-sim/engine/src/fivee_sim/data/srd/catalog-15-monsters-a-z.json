@@ -45,15 +45,14 @@
       "bonus_actions": [
         "disengage"
       ],
+      "skill_bonuses": {
+        "stealth": 6
+      },
       "provenance": "SRD 5.2.1",
       "unmodelled_facts": [
         {
           "code": "unsupported_bonus_action",
           "feature": "Nimble Escape: Hide"
-        },
-        {
-          "code": "unsupported_creature_skills",
-          "feature": "Stealth +6"
         },
         {
           "code": "unsupported_passive_perception",
@@ -104,15 +103,14 @@
           "advantage_bonus_damage": "1d4"
         }
       ],
+      "skill_bonuses": {
+        "stealth": 6
+      },
       "provenance": "SRD 5.2.1",
       "unmodelled_facts": [
         {
           "code": "unsupported_bonus_action",
           "feature": "Nimble Escape: Hide"
-        },
-        {
-          "code": "unsupported_creature_skills",
-          "feature": "Stealth +6"
         },
         {
           "code": "unsupported_passive_perception",
@@ -144,7 +142,8 @@
         "poison"
       ],
       "condition_immunities": [
-        "poisoned"
+        "poisoned",
+        "exhaustion"
       ],
       "undead_fortitude": true,
       "attacks": [
@@ -157,13 +156,7 @@
           "reach": 5
         }
       ],
-      "provenance": "SRD 5.2.1",
-      "unmodelled_facts": [
-        {
-          "code": "unsupported_condition_immunity",
-          "feature": "Exhaustion"
-        }
-      ]
+      "provenance": "SRD 5.2.1"
     },
     {
       "name": "Skeleton",
@@ -186,7 +179,8 @@
         "poison"
       ],
       "condition_immunities": [
-        "poisoned"
+        "poisoned",
+        "exhaustion"
       ],
       "vulnerabilities": [
         "bludgeoning"
@@ -212,10 +206,6 @@
       ],
       "provenance": "SRD 5.2.1",
       "unmodelled_facts": [
-        {
-          "code": "unsupported_condition_immunity",
-          "feature": "Exhaustion"
-        },
         {
           "code": "unsupported_passive_perception",
           "feature": "Passive Perception 8"

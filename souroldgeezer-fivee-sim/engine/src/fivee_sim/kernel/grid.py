@@ -67,6 +67,7 @@ class MovementMode(StrEnum):
     CLIMB = "climb"
     SWIM = "swim"
     FLY = "fly"
+    BURROW = "burrow"
 
 
 class Facing(StrEnum):

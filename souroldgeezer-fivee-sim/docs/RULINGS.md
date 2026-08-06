@@ -56,6 +56,22 @@ Basis: SRD 5.2.1, Cover; SRD 5.2.1, Vision and Light.
 
 Governs: `kernel/grid.py:has_line_of_sight`.
 
+### `speed_reduction_reaches_every_movement_mode`
+
+**Question.** Exhaustion reduces 'your Speed' by feet per level. A creature with more than one Speed has to choose which one applies to a numeric reduction stated once, in the singular.
+
+**Decision.** The reduction comes off every movement mode a creature has — walk, climb, swim, fly, and burrow alike — clamped at 0, never negative.
+
+**Why.** Grappled's Speed clause reads identically ('Your Speed is 0') and this engine already reads it as covering every mode: _do_move refuses regardless of movement_mode. Reading Exhaustion's numeric clause the other way would make the same three words mean two different things in one condition table. The Speed glossary entry reinforces it: a creature with more than one Speed chooses which to use for a given move, so the modes are alternatives drawing on one budget rather than independent totals — a reduction a creature could dodge by choosing to fly would be no reduction at all.
+
+**Revisit when.** No survey of outside readings backs this yet — it is argued from the table's own Grappled precedent and the Speed glossary alone. Revisit if a printed clause ever states a Speed reduction that is meant to apply to one named mode only, which would mean the modes are not always drawing on one shared budget.
+
+**Outside readings.** no outside ruling exists.
+
+Basis: SRD 5.2.1, Conditions, Exhaustion; SRD 5.2.1, Rules Glossary, Speed.
+
+Governs: `model/creature.py:Creature.speed_for`.
+
 ## Modelled coarser than printed
 
 The rule is clear and the engine deliberately models it at a different granularity. Each entry names the case where the two part company.
@@ -87,6 +103,20 @@ Governs: `model/encounter.py:Encounter._do_attack`.
 Basis: SRD 5.2.1, Climbing, Swimming, and Crawling; SRD 5.2.1, Difficult Terrain.
 
 Governs: `model/encounter.py:Encounter._step_cost`.
+
+### `movement_mode_ungated_by_terrain`
+
+**Question.** A Swim Speed needs water, a Burrow Speed needs something to burrow through, a Fly Speed needs open air. The printed rule assumes the terrain a mode needs is actually there before a creature draws on it.
+
+**Decision.** The turn's movement budget is the highest of every mode a creature has, with no check that the square it occupies offers what that mode requires. A swim speed counts on dry land; a burrow speed counts in open air; a fly speed counts underground.
+
+**Why.** This predates the wave for swim, climb and fly; burrow joined the same rule rather than inventing a gate for one mode alone. A grid square carries a terrain price, not a per-mode legality flag, and adding one is a single decision for all five modes together.
+
+**Revisit when.** A real gate is one decision covering all five modes at once, not a burrow-shaped patch. The day a map needs a creature refused a swim move on dry ground is the day to design it, for every mode together.
+
+Basis: SRD 5.2.1, Rules Glossary, Speed.
+
+Governs: `model/encounter.py:Encounter._fresh_turn_state`.
 
 ### `cylinder_height_unread`
 
@@ -130,6 +160,34 @@ Basis: SRD 5.2.1, Exploration; SRD 5.2.1, Your Turn.
 
 Governs: `model/encounter.py:Encounter._begin_beat`.
 
+### `temp_hp_grant_takes_the_higher_value`
+
+**Question.** Temporary Hit Points, They Don't Stack: the recipient chooses whether to keep what they have or take the new grant. This engine has no player-choice channel at grant time.
+
+**Decision.** Creature.grant_temp_hp takes the higher of what the creature already carries and what is offered, rather than asking anyone.
+
+**Why.** There is no channel through which a grant can pause and put the choice to the recipient, and the higher value is the choice a player would make anyway whenever the two amounts differ, so defaulting to it costs nothing a real choice would have kept.
+
+**Revisit when.** The day a grant can carry a real choice — an interactive session where the recipient answers a prompt rather than the engine picking for them — is the day this reverts to the printed rule.
+
+Basis: SRD 5.2.1, Temporary Hit Points.
+
+Governs: `model/creature.py:Creature.grant_temp_hp`.
+
+### `effect_release_drops_the_whole_condition`
+
+**Question.** A cumulative condition like Exhaustion is held at a level, and more than one source can be adding to it. The printed rule tracks the level; nothing says an ending effect should remove more than its own contribution.
+
+**Decision.** Encounter._release_effect calls remove_condition(effect.condition) outright once it is the last ledger effect holding that condition, dropping the whole entry rather than the levels this one effect contributed.
+
+**Why.** The ledger's stacked/remaining guards protect a condition already held before this effect began, or still held by another live effect, but neither guard is re-checked at release time: a level added by something outside the ledger — a table ruling, most concretely — after this effect started is not accounted for and is stripped along with it.
+
+**Revisit when.** A pack that imposes one level of a cumulative condition through a timed or concentration effect, on a creature that also picks up a level from a table ruling or another channel while that effect is still active, is misresolved the moment the first effect lapses. Give remove_condition's levels parameter a real caller here before that content ships.
+
+Basis: SRD 5.2.1, Conditions, Exhaustion; SRD 5.2.1, Rules Glossary, Concentration.
+
+Governs: `model/encounter.py:Encounter._release_effect`.
+
 ## Said by the rules, unsayable here
 
 The record schema has no field for these, so transcribing harder produces nothing. Closing one is a code change, not content.
@@ -146,17 +204,41 @@ The record schema has no field for these, so transcribing harder produces nothin
 
 Basis: SRD 5.2.1, Monsters.
 
-### `no_skill_or_proficiency_concept`
+### `skills_are_printed_absolutes`
 
-**Question.** 216 of 336 stat blocks print skills. Ability checks take a proficiency.
+**Question.** A skill bonus is a Proficiency Bonus, possibly doubled by Expertise, added to an ability modifier, and Help can grant Advantage on the check.
 
-**Decision.** No skill or proficiency concept exists anywhere in the engine. The check primitive takes a skill name as a label and its modifier from the caller.
+**Decision.** A creature carries a flat printed total per skill. No proficiency bonus, Expertise, or Help exists, and only a map-fixture check can name a skill — the standalone check operation still takes its modifier from the caller.
 
-**Why.** Combat resolution never needed one, so nothing forced the design. The label keeps the caller honest about what it is rolling without the engine pretending to know.
+**Why.** Stat blocks print the total, so a transcriber never has the breakdown to enter, and deriving one would mean inventing a level the monster does not have. The same shape save_bonuses already used carries it.
 
-**Revisit when.** A transcribed creature silently drops its skills and its passive Perception. Any content that turns on being good at something — hiding, spotting an ambush — cannot be expressed.
+**Revisit when.** A player character whose Proficiency Bonus rises cannot be modelled by changing one number, and nothing can grant Advantage by helping. Hide, Search and Study remain unbuildable for the same reason.
 
 Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
+
+### `passive_perception_transcribed_only`
+
+**Question.** 333 of 336 stat blocks print a Passive Perception.
+
+**Decision.** A creature record may carry the printed number and nothing reads it. The bundled records that print one still declare it as an omission.
+
+**Why.** There is no Hide, Search, or Study action for it to be compared against, so a consumer would have to be invented before the field could do anything. Carrying it keeps a faithful transcription from being re-derived later; declaring it keeps the coverage report from claiming a simulation that does not exist.
+
+**Revisit when.** The moment a hidden creature is expressible, this number is what an onlooker's passive Perception must beat, and the omission codes on five bundled records become closable.
+
+Basis: SRD 5.2.1, Perception; SRD 5.2.1, Monsters.
+
+### `tremorsense_carried_and_unconsumed`
+
+**Question.** Tremorsense pinpoints a creature's location within range and explicitly 'doesn't count as a form of sight.'
+
+**Decision.** Creature.tremorsense is transcribed and reported. Encounter._can_see, the engine's only sight predicate, has no rung for it and no rule consults the field.
+
+**Why.** Every consumer of _can_see only has 'can see' and 'cannot see' to choose between, and answering True for a Tremorsense-only observer would wrongly cancel the unseen-target Disadvantage against a creature it has pinpointed but still cannot see. The same declared-but-inert standing as passive_perception_transcribed_only: carrying a printed number with no consumer to spend it on.
+
+**Revisit when.** The day this engine gains a pinpoint-without-sight state — something between 'can see' and 'cannot see' — is the day Tremorsense has a rung of its own to occupy in _can_see.
+
+Basis: SRD 5.2.1, Rules Glossary, Tremorsense.
 
 ### `touch_range_transcribed_as_five_feet`
 
@@ -182,17 +264,17 @@ Basis: SRD 5.2.1, Spells, Range.
 
 Basis: SRD 5.2.1, Monsters, Recharge.
 
-### `no_round_clock_for_durations`
+### `long_rest_exhaustion_removal_is_unreachable`
 
-**Question.** 225 SRD spells carry a real duration and 133 are Concentration. Durations are printed in rounds, minutes and hours.
+**Question.** Exhaustion names a Long Rest as the thing that removes a level, and sets no other way to shed one.
 
-**Decision.** An ongoing effect expires on a turn boundary — a phase and the creature whose turn ends it — or it lasts until something releases it. There is no elapsed-time clock, so a printed duration has nowhere to go.
+**Decision.** This engine models no rest of any length. The only channel that reaches a carried combatant's Exhaustion level is ``adventures.link_encounter``'s caller-supplied ``recovery`` delta, which is already where a caller says a long rest happened, for hit points and every other carried field.
 
-**Why.** Turn-boundary anchors are what an attack rider's condition actually needs, and they were enough for every effect the engine could resolve when the ledger was written.
+**Why.** A combat stepper has rounds and turns, not the minutes or hours a rest takes, so there is no clock here for a long rest to finish against. ``recovery`` already exists for exactly this shape of gap and needed no new field to carry Exhaustion's.
 
-**Revisit when.** A concentration spell runs until concentration breaks rather than until its minute is up, so it is strictly more powerful here than in print. Hold Person is the bundled case.
+**Revisit when.** Simulating rest at all — even a bare 'a long rest happened' operation between encounters — would give this a real site to point at instead of a caller-supplied number, and this entry should close in favour of one that names it.
 
-Basis: SRD 5.2.1, Spells, Duration; SRD 5.2.1, Rules Glossary, Concentration.
+Basis: SRD 5.2.1, Conditions, Exhaustion; SRD 5.2.1, Resting.
 
 ## Outside what this engine simulates
 
@@ -225,6 +307,30 @@ Basis: SRD 5.2.1, Spells, Casting Time; SRD 5.2.1, Resting.
 ## Closed
 
 Kept because earlier reviews still cite them, and because a reopened question should find its own history.
+
+### `no_skill_or_proficiency_concept`
+
+**Question.** 216 of 336 stat blocks print skills. Ability checks take a proficiency.
+
+**Decision.** A creature carries printed skill bonuses and a map-fixture check may name the skill it wants, so the bundled records that dropped their skills no longer declare an unsupported_creature_skills omission. Passive Perception stayed unmodelled and is now its own entry.
+
+**Why.** The ceiling was one field and one consumer wide, not a design question: stat blocks print skill totals rather than proficiencies, so the same printed-absolute shape save_bonuses already used carried them, and the engine's one ability-check site only needed to be able to name a skill.
+
+**Closed in.** 2026.08.69
+
+Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
+
+### `no_round_clock_for_durations`
+
+**Question.** 225 SRD spells carry a real duration and 133 are Concentration. Durations are printed in rounds, minutes and hours.
+
+**Decision.** A spell may declare a duration in rounds, and an ongoing effect it creates is released when that many rounds have passed. Hold Person carries its 1-minute cap and no longer declares it as an omission.
+
+**Why.** The round counter the encounter already advanced was the whole missing half: nothing in the effect ledger read it. A concentration spell now ends on whichever arrives first, its cap or a broken concentration.
+
+**Closed in.** 2026.08.69
+
+Basis: SRD 5.2.1, Spells, Duration; SRD 5.2.1, Rules Glossary, Concentration.
 
 ### `surprise_had_no_initiative_rider`
 

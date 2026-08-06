@@ -37,6 +37,7 @@ from fivee_sim.content import (
 )
 from fivee_sim.kernel.actions import AttackKind, compute_attack_advantage
 from fivee_sim.kernel.conditions import (
+    EFFECT_FLAGS,
     EFFECTS,
     Condition,
     ConditionEffect,
@@ -245,7 +246,8 @@ class TestPlaytestFieldsSchema:
             }],
             "spells": [{
                 "name": "Restore", "level": 1, "heal": "1d8+3",
-                "upcast_heal": "1d8", "range_feet": 5,
+                "upcast_heal": "1d8", "temp_hp": "1d4+1", "upcast_temp_hp": "1d4",
+                "range_feet": 5,
                 "action_cost": "bonus_action",
                 "provenance": "test",
             }],
@@ -256,7 +258,7 @@ class TestPlaytestFieldsSchema:
             }],
             "items": [{
                 "name": "Second Wind", "use": {
-                    "heal": "1d10+1", "action_cost": "bonus_action",
+                    "heal": "1d10+1", "temp_hp": "1d6", "action_cost": "bonus_action",
                 }, "provenance": "test",
             }],
         })
@@ -280,9 +282,12 @@ class TestPlaytestFieldsSchema:
         assert attack.detach_after_damage == 5
         assert registry.spells["Restore"].heal == Dice(1, 8, 3)
         assert registry.spells["Restore"].upcast_heal == Dice(1, 8)
+        assert registry.spells["Restore"].temp_hp == Dice(1, 4, 1)
+        assert registry.spells["Restore"].upcast_temp_hp == Dice(1, 4)
         assert registry.spells["Restore"].action_cost is ActionCost.BONUS_ACTION
         assert registry.terrain_effects["deep-water"].underwater is True
         assert registry.items["Second Wind"].action_cost is ActionCost.BONUS_ACTION
+        assert registry.items["Second Wind"].temp_hp == Dice(1, 6)
 
     def test_an_unknown_bonus_action_is_refused_by_name(self, tmp_path: Path) -> None:
         path = write_pack(tmp_path, "bad-bonus.json", {
@@ -563,7 +568,10 @@ class TestDiagnostics:
             "pack": "x", "provenance": "test",
             "items": [{"name": "Pebble", "use": {}, "provenance": "test"}],
         })
-        assert any("heal, deal damage, or apply a condition" in p for p in found)
+        assert any(
+            "heal, deal damage, grant temporary hit points, or apply a condition" in p
+            for p in found
+        )
 
     def test_several_problems_in_one_record_are_all_reported(self, tmp_path: Path) -> None:
         found = self.check(tmp_path, {
@@ -1039,7 +1047,7 @@ class TestConstructionSeam:
             condition_effects=table,
             source="test",
         )
-        assert creature.conditions == {"vale-cursed"}
+        assert creature.conditions == {"vale-cursed": 1}
         assert not creature.active
 
     def test_label_and_team_rename_the_instance(self) -> None:
@@ -1167,6 +1175,40 @@ class TestSpellActionCostSchema:
         })
         registry = load_packs([path], include_environment=False)
         assert registry.spells["Vale Bolt"].action_cost is ActionCost.ACTION
+
+
+class TestSpellDurationRoundsSchema:
+    """A spell's printed duration cap is stored in rounds, and defaults to none.
+
+    SRD 5.2.1 prints durations in minutes or hours; this engine counts rounds,
+    at 10 rounds per SRD minute (1 round = 6 seconds). ``0`` means "no cap" —
+    the same reading ``range_feet`` gives its own default — so a record
+    carrying only ``name``, ``level`` and ``provenance`` keeps loading exactly
+    as it does today.
+    """
+
+    def test_an_omitted_duration_rounds_defaults_to_no_cap(self, tmp_path: Path) -> None:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Bolt", "level": 1, "damage": "1d10",
+                "damage_type": "force", "range_feet": 60, "provenance": "test",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Bolt"].duration_rounds == 0
+
+    def test_duration_rounds_is_read_from_the_record(self, tmp_path: Path) -> None:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Hold", "level": 2, "condition": "paralyzed",
+                "save_ability": "wisdom", "range_feet": 60, "concentration": True,
+                "duration_rounds": 10, "provenance": "test",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Hold"].duration_rounds == 10
 
 
 class TestCatalogContentRefMustResolve:
@@ -1403,6 +1445,116 @@ class TestEnvironment:
         })
         assert "Rope" in registry.items
         assert "Vale Stalker" not in registry.creatures
+
+
+class TestConditionEffectNumericFields:
+    """``d20_test_penalty_per_level`` is the numeric effect field: the validator
+    must derive its expected type from :class:`ConditionEffect` rather than
+    hardcoding which flags are boolean, and the builtin condition payload must
+    keep emitting only the flags that differ from the defaults.
+    """
+
+    def condition_pack(self, tmp_path: Path, effects: dict[str, Any]) -> Path:
+        return write_pack(tmp_path, "numeric.json", {
+            "pack": "x", "provenance": "test",
+            "conditions": [{
+                "name": "weary", "provenance": "test", "effects": effects,
+            }],
+        })
+
+    def test_a_non_negative_int_is_accepted(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": 2})],
+            builtin="exclude", include_environment=False,
+        )
+        assert (
+            registry.condition_effects["weary"].d20_test_penalty_per_level == 2
+        )
+
+    def test_zero_is_accepted(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": 0})],
+            builtin="exclude", include_environment=False,
+        )
+        assert not problems(diagnostics)
+
+    def test_a_negative_penalty_is_refused_as_a_bonus_wearing_a_penalty_name(
+        self, tmp_path: Path
+    ) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": -1})],
+            builtin="exclude", include_environment=False,
+        )
+        found = problems(diagnostics)
+        assert any("d20_test_penalty_per_level" in p for p in found)
+        assert any("bonus" in p for p in found)
+
+    def test_a_bool_is_refused_for_a_numeric_field_even_though_it_is_an_int(
+        self, tmp_path: Path
+    ) -> None:
+        # ``isinstance(True, int)`` is ``True`` in Python, so an int-first check
+        # would silently accept ``true`` as the number 1. The bool check must run
+        # first.
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": True})],
+            builtin="exclude", include_environment=False,
+        )
+        found = problems(diagnostics)
+        assert any("d20_test_penalty_per_level" in p for p in found)
+
+    def test_a_non_bool_is_still_refused_for_a_boolean_field(
+        self, tmp_path: Path
+    ) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"own_attacks_have_disadvantage": 1})],
+            builtin="exclude", include_environment=False,
+        )
+        assert any(
+            "own_attacks_have_disadvantage must be true or false" in p
+            for p in problems(diagnostics)
+        )
+
+    def test_a_second_numeric_field_needs_no_validator_change(
+        self, tmp_path: Path
+    ) -> None:
+        # speed_reduction_feet_per_level is the second numeric ConditionEffect
+        # field (T10d), added after d20_test_penalty_per_level (T10c). The
+        # validator derives its expected type from the dataclass default
+        # exactly as it does for the first one, so accepting this one needed
+        # no branch of its own.
+        registry = load_packs(
+            [self.condition_pack(tmp_path, {"speed_reduction_feet_per_level": 5})],
+            builtin="exclude", include_environment=False,
+        )
+        assert registry.condition_effects["weary"].speed_reduction_feet_per_level == 5
+
+    def test_a_negative_speed_reduction_is_refused_too(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"speed_reduction_feet_per_level": -1})],
+            builtin="exclude", include_environment=False,
+        )
+        found = problems(diagnostics)
+        assert any("speed_reduction_feet_per_level" in p for p in found)
+
+    def test_the_builtin_condition_payload_is_a_defaults_diff(self) -> None:
+        # ``_builtin_condition_payload`` renders each row as a diff against
+        # ``ConditionEffect()``'s defaults, not as ``{flag: True for flag in
+        # EFFECT_FLAGS if getattr(effect, flag)}`` — that formula coerces a
+        # numeric field (Exhaustion's ``d20_test_penalty_per_level``,
+        # ``speed_reduction_feet_per_level``, and ``death_at_level``) down to
+        # ``True``, which T10a's all-boolean table could never have caught.
+        from fivee_sim.content import _builtin_condition_payload
+
+        payload = _builtin_condition_payload()
+        by_name = {row["name"]: row for row in payload["conditions"]}
+        defaults = ConditionEffect()
+        for name, effect in EFFECTS.items():
+            expected = {
+                flag: getattr(effect, flag)
+                for flag in EFFECT_FLAGS
+                if getattr(effect, flag) != getattr(defaults, flag)
+            }
+            assert by_name[str(name)]["effects"] == expected
 
 
 class TestCustomConditions:
@@ -2231,4 +2383,113 @@ class TestInitiativeBonusSchema:
             builtin="exclude", include_environment=False,
         )
         assert "initiative_bonus" in fields(diagnostics)
+        assert any("must be a whole number" in p for p in problems(diagnostics))
+
+
+class TestSkillBonusesSchema:
+    """``skill_bonuses``: a printed absolute modifier, not a proficiency to add.
+
+    SRD stat blocks print totals ("Perception +5"), and the engine has no
+    character level or proficiency bonus to derive one from — the value here
+    *is* the printed total. Keys are plain strings, never a closed enum: the
+    engine already treats a ``primitives.check`` skill label and a pack
+    condition name the same way, and a skill this engine has never heard of is
+    still a fact a stat block prints.
+    """
+
+    def creature_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "sentry.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Vale Sentry", "ac": 13, "max_hp": 20,
+                "abilities": {"wisdom": 12}, "provenance": "test", **fields,
+            }],
+        })
+
+    def test_a_creature_carries_its_printed_skill_bonuses(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path, skill_bonuses={"perception": 5, "stealth": 4})],
+            builtin="exclude", include_environment=False,
+        )
+        sentry = Creature.from_record(
+            registry.creatures["Vale Sentry"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert sentry.skill_bonuses == {"perception": 5, "stealth": 4}
+
+    def test_a_creature_without_any_falls_back_to_an_empty_mapping(
+        self, tmp_path: Path
+    ) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        sentry = Creature.from_record(
+            registry.creatures["Vale Sentry"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert sentry.skill_bonuses == {}
+
+    def test_a_non_integer_value_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.creature_pack(tmp_path, skill_bonuses={"perception": "five"})],
+            builtin="exclude", include_environment=False,
+        )
+        assert "skill_bonuses" in fields(diagnostics)
+        assert any("must be a whole number" in p for p in problems(diagnostics))
+
+
+class TestPassivePerceptionSchema:
+    """``passive_perception``: transcription-only, following the
+    ``initiative_bonus`` template exactly. A stat block's printed Passive
+    Perception does not always equal ``10 + Wisdom modifier`` — the same
+    reason ``initiative_bonus`` is carried rather than derived — and nothing
+    in this engine reads it: there is no Hide, Search, Stealth, or Perception
+    action here for it to reach. It is carried anyway, declared rather than
+    silently dropped, per the ``hit_dice`` ruling.
+    """
+
+    def creature_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "watcher.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Vale Watcher", "ac": 13, "max_hp": 20,
+                "abilities": {"wisdom": 12}, "provenance": "test", **fields,
+            }],
+        })
+
+    def test_a_creature_carries_its_printed_passive_perception(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path, passive_perception=15)],
+            builtin="exclude", include_environment=False,
+        )
+        watcher = Creature.from_record(
+            registry.creatures["Vale Watcher"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert watcher.passive_perception == 15
+
+    def test_a_creature_without_one_falls_back_to_none(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        watcher = Creature.from_record(
+            registry.creatures["Vale Watcher"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert watcher.passive_perception is None
+
+    def test_a_non_integer_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.creature_pack(tmp_path, passive_perception="fifteen")],
+            builtin="exclude", include_environment=False,
+        )
+        assert "passive_perception" in fields(diagnostics)
         assert any("must be a whole number" in p for p in problems(diagnostics))

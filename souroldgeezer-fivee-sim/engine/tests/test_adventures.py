@@ -20,6 +20,7 @@ stale version is refused rather than merged, and a retried link under one
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -892,3 +893,120 @@ class TestCarryingTheGround:
 
         assert len(api.adventure_state("adv-1")["members"]) == 1
         assert len(api.encounter_list("all")["encounters"]) == 1
+
+class TestTempHpCarryForward:
+    """``temp_hp`` joined ``CARRIED_STATE_KEYS`` in the same wave as
+    ``condition_levels``, and only the latter got a test for it.
+
+    SRD 5.2.1 p.18 is why it carries at all: Temporary Hit Points last "until
+    they're depleted or you finish a Long Rest", and this engine models no
+    rest — so a chapter boundary is not something that ends them, and dropping
+    the buffer there would end something the printed rule says survives.
+
+    The second case is the one worth having. ``carry_forward`` overlays *by
+    presence*, so a field the fight spent to zero must arrive at zero rather
+    than at the value the creation capture still remembers.
+    """
+
+    def test_an_unspent_buffer_survives_the_chapter_boundary(self) -> None:
+        warded = dict(BRAWLER) | {"temp_hp": 5}
+        first = str(api.encounter_create([warded, RUFFIAN], seed=91)["encounter_id"])
+        assert combatant(api.encounter_state(first), "Thora")["temp_hp"] == 5
+
+        normalized, live = shapes(first, "Thora")
+        carried = adventures.carry_forward(normalized, live)
+        second = str(
+            api.encounter_create([carried, dict(RUFFIAN)], seed=92)["encounter_id"]
+        )
+
+        assert combatant(api.encounter_state(second), "Thora")["temp_hp"] == 5
+
+    def test_a_buffer_spent_before_the_boundary_arrives_spent(self) -> None:
+        # Bram's Club is +20 against AC 10 and deals 2d6+3, so one landed hit
+        # always exceeds a 5-point buffer — the spend is deterministic without
+        # scripting the dice.
+        warded = dict(BRAWLER) | {"temp_hp": 5}
+        first = str(api.encounter_create([warded, RUFFIAN], seed=93)["encounter_id"])
+        for _ in range(8):
+            if combatant(api.encounter_state(first), "Thora")["temp_hp"] == 0:
+                break
+            if api.encounter_state(first)["turn"] == "Bram":
+                api.encounter_act(first, "attack", target="Thora")
+            api.encounter_advance(first)
+        else:  # pragma: no cover - a fixture that stopped working, not a branch
+            raise AssertionError("nobody ever spent Thora's temporary hit points")
+
+        normalized, live = shapes(first, "Thora")
+        carried = adventures.carry_forward(normalized, live)
+        second = str(
+            api.encounter_create([carried, dict(RUFFIAN)], seed=94)["encounter_id"]
+        )
+
+        # Not 5: the creation capture still says 5, and only the overlay makes
+        # the arrival honest about what the fight did to it.
+        assert combatant(api.encounter_state(second), "Thora")["temp_hp"] == 0
+
+
+class TestConditionLevelsCarryForward:
+    """The last leg of the T10b acceptance check: a pack-declared cumulative
+    condition's level survives an adventure chapter boundary.
+
+    ``condition_levels`` is emitted unconditionally from ``Encounter.state()``
+    specifically so this overlay is correct — see the ruling on
+    ``adventures.CARRIED_STATE_KEYS``.
+    """
+
+    PACK = str(Path(__file__).parent / "packs" / "01-ashfall-reach.json")
+
+    def test_a_level_reached_by_three_impositions_survives_the_chapter_boundary(
+        self,
+    ) -> None:
+        api.content_configure([self.PACK], add=True)
+        api.adventure_create("The Sunless Citadel")
+        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=76)
+        first_id = str(first["encounter_id"])
+        for index in range(3):
+            api.encounter_condition(
+                first_id, "Thora", "ashfall-ember-marked", request_id=f"mark-{index}"
+            )
+        assert combatant(api.encounter_state(first_id), "Thora")["condition_levels"] == {
+            "ashfall-ember-marked": 3
+        }
+
+        second = api.adventure_encounter(
+            "adv-1",
+            carry=["Thora"],
+            combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            seed=77,
+        )
+        arrived = combatant(api.encounter_state(str(second["encounter_id"])), "Thora")
+
+        assert arrived["condition_levels"] == {"ashfall-ember-marked": 3}
+        assert "ashfall-ember-marked" in arrived["conditions"]
+
+    def test_shedding_the_condition_before_the_boundary_carries_no_level(self) -> None:
+        # The defect unconditional emission exists to prevent: a combatant who
+        # lost the condition mid-fight must not arrive at the next chapter
+        # still carrying the level a stale, non-empty capture would leave.
+        api.content_configure([self.PACK], add=True)
+        api.adventure_create("The Sunless Citadel")
+        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=78)
+        first_id = str(first["encounter_id"])
+        api.encounter_condition(
+            first_id, "Thora", "ashfall-ember-marked", request_id="mark-0"
+        )
+        api.encounter_condition(
+            first_id, "Thora", "ashfall-ember-marked",
+            applied=False, request_id="lift-0",
+        )
+
+        second = api.adventure_encounter(
+            "adv-1",
+            carry=["Thora"],
+            combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            seed=79,
+        )
+        arrived = combatant(api.encounter_state(str(second["encounter_id"])), "Thora")
+
+        assert arrived["condition_levels"] == {}
+        assert "ashfall-ember-marked" not in arrived["conditions"]

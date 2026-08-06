@@ -352,6 +352,65 @@ class TestHealingScalesWithTheCaster:
         assert resolution.results[0].healed >= 0
 
 
+class TestTempHpGrantingSpells:
+    """SRD 5.2.1, Temporary Hit Points, on a spell — never routed through
+    ``heal``, mirroring it exactly otherwise: rolled once, shared by every
+    target in the area, and scaled by ``upcast_temp_hp`` the same way
+    ``upcast_heal`` scales healing.
+    """
+
+    def test_temp_hp_is_rolled_once_and_shared_by_every_target(self) -> None:
+        spell = Spell(
+            name="Warding Chant",
+            level=1,
+            temp_hp=Dice.parse("2d6+2"),
+            range_feet=30,
+            max_targets=3,
+            provenance="synthetic test fixture, not SRD content",
+        )
+        resolution = resolve_spell(
+            Random(6),
+            spell,
+            slot_level=1,
+            save_dc=13,
+            targets=(SpellTarget(name="Ally A"), SpellTarget(name="Ally B")),
+        )
+        assert resolution.temp_hp_roll is not None
+        first, second = resolution.results
+        assert first.temp_hp_granted == resolution.temp_hp_roll.total
+        assert second.temp_hp_granted == resolution.temp_hp_roll.total
+        assert first.healed == 0
+
+    def test_upcasting_scales_the_temp_hp_dice(self) -> None:
+        spell = Spell(
+            name="Warding Chant",
+            level=1,
+            temp_hp=Dice.parse("1d6"),
+            upcast_temp_hp=Dice.parse("1d6"),
+            range_feet=30,
+            provenance="synthetic test fixture, not SRD content",
+        )
+        assert str(spell.temp_hp_at(1)) == "1d6"
+        assert str(spell.temp_hp_at(3)) == "3d6"
+
+    def test_a_grant_alone_is_not_healing(self) -> None:
+        spell = Spell(
+            name="Warding Chant",
+            level=1,
+            temp_hp=Dice.parse("2d4"),
+            range_feet=30,
+            provenance="synthetic test fixture, not SRD content",
+        )
+        resolution = resolve_spell(
+            Random(2), spell, slot_level=1, save_dc=13,
+            targets=(SpellTarget(name="Ally"),),
+        )
+        assert resolution.healing_roll is None
+        assert resolution.results[0].healed == 0
+        assert resolution.results[0].temp_hp_granted > 0
+        assert resolution.results[0].affected
+
+
 class TestBundledData:
     def test_every_bundled_spell_declares_srd_provenance(self) -> None:
         assert all(spell.provenance == "SRD 5.2.1" for spell in spellbook().values())

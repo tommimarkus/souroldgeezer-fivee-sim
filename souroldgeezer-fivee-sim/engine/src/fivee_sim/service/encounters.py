@@ -394,6 +394,7 @@ def condition(
     target: str,
     condition_name: str,
     applied: bool = True,
+    levels: int = 1,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Impose or lift a condition on one combatant by the table's ruling.
@@ -410,13 +411,29 @@ def condition(
     ``latest_state`` one ruling past the final checkpoint. Recovery had it
     right all along (``sessions.recover_session`` replays this operation with
     both), so the two paths disagreed about the same fight.
+
+    ``levels`` is forwarded to :meth:`Encounter.set_condition` unchanged — it
+    only accumulates on a condition the effect row marks ``cumulative``, so a
+    GM imposing three levels of an ordinary condition gets the same level-1
+    result a caller who never sends it gets.
     """
+    # Checked here rather than left to ``Creature.add_condition``'s own floor:
+    # that one raises a bare ValueError, which the adapter would answer as a
+    # 500. A level a caller typed is bad input and gets said so.
+    if levels < 1:
+        raise RequestError(
+            f"levels is {levels}, and a condition level must be at least 1 — "
+            f"a numeric condition effect scales by the level, so one below it "
+            f"inverts the effect rather than weakening it"
+        )
     session = sessions.session_for(state, encounter_id)
 
     def execute() -> dict[str, Any]:
         before = len(session.encounter.log)
         try:
-            session.encounter.set_condition(target, condition_name, applied=applied)
+            session.encounter.set_condition(
+                target, condition_name, applied=applied, levels=levels
+            )
         except (EncounterError, UnknownCondition) as error:
             raise RequestError(str(error)) from error
         completed_at = sessions.utc_now()
@@ -424,12 +441,14 @@ def condition(
             [completed_at] * (len(session.encounter.log) - before)
         )
         sessions.capture_checkpoint(session, completed_at)
+        target_creature = session.encounter.creatures[target]
         return {
             "encounter_id": encounter_id,
             "target": target,
             "condition": condition_name,
             "applied": applied,
-            "conditions": sorted(session.encounter.creatures[target].conditions),
+            "conditions": sorted(target_creature.conditions),
+            "level": target_creature.level_of(condition_name),
         }
 
     return primitives.audited_primitive(
@@ -441,6 +460,7 @@ def condition(
             "target": target,
             "condition": condition_name,
             "applied": applied,
+            "levels": levels,
         },
         execute=execute,
     )
@@ -527,7 +547,7 @@ def execute_act(
     ends a move on another storey: walk to a stairway on your own level — the
     square named by ``to_position`` — and it carries you, charging the rise
     between the two floors as a climb. ``movement_mode`` selects walk, climb,
-    swim, or fly; the creature must have that speed, and flight does not need a
+    swim, fly, or burrow; the creature must have that speed, and flight does not need a
     connector. ``facing`` sets where the actor ends up looking, overriding what
     a move would otherwise derive from the leg that ended it; it changes no roll
     and is refused unless it names one of the eight grid directions. Illegal

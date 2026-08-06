@@ -298,13 +298,17 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "ac": creature.ac,
         "max_hp": creature.max_hp,
         "hp": creature.hp,
+        "temp_hp": creature.temp_hp,
         "speed": creature.speed,
         "climb_speed": creature.climb_speed,
         "swim_speed": creature.swim_speed,
         "fly_speed": creature.fly_speed,
+        "burrow_speed": creature.burrow_speed,
         "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
         "darkvision": creature.darkvision,
         "blindsight": creature.blindsight,
+        "tremorsense": creature.tremorsense,
+        "truesight": creature.truesight,
         "death_rule": creature.death_rule.value,
         "size": creature.size.value,
         "abilities": {
@@ -316,6 +320,7 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
                 creature.save_bonuses.items(), key=lambda item: item[0].value
             )
         },
+        "skill_bonuses": dict(sorted(creature.skill_bonuses.items())),
         "attacks": [_attack_payload(option) for option in creature.attacks],
         "attacks_per_action": creature.attacks_per_action,
         "bonus_actions": sorted(creature.bonus_actions),
@@ -339,12 +344,22 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         # fight without this would fall back to its Dexterity modifier even
         # when its stat block prints a different Initiative bonus.
         "initiative_bonus": creature.initiative_bonus,
+        # Transcription-only, like the field above it, but consumed by
+        # nothing: carried so a recovered combatant's sheet still reads
+        # exactly as authored.
+        "passive_perception": creature.passive_perception,
         "resistances": sorted(kind.value for kind in creature.resistances),
         "immunities": sorted(kind.value for kind in creature.immunities),
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),
         "condition_immunities": sorted(creature.condition_immunities),
         "items": dict(sorted(creature.items.items())),
         "conditions": sorted(creature.conditions),
+        # Unconditional like ``Encounter._creature_state``'s own emission — see
+        # the ruling there. Only entries above level 1 are named; level 1 is
+        # what every condition without a level already reads as.
+        "condition_levels": dict(sorted(
+            (name, level) for name, level in creature.conditions.items() if level != 1
+        )),
         # How the fight left them. Without these a recovered combatant comes
         # back on their feet: `dying` is derived as `not dead and hp == 0 and
         # not stable`, so dropping `stable` alone turns a stabilised creature
