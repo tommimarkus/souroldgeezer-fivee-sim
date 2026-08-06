@@ -1084,8 +1084,21 @@ def prune(apply: bool = False) -> dict[str, Any]:
     is nothing here that could license removing one. Retiring blobs needs a
     survey of the journals that *do* name them, which is a different operation
     against a different hazard.
+
+    The refusal is translated here like every other journal caller's —
+    ``sessions.journal_append``, ``sessions.recover_session`` and
+    ``list_encounters`` above all do the same. This one did not, and
+    ``JournalError`` is a bare ``ValueError`` rather than a ``RequestError``, so
+    a prune that could not finish reached the adapter's catch-all and told an
+    operator the engine had a defect. The ids already reclaimed ride in the
+    sentence, which is where :func:`~fivee_sim.service.encounter_journal.prune`
+    puts them for exactly this reason; the ``reaped`` attribute stays available
+    to a caller holding the journal module directly.
     """
-    return {"applied": apply, "encounters": journal_service.prune(apply=apply)}
+    try:
+        return {"applied": apply, "encounters": journal_service.prune(apply=apply)}
+    except journal_service.JournalError as error:
+        raise RequestError(str(error)) from error
 
 
 def finalize(

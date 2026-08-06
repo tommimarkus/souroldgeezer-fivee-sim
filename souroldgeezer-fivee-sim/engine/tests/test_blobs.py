@@ -86,9 +86,20 @@ def test_a_reference_outside_the_digest_grammar_is_refused_before_any_read(
 
     The same reasoning as ``common.ID_PATTERN``: an id outside the grammar
     cannot name a file we wrote, so it is refused rather than half-resolved.
+
+    The plant is not scenery, and the arithmetic is worth spelling out because
+    it is the only thing that makes this a traversal test rather than a second
+    grammar test. ``blob_path`` builds ``blobs_root() / f"{reference}.json"``,
+    the suite's blobs root is ``tmp_path / "blobs"``, so ``../secret`` resolves
+    to exactly ``tmp_path / "secret.json"`` — this file. Delete the grammar
+    check and ``get`` reads it.
     """
     planted = tmp_path / "secret.json"
     planted.write_text('{"stolen": true}', encoding="utf-8")
+    assert planted == (blobs_root() / "../secret.json").resolve(), (
+        "the plant has to sit where '../secret' actually lands, or this test "
+        "proves only that the grammar rejects a string"
+    )
 
     with pytest.raises(blobs.BlobError, match=r"not a blob reference: '\.\./secret'"):
         blobs.get("../secret")

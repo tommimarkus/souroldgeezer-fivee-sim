@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+from fivee_sim.paths import adventures_root
 from fivee_sim.service import adventures, durable, encounter_journal, sessions
 from fivee_sim.service.errors import RequestError, StaleWriteError
 
@@ -186,6 +187,7 @@ def test_a_second_process_acting_on_a_live_encounter_is_refused_not_merged(
 _LINKER = """
 import os, sys
 os.environ["FIVEE_SIM_ENCOUNTERS"] = {root!r}
+os.environ["FIVEE_SIM_ADVENTURES"] = {adventures!r}
 from fivee_sim.service import adventures, sessions
 from fivee_sim.service.errors import StaleWriteError
 tag, rounds, start_id = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
@@ -213,8 +215,14 @@ print(f"{{wins}} {{refusals}}")
 def _run_linker(
     root: Path, adventure_id: str, tag: str, rounds: int, start_id: int
 ) -> subprocess.Popen[str]:
+    # The adventures root is named explicitly rather than inherited. Since the
+    # layout move an adventure document no longer lives under
+    # ``FIVEE_SIM_ENCOUNTERS``, so a child setting only that one would be
+    # writing to whatever root the parent's environment happened to carry —
+    # correct here by luck, and silent about the seam under test.
     code = _LINKER.format(
         root=str(root),
+        adventures=str(adventures_root()),
         adventure_id=adventure_id,
         combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
     )
@@ -381,6 +389,39 @@ def test_a_symlink_planted_at_the_scratch_path_cannot_divert_a_write(
     assert json.loads(target.read_text(encoding="utf-8"))["generation"] == 1
 
 
+def test_a_symlink_planted_at_the_target_itself_is_replaced_not_followed(
+    tmp_path: Path,
+) -> None:
+    """The half of the guarantee the scratch-path case above cannot state.
+
+    That case pins the *shape of the defect that was fixed*: a symlink at the
+    old constructed name ``.{name}.{pid}.tmp``. It cannot observe what replaced
+    it, and re-running its assertion body against a bare
+    ``Path(path).write_text(text)`` — no ``mkstemp``, no rename, no atomicity at
+    all — passes, because a writer that never makes a scratch file never follows
+    one either. So it guards against a revert and against nothing else.
+
+    This is the case that discriminates. ``write_text`` on a symlinked target
+    follows the link and writes straight through to the victim; ``os.replace``
+    replaces the link itself, which is why publishing by rename is the whole
+    mechanism rather than an implementation detail of it. Together the two cases
+    cover both ends a planted link can be planted at.
+    """
+    victim = tmp_path / "victim.txt"
+    victim.write_text("do not clobber", encoding="utf-8")
+    target = tmp_path / "map.json"
+    target.symlink_to(victim)
+
+    durable.atomic_write(target, '{"generation": 1}')
+
+    assert victim.read_text(encoding="utf-8") == "do not clobber", (
+        "the write followed a symlink planted at the target and clobbered its "
+        "victim; publishing must replace the link, not write through it"
+    )
+    assert not target.is_symlink()
+    assert json.loads(target.read_text(encoding="utf-8"))["generation"] == 1
+
+
 def test_a_replaced_file_keeps_the_permissions_it_had(tmp_path: Path) -> None:
     """``mkstemp`` creates 0600; a replace must not silently tighten a file."""
     import stat as _stat
@@ -435,14 +476,29 @@ class TestLockLifecycle:
     def test_the_lock_is_released_and_closed_after_a_normal_body(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        """Both halves the name promises, because the common path is this one.
+
+        Closure used to be asserted only by the release-raises case below, so a
+        descriptor leaked on every *successful* acquisition would ship green —
+        and this lock is taken once per append on a threading server, which
+        turns that into ``EMFILE`` rather than a slow drip.
+        """
         calls: list[str] = []
-        monkeypatch.setattr(durable, "_acquire", lambda fd: calls.append("acquire"))
+        held: list[int] = []
+
+        def acquire(descriptor: int) -> None:
+            calls.append("acquire")
+            held.append(descriptor)
+
+        monkeypatch.setattr(durable, "_acquire", acquire)
         monkeypatch.setattr(durable, "_release", lambda fd: calls.append("release"))
 
         with durable.file_lock(tmp_path / "map.json"):
             calls.append("body")
 
         assert calls == ["acquire", "body", "release"]
+        with pytest.raises(OSError):
+            os.fstat(held[0])
 
     def test_a_raising_body_still_releases_the_lock(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -479,6 +535,11 @@ class TestLockLifecycle:
 
 #: Every child builds the same fight at the same moment. The id each is handed
 #: has to be its own, and nothing but the filesystem is shared between them.
+#:
+#: The child announces itself *after* its imports and before it waits, so the
+#: parent releases the gate on a state predicate — every child warm — rather
+#: than on a fixed sleep. The sleep this replaces was 2.0 s against a measured
+#: 0.09 s warm-up: never tight enough to flake, and 18% of this file's runtime.
 _CREATOR = """
 import os, sys, json, time
 os.environ["FIVEE_SIM_ENCOUNTERS"] = {root!r}
@@ -495,6 +556,7 @@ COMBATANTS = [
 ]
 gate = {gate!r}
 state = sessions.EngineState()
+open(os.path.join({ready!r}, str(os.getpid())), "w").close()   # warm, and waiting
 while not os.path.exists(gate):      # every child warm before any child allocates
     time.sleep(0.005)
 made, failed = [], []
@@ -503,14 +565,31 @@ for round_index in range({rounds}):
         made.append(str(encounters.create(state, COMBATANTS, seed=11)["encounter_id"]))
     except Exception as error:
         failed.append(type(error).__name__ + ": " + str(error)[:80])
-print(json.dumps({{"made": made, "failed": failed}}))
+print(json.dumps({{"made": made, "pid": os.getpid(), "failed": failed}}))
 """
+
+
+def _id_number(encounter_id: str) -> int:
+    """``enc-12`` as ``12``, so allocation order sorts numerically not lexically."""
+    return int(encounter_id.removeprefix("enc-"))
 
 
 def _run_creators(
     root: Path, gate: Path, children: int, rounds: int
-) -> tuple[list[str], list[str]]:
-    code = _CREATOR.format(root=str(root), gate=str(gate), rounds=rounds)
+) -> tuple[list[str], list[str], list[list[str]]]:
+    """Start ``children`` creators, release them together, and report per child.
+
+    The gate opens on a **state predicate** — one ready file per child — rather
+    than on a clock, so the release is correct on a loaded machine instead of
+    merely probable on an idle one. The loop is bounded by the children's own
+    liveness rather than by an elapsed budget: a child that dies is reported as
+    a dead child, which is the honest failure, and cannot hang the suite.
+    """
+    ready = gate.parent / "ready"
+    ready.mkdir()
+    code = _CREATOR.format(
+        root=str(root), gate=str(gate), ready=str(ready), rounds=rounds
+    )
     running = [
         subprocess.Popen(
             [sys.executable, "-c", code],
@@ -520,17 +599,22 @@ def _run_creators(
         )
         for _ in range(children)
     ]
-    time.sleep(2.0)  # let every interpreter finish importing before the gate opens
+    while len(list(ready.iterdir())) < children:
+        dead = [one for one in running if one.poll() not in (None, 0)]
+        assert not dead, f"a creator died before reaching the gate: {dead[0].returncode}"
+        time.sleep(0.005)
     gate.write_text("go")
     made: list[str] = []
     failed: list[str] = []
+    per_child: list[list[str]] = []
     for process in running:
         stdout, stderr = process.communicate(timeout=180)
         assert process.returncode == 0, f"creator died: {stderr}"
         answer = json.loads(stdout)
         made.extend(answer["made"])
         failed.extend(answer["failed"])
-    return made, failed
+        per_child.append(answer["made"])
+    return made, failed, per_child
 
 
 class TestEncounterIdsAcrossProcesses:
@@ -563,13 +647,31 @@ class TestEncounterIdsAcrossProcesses:
         root = tmp_path / "shared"
         root.mkdir()
 
-        made, failed = _run_creators(root, tmp_path / "GO", children=6, rounds=3)
+        made, failed, per_child = _run_creators(
+            root, tmp_path / "GO", children=6, rounds=3
+        )
 
         assert failed == [], f"creating a fresh encounter was refused: {failed}"
         assert len(made) == 18
         assert len(set(made)) == 18, (
             f"ids collided across processes: "
             f"{sorted(name for name in made if made.count(name) > 1)}"
+        )
+        # Without this the case is vacuous in the same way the atomic-write
+        # reader was: eighteen distinct ids is exactly what six children running
+        # *one after another* produce, so the assertions above cannot tell
+        # contention from a gate that opened too early. Interleaving can: a
+        # child that never raced anybody is handed three consecutive names.
+        order = {name: index for index, name in enumerate(sorted(made, key=_id_number))}
+        contiguous = [
+            child
+            for child in per_child
+            if max(order[name] for name in child) - min(order[name] for name in child)
+            == len(child) - 1
+        ]
+        assert len(contiguous) < len(per_child), (
+            "every child was handed a consecutive block of ids, so nothing "
+            f"actually contended: {per_child}"
         )
 
     def test_a_claimed_id_is_not_handed_out_again_after_a_crash(

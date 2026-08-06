@@ -2602,6 +2602,105 @@ def test_a_journal_left_flat_in_the_root_is_not_a_fight_this_build_knows(
         encounter_journal.read("enc-1")
 
 
+def test_a_second_caller_is_refused_the_id_the_first_one_claimed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``O_EXCL``'s losing side, which is the whole reason allocation claims.
+
+    Every other call site in this suite asserts ``is True``, and a taken id is
+    the only case that says anything: ``claim`` collapses the test and the
+    taking into one syscall precisely so two engines cannot both be told a name
+    is free. Delete the ``FileExistsError`` arm and every fight-level test here
+    still passes, because ``new_encounter_id`` only ever walks forward — the
+    refusal is what it walks *on*.
+    """
+    _journal_root(tmp_path, monkeypatch)
+
+    assert encounter_journal.claim("enc-9001") is True
+    assert encounter_journal.claim("enc-9001") is False, (
+        "a claimed id must be refused to the next caller; handing it out twice "
+        "is two fights appending one journal"
+    )
+
+
+def test_a_claim_the_filesystem_refuses_is_a_named_refusal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``claim``'s own ``OSError`` arm, which nothing had ever reached."""
+    root = _journal_root(tmp_path, monkeypatch)
+    root.mkdir(parents=True, exist_ok=True)
+    # A fight's directory cannot be created under a regular file, so the
+    # ``mkdir`` in ``claim`` fails with something that is not FileExistsError.
+    (root / "enc-9001").write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(encounter_journal.JournalError, match="cannot claim .*enc-9001"):
+        encounter_journal.claim("enc-9001")
+
+
+def test_an_append_whose_lock_cannot_be_taken_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``file_lock`` is the one primitive here that raises outside the family.
+
+    ``durable.py`` opens the guard with ``O_NOFOLLOW`` on purpose — "a lock that
+    cannot be taken safely fails the write rather than skipping it" — and that
+    refusal is an ``OSError``. Nothing in ``service/`` may hand a caller one:
+    this module already turns seven other ``OSError`` sites into
+    :class:`JournalError`, and the two ``file_lock`` call sites were the ones
+    that got missed, so a booby-trapped lock left the write path answering a
+    bare 500 instead of naming the file.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=241)
+    guard = durable.lock_path(journal_path(root, encounter_id))
+    guard.unlink()
+    guard.symlink_to(tmp_path / "elsewhere")
+
+    with pytest.raises(encounter_journal.JournalError, match="cannot lock .*journal.jsonl"):
+        encounter_journal.append(encounter_id, {"kind": "note"})
+
+
+def test_a_prune_whose_lock_cannot_be_taken_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same hole on the destructive path, where it matters most.
+
+    ``journal.jsonl.lock`` is in :data:`_RECLAIMABLE_NAMES`, so a symlink wearing
+    that name passes the "directory holds only what a claim leaves" filter and
+    reaches ``file_lock`` — which means the operator asking an engine to reclaim
+    stranded ids could be answered with an unhandled error rather than a
+    sentence naming the directory that would not go.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    assert encounter_journal.claim("enc-9001") is True
+    durable.lock_path(journal_path(root, "enc-9001")).symlink_to(tmp_path / "elsewhere")
+
+    # The dry run still reads and writes nothing at all, lock included.
+    assert encounter_journal.prune(apply=False) == ["enc-9001"]
+
+    with pytest.raises(encounter_journal.JournalError, match="cannot lock .*journal.jsonl"):
+        encounter_journal.prune(apply=True)
+
+
+def test_a_prune_refusal_reaches_the_caller_as_a_request_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``encounters.prune`` was the one journal caller translating nothing.
+
+    ``JournalError`` is a bare ``ValueError`` rather than a ``RequestError``, and
+    every other caller — ``sessions.journal_append``, ``sessions.recover_session``,
+    ``encounters.list_encounters`` — catches it and re-raises. This one passed it
+    straight through, so the refusal the part-way-prune case exists to produce
+    reached the adapter's catch-all instead of its ``RequestError`` arm.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    assert encounter_journal.claim("enc-9001") is True
+    durable.lock_path(journal_path(root, "enc-9001")).symlink_to(tmp_path / "elsewhere")
+
+    with pytest.raises(RequestError, match="cannot lock .*journal.jsonl"):
+        api.encounter_prune(apply=True)
+
+
 def test_pruning_reports_the_ids_it_would_reap_and_removes_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -21,7 +21,8 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -106,7 +107,16 @@ def claim(encounter_id: str) -> bool:
     and ``creation_request`` skip it, and ``recover_session`` refuses it by name.
     """
     path = journal_path(encounter_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    # Its own ``try``, and deliberately not the one below. ``mkdir`` raises
+    # ``FileExistsError`` when the path is taken by something that is not a
+    # directory, and that is a different fact from the one ``O_EXCL`` reports:
+    # folding them together would read "somebody else claimed this id" off a
+    # filesystem that is simply unusable here, and walk on to the next name
+    # having hidden it.
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise JournalError(f"cannot claim {path}: {error}") from error
     try:
         # 0o666 rather than 0o600: the umask applies, so a claimed journal has
         # the permissions `append`'s own ``open(..., "ab")`` would have given it.
@@ -117,6 +127,35 @@ def claim(encounter_id: str) -> bool:
         raise JournalError(f"cannot claim {path}: {error}") from error
     os.close(handle)
     return True
+
+
+@contextmanager
+def _locked(path: Path) -> Iterator[None]:
+    """:func:`durable.file_lock`, with its refusal inside this module's family.
+
+    ``file_lock`` opens the guard with ``O_NOFOLLOW`` on purpose — "a lock that
+    cannot be taken safely fails the write rather than skipping it" — and says
+    so with an ``OSError``. Nothing in ``service/`` may hand a caller one, and
+    this module already turns seven other ``OSError`` sites into
+    :class:`JournalError`; the two that take a lock were the ones that got
+    missed, so a booby-trapped or unopenable guard reached the adapter's
+    catch-all and answered a bare 500 rather than naming the file.
+
+    ``acquired`` is what keeps the relabelling honest. Only a failure to *take*
+    the lock is a locking failure; an ``OSError`` out of the body is somebody
+    else's, and calling it "cannot lock" would put a wrong sentence on a right
+    refusal. The bodies here convert their own, so this is a guard against a
+    future one rather than a case that exists today.
+    """
+    acquired = False
+    try:
+        with durable.file_lock(path):
+            acquired = True
+            yield
+    except OSError as error:
+        if acquired:
+            raise
+        raise JournalError(f"cannot lock {path}: {error}") from error
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -313,7 +352,7 @@ def append(
     """
     path = journal_path(encounter_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with _JOURNAL_LOCK, durable.file_lock(path):
+    with _JOURNAL_LOCK, _locked(path):
         return _append_unlocked(encounter_id, payload, expected_head=expected_head)
 
 
@@ -411,7 +450,7 @@ def prune(*, apply: bool) -> list[str]:
             reaped.append(directory.name)
             continue
         try:
-            with _JOURNAL_LOCK, durable.file_lock(path):
+            with _JOURNAL_LOCK, _locked(path):
                 if not _unwritten(path):
                     continue
                 _remove(path)

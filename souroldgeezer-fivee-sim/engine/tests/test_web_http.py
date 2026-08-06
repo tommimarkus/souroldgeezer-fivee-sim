@@ -2424,6 +2424,28 @@ class TestEncountersOverHttp:
         assert not (encounters_root() / "enc-9001").exists()
         assert (encounters_root() / kept).is_dir()
 
+    def test_a_prune_that_cannot_finish_is_a_refusal_rather_than_a_bug_report(
+        self, editor: Editor
+    ) -> None:
+        """The refusal path of a destructive operation, over the transport.
+
+        The happy path above is the only place this route was exercised, which
+        is how it went unnoticed that ``encounters.prune`` translated nothing:
+        ``JournalError`` is a bare ``ValueError`` rather than a ``RequestError``,
+        so it reached ``_dispatch``'s catch-all and an operator asking to reclaim
+        stranded ids was told the engine had a defect. A lock that will not open
+        is a refusal about a file, and it is answered as one.
+        """
+        assert journal_service.claim("enc-9001") is True
+        guard = encounters_root() / "enc-9001" / "journal.jsonl.lock"
+        guard.symlink_to(encounters_root() / "elsewhere")
+
+        refused = editor.request(
+            "POST", "/api/v1/encounters/prune", json_body={"apply": True}
+        )
+
+        assert_problem(refused, 400, "cannot lock")
+
     def test_an_unknown_status_filter_names_the_three_that_work(
         self, editor: Editor
     ) -> None:

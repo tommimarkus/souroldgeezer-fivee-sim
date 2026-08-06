@@ -415,6 +415,20 @@ also why a stale writer is refused rather than merged, and why the refusal is
 session the bytes it last saw on disk, so both supply their own precondition and
 a caller has to pass `"*"` to deliberately take a file over.
 
+**`file_lock` is the one primitive in `service/` that raises outside the
+`ValueError` family, so every caller translates it.** It opens the guard with
+`O_NOFOLLOW` deliberately — a lock that cannot be taken safely fails the write
+rather than skipping it — and an unopenable guard is an `OSError`. That is a
+refusal about a file like any other, but the layer rule above says nothing here
+may hand a caller one, and a caller that forgets reaches
+`web/http_server.py`'s catch-all and answers **500**: an operator is told the
+engine has a defect when the honest answer names the file. `encounter_journal`'s
+`_locked` is the worked example — it relabels the *acquisition* only, because an
+`OSError` out of the body is somebody else's and "cannot lock" would be a wrong
+sentence on a right refusal. Definition of done for a new lock site: the
+acquisition is wrapped, and an error-branch test names the refusal at both the
+service layer and, for a routed operation, the transport.
+
 **A journal records inputs and outcomes, never derived state.** Recovery
 recomputes a fight by replaying its recorded actions through the same stepper
 that first ran them, so a stored snapshot beside that record is a second copy
@@ -516,9 +530,10 @@ A refusal part-way through an `apply` **carries the ids it already reclaimed**,
 and carries them in the sentence rather than only in an attribute. Those
 journals are unlinked and nothing else records that they were, so raising past
 them would tell an operator nothing was pruned while several had been — and an
-attribute does not cross the adapter, which renders a `ValueError` into
-problem+json from its message and reads nothing else. The attribute stays for a
-caller that is a program and wants the ids as ids.
+attribute does not cross the adapter, which renders a refusal into problem+json
+from its message and reads nothing else. The attribute stays for a caller that
+is a program and wants the ids as ids — `service/encounters.py` translates the
+`JournalError` into a `RequestError` and the sentence is what survives that.
 
 **A blob is the fourth storage kind, and it is defined entirely by its name.**
 `service/blobs.py` writes a payload to a file named for the SHA-256 of its own
