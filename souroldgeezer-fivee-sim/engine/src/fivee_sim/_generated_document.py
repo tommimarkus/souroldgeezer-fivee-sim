@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 
 
 def write_generated_document(
-    argv: list[str] | None,
+    argv: list[str] | None = None,
     *,
     source_file: str,
     default_filename: str,
@@ -25,3 +26,18 @@ def write_generated_document(
     target.write_text(render(), encoding="utf-8")
     print(f"wrote {target}", file=sys.stderr)
     return 0
+
+
+def generated_document_main(
+    *,
+    source_file: str,
+    default_filename: str,
+    render: Callable[[], str],
+) -> Callable[..., int]:
+    """Bind one renderer's constants into its command-line entry point."""
+    return partial(
+        write_generated_document,
+        source_file=source_file,
+        default_filename=default_filename,
+        render=render,
+    )

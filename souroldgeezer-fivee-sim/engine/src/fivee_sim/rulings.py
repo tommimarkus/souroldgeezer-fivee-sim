@@ -38,7 +38,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ._generated_document import write_generated_document
+from ._generated_document import generated_document_main
 
 
 class RulingKind(StrEnum):
@@ -973,13 +973,9 @@ def render_markdown() -> str:
     return "\n".join(lines) + "\n"
 
 
-def main(argv: list[str] | None = None) -> int:
-    return write_generated_document(
-        argv,
-        source_file=__file__,
-        default_filename="RULINGS.md",
-        render=render_markdown,
-    )
+main = generated_document_main(
+    source_file=__file__, default_filename="RULINGS.md", render=render_markdown
+)
 
 
 if __name__ == "__main__":

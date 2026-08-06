@@ -27,7 +27,6 @@ from typing import Any
 
 import pytest
 
-from fivee_sim import paths
 from fivee_sim.client import discovery
 from fivee_sim.web.cli import STATE_FILENAME, read_state, state_file_for
 from fivee_sim.web.http_server import API_PREFIX, SOURCE_ID_ENV, TOKEN_HEADER
@@ -136,12 +135,12 @@ def _record_and_ping(
             process.communicate(timeout=10)
 
 
-def test_the_state_file_reader_has_one_canonical_owner() -> None:
-    assert discovery.read_state is paths.read_state
-    assert read_state is paths.read_state
-
-
-def test_the_state_file_reader_keeps_its_tolerant_contract(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "reader", [discovery.read_state, read_state], ids=["client", "server"]
+)
+def test_both_public_state_file_readers_keep_the_tolerant_contract(
+    reader: Callable[[str | Path], dict[str, Any] | None], tmp_path: Path
+) -> None:
     directory = tmp_path / "directory"
     directory.mkdir()
     invalid_utf8 = tmp_path / "invalid-utf8.json"
@@ -151,16 +150,16 @@ def test_the_state_file_reader_keeps_its_tolerant_contract(tmp_path: Path) -> No
     non_object = tmp_path / "non-object.json"
     non_object.write_text("[]", encoding="utf-8")
 
-    assert read_state(tmp_path / "missing.json") is None
-    assert read_state(directory) is None
-    assert read_state(invalid_utf8) is None
-    assert read_state(malformed) is None
-    assert read_state(non_object) is None
+    assert reader(tmp_path / "missing.json") is None
+    assert reader(directory) is None
+    assert reader(invalid_utf8) is None
+    assert reader(malformed) is None
+    assert reader(non_object) is None
 
     valid = tmp_path / "valid.json"
     expected = {"port": 4312, "token": "still-the-same", "nested": {"ready": True}}
     valid.write_text(json.dumps(expected), encoding="utf-8")
-    assert read_state(valid) == expected
+    assert reader(valid) == expected
 
 
 class TestCliLifecycle:

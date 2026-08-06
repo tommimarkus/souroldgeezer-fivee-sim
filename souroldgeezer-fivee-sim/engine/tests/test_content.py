@@ -19,9 +19,10 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
 from random import Random
-from typing import Any, Literal
+from typing import Any
 
 import pytest
 
@@ -141,62 +142,120 @@ def fields(diagnostics: list[Any], severity: Severity = Severity.ERROR) -> list[
     return [d.field for d in diagnostics if d.severity is severity]
 
 
-@pytest.mark.parametrize("identity_field", ["name", "id"])
-def test_keyed_record_reader_preserves_name_and_id_semantics(
-    identity_field: Literal["name", "id"],
-) -> None:
-    diagnostics: list[Any] = []
+def _item_record(identity: str) -> dict[str, Any]:
+    return {"name": identity, "use": {"heal": "1d1"}, "provenance": "test"}
 
-    assert content_module._keyed_records(
-        {}, "records", diagnostics, "pack.json", identity_field=identity_field
-    ) == []
-    assert diagnostics == []
 
-    assert content_module._keyed_records(
-        {"records": {}},
-        "records",
-        diagnostics,
-        "pack.json",
-        identity_field=identity_field,
-    ) == []
-    assert [
-        (item.source, item.section, item.record, item.field, item.problem)
+def _catalog_record(identity: str) -> dict[str, Any]:
+    return {
+        "id": identity,
+        "kind": "rule",
+        "name": identity,
+        "source_ids": [identity],
+        "pages": [1],
+        "fact_status": "complete",
+        "facts": {},
+        "provenance": "test",
+    }
+
+
+KEYED_SECTION_CASES: tuple[
+    tuple[str, str, str, Callable[[str], dict[str, Any]]], ...
+] = (
+    ("items", "name", "  first  ", _item_record),
+    ("catalog", "id", "first", _catalog_record),
+)
+
+
+def _record_diagnostic_facts(
+    diagnostics: list[Any], section: str
+) -> list[tuple[str, str, str]]:
+    return [
+        (item.record, item.field, item.problem)
         for item in diagnostics
-    ] == [("pack.json", "records", "", "", "must be a list of records")]
-
-    diagnostics.clear()
-    original_identity = "  first  "
-    first = {identity_field: original_identity, "marker": 1}
-    second = {identity_field: "second", "marker": 2}
-    duplicate = {identity_field: original_identity, "marker": 3}
-
-    assert content_module._keyed_records(
-        {"records": [first, 42, {}, second, duplicate]},
-        "records",
-        diagnostics,
-        "pack.json",
-        identity_field=identity_field,
-    ) == [(original_identity, first), ("second", second)]
-    assert [
-        (item.source, item.section, item.record, item.field, item.problem)
-        for item in diagnostics
-    ] == [
-        ("pack.json", "records", "#1", "", "must be an object, got int"),
-        (
-            "pack.json",
-            "records",
-            "#2",
-            identity_field,
-            "required, and must be non-empty text",
-        ),
-        (
-            "pack.json",
-            "records",
-            original_identity,
-            "",
-            "defined twice in the same pack",
-        ),
+        if item.severity is Severity.ERROR and item.section == section
     ]
+
+
+@pytest.mark.parametrize(
+    ("section", "identity_field", "first_identity", "record"),
+    KEYED_SECTION_CASES,
+    ids=["name", "id"],
+)
+def test_name_and_id_sections_report_the_same_record_shape_errors(
+    section: str,
+    identity_field: str,
+    first_identity: str,
+    record: Callable[[str], dict[str, Any]],
+    tmp_path: Path,
+) -> None:
+    payload = {
+        "pack": "keyed",
+        "provenance": "test",
+        section: [record(first_identity), 42, {}, record("second"), record(first_identity)],
+    }
+    path = write_pack(tmp_path, "keyed.json", payload)
+
+    assert _record_diagnostic_facts(
+        validate([path], builtin=BuiltinMode.EXCLUDE, include_environment=False),
+        section,
+    ) == [
+        ("#1", "", "must be an object, got int"),
+        ("#2", identity_field, "required, and must be non-empty text"),
+        (first_identity, "", "defined twice in the same pack"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("section", "_identity_field", "_first_identity", "_record"),
+    KEYED_SECTION_CASES,
+    ids=["name", "id"],
+)
+def test_name_and_id_sections_must_be_lists(
+    section: str,
+    _identity_field: str,
+    _first_identity: str,
+    _record: Callable[[str], dict[str, Any]],
+    tmp_path: Path,
+) -> None:
+    path = write_pack(
+        tmp_path,
+        "keyed.json",
+        {"pack": "keyed", "provenance": "test", section: {}},
+    )
+
+    assert _record_diagnostic_facts(
+        validate([path], builtin=BuiltinMode.EXCLUDE, include_environment=False),
+        section,
+    ) == [("", "", "must be a list of records")]
+
+
+@pytest.mark.parametrize(
+    ("section", "_identity_field", "first_identity", "record"),
+    KEYED_SECTION_CASES,
+    ids=["name", "id"],
+)
+def test_name_and_id_sections_preserve_declared_identity_and_order(
+    section: str,
+    _identity_field: str,
+    first_identity: str,
+    record: Callable[[str], dict[str, Any]],
+    tmp_path: Path,
+) -> None:
+    path = write_pack(
+        tmp_path,
+        "keyed.json",
+        {
+            "pack": "keyed",
+            "provenance": "test",
+            section: [record(first_identity), record("second")],
+        },
+    )
+
+    registry = load_packs(
+        [path], builtin=BuiltinMode.EXCLUDE, include_environment=False
+    )
+    assert list(getattr(registry, section)) == [first_identity, "second"]
 
 
 @pytest.fixture
