@@ -670,10 +670,13 @@ def test_a_combatants_facing_is_accepted_reported_and_carried_into_the_bundle() 
 
     assert live["facing"] == "northeast"
     assert checkpointed["facing"] == "northeast"
-    assert "facing" not in next(
+    # And the combatant nobody set one on is reported with a null rather than
+    # omitted — the key is unconditional now, so a state delta can tell a
+    # cleared facing from an untracked one. See `LIVE_KEYS`.
+    assert next(
         entry for entry in bundle["latest_state"]["combatants"]
         if entry["name"] == "Goblin"
-    )
+    )["facing"] is None
 
 
 def test_the_journal_captures_every_key_a_combatant_spec_accepts() -> None:
@@ -770,11 +773,17 @@ def test_a_recovered_fight_exports_a_bundle_that_still_points_its_sight_cones() 
 
 
 def test_the_captured_creation_input_carries_facing_even_when_nobody_set_one() -> None:
-    # The state payload omits `facing` for an untracked creature; this one does
-    # not, and the difference is deliberate — creation input is a fixed set of
-    # keys fed back through `combatants_from_specs`, not a report. Pinned
-    # because it is otherwise unguarded: making the key conditional here breaks
-    # no other test, so nothing would stop the two shapes being quietly merged.
+    # Creation input is a fixed set of keys fed back through
+    # `combatants_from_specs`, not a report, so it has always carried `facing`
+    # unconditionally. Pinned because it is otherwise unguarded: making the key
+    # conditional here breaks no other test.
+    #
+    # This case used to end by asserting the *contrast* — that the state payload
+    # left the key out entirely. It does not any more, and the two shapes now
+    # agree; the reason is in `model/encounter.py`'s `LIVE_KEYS` and has nothing
+    # to do with replay. What survives here is the claim this test was named
+    # for, which the merged shapes do not make redundant: a bundle's creation
+    # input reports `facing` for a combatant nobody set one on.
     encounter_id = str(
         api.encounter_create(
             [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=125
@@ -785,10 +794,6 @@ def test_the_captured_creation_input_carries_facing_even_when_nobody_set_one() -
     captured = bundle["initial"]["combatants"]
     assert all("facing" in entry for entry in captured)
     assert [entry["facing"] for entry in captured] == [None, None]
-    # ...while the state payload still leaves the key out entirely.
-    assert all(
-        "facing" not in entry for entry in bundle["latest_state"]["combatants"]
-    )
 
 
 def test_a_facing_nobody_named_is_refused_rather_than_silently_dropped() -> None:

@@ -503,9 +503,11 @@ class Creature:
     #:
     #: ``None`` is the default and stays the default. Facing changes no roll, so
     #: a creature nobody set one on has no facing to report — defaulting to
-    #: north would add a key to every combatant of every fight for a property
-    #: nobody chose, and would claim a fact about where they are looking that
-    #: nothing established.
+    #: north would claim a fact about where they are looking that nothing
+    #: established. What ``Encounter._creature_state`` does with that ``None``
+    #: is a separate decision and it went the other way: the key is reported
+    #: unconditionally, because a conditional key is the one thing a state delta
+    #: cannot express. Null there means exactly what ``None`` means here.
     facing: str | None = None
     #: Which storey of the map the creature stands on. Zero — the ground — for
     #: every fight on a map without storeys, which is nearly all of them. The

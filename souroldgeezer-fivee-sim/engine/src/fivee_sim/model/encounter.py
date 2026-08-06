@@ -483,6 +483,110 @@ HEALTH_BANDS: tuple[str, ...] = (
 )
 
 
+#: What a fight cannot move, and so what a later response need not repeat.
+#:
+#: The second classification of the same payload the brief's ``ENEMY_*`` pair
+#: classifies, and an **orthogonal** one: that pair answers *may this seat see
+#: it*, this one answers *can the fight change it*. A key belongs to one bucket
+#: of each, for two different reasons, and neither pair may be read as the
+#: other. ``tests/test_state_split.py`` and ``tests/test_player_brief.py``
+#: derive their halves from the model separately, and neither imports the
+#: other's sets.
+#:
+#: **It is a bandwidth split and never a claim about the rules.** Nothing here
+#: decides what a creature may do or what it is entitled to know. Being wrong
+#: about a key costs re-sends, not correctness, and the reason it costs only
+#: that is :func:`fivee_sim.service.replay.sheet_sha256`: the digest is computed
+#: over the sheet as serialised, freshly, so a declared-static field that ever
+#: moves moves the digest with it and a caller refetches.
+#:
+#: Every entry below was established by looking for a writer, not by reading the
+#: field's name. What follows each group is where that search ended.
+SHEET_KEYS: frozenset[str] = frozenset({
+    # Identity. ``Creature.name`` and ``.team`` are assigned in exactly one
+    # place in the engine — ``service/analytics.py``'s ``simulate_dpr`` dummy,
+    # which it builds itself and which is never in an ``Encounter``.
+    "name", "team",
+    # The printed sheet. None of these is assigned anywhere: ``heal`` clamps to
+    # ``max_hp`` without writing it, and ``ac`` is never modified — this engine
+    # models a condition's effect on being hit as Advantage, not as an AC
+    # adjustment. If that ever changes, ``ac`` moves to LIVE_KEYS and the digest
+    # is what makes the day it changes visible.
+    "ac", "max_hp", "senses", "death_rule",
+    # Capability, all of it immutable in shape as well as in value:
+    # ``terrain_cost_overrides`` and ``bonus_actions`` are frozensets,
+    # ``attacks`` and ``spells`` tuples, so there is no in-place write either.
+    # ``spells`` is the list of what can be cast; what casting *spends* is
+    # ``spell_slots``, which is live.
+    "terrain_cost_overrides", "bonus_actions", "redirect_attack",
+    "attacks", "spells",
+    # Scenario timing, not the fight's own fact: ``arrival_round`` is the round
+    # named at creation and never written. ``present`` — whether that round has
+    # come — is its live counterpart.
+    "arrival_round",
+    # Rolled once, in ``Encounter.__init__``, and never again: ``self.initiative``
+    # has no other write site. A recovered fight re-rolls it from the same seed
+    # and lands on the same number. Static despite reading like a fight fact.
+    "initiative",
+})
+
+#: The other half: what a turn can leave different from how it found it.
+#:
+#: Declared as well as derived, so that a key which is live *for a reason worth
+#: writing down* says so here rather than being merely absent from the set
+#: above. The complement is what :func:`live_of` actually computes — an
+#: unclassified key falls here, which is the safe direction — and
+#: ``tests/test_state_split.py`` holds this declaration against that complement.
+LIVE_KEYS: frozenset[str] = frozenset({
+    # Damage and what it does. ``conscious``, ``dying`` and ``stable`` are
+    # derived from ``hp`` and ``dead`` rather than stored, which makes them no
+    # less live.
+    "hp", "temp_hp", "conditions", "condition_levels", "conscious", "dying",
+    "dead", "stable", "death_saves", "surrendered",
+    # **The one a reading of the dataclass gets wrong.** No printed Speed is
+    # ever assigned, so ``speed``/``climb_speed``/… look static — but the block
+    # reported here is ``Creature.speed_for``, which subtracts the held
+    # conditions' reduction. A Grappled or Exhausted combatant reports
+    # different numbers from the ones its sheet prints.
+    "speeds",
+    # Where it is, which way it looks, which storey it is on, and how high the
+    # ground under it is. ``level`` is assigned by the two connector moves in
+    # ``_do_move``; ``elevation`` follows from it and from ``position``.
+    "position", "facing", "level", "elevation",
+    # Whether the round it was waiting for has arrived.
+    "present",
+    # The turn's own bookkeeping, reset by ``_begin_turn`` and written by the
+    # actions that spend them.
+    "dodging", "disengaged", "reaction_available",
+    # What a fight consumes: slots on a cast, charges on an item, and the
+    # concentration a cast starts and damage ends.
+    "spell_slots", "items", "concentrating_on",
+})
+
+
+def sheet_of(entry: Mapping[str, Any]) -> dict[str, Any]:
+    """The static half of one combatant's state entry, in the payload's own order.
+
+    Walks the entry's keys rather than :data:`SHEET_KEYS`, so a key that is
+    classified but absent — ``level`` on a fight with no map — is not invented
+    here at ``None``.
+    """
+    return {key: value for key, value in entry.items() if key in SHEET_KEYS}
+
+
+def live_of(entry: Mapping[str, Any]) -> dict[str, Any]:
+    """Everything else, which is the **complement** and not a second allowlist.
+
+    A key nobody classified is live, which is the safe direction: it is re-sent
+    every turn, which is what this split exists to avoid but is only a cost.
+    Omitting it instead would silently drop a field from every delta, which
+    would be a correctness defect wearing an optimisation's clothes. Together
+    with :func:`sheet_of` this partitions any entry, by construction, whatever
+    :data:`LIVE_KEYS` happens to say.
+    """
+    return {key: value for key, value in entry.items() if key not in SHEET_KEYS}
+
+
 #: The action kinds that can put the *actor's* own d20 on the table, and so the
 #: only ones a reported face means anything for. Two of the three are
 #: conditional — a cast rolls one only when the spell attacks rather than
@@ -2028,10 +2132,15 @@ class Encounter:
             "arrival_round": creature.arrival_round,
             "present": creature.arrived,
             "position": list(as_point(creature.position)),
-            # Omitted when nobody is tracking it, which is what keeps every
-            # existing fight's payload byte-identical — and what the replay
-            # bundle's state slots inherit, since they are this dictionary.
-            **({"facing": creature.facing} if creature.facing is not None else {}),
+            # Unconditional, and null for a creature nobody is tracking. It was
+            # omitted once, which kept every existing fight's payload
+            # byte-identical and cost more than it saved: a *conditional* key is
+            # the one thing a state delta cannot express, because absent and
+            # null are the same edit to a receiver applying a patch — a
+            # combatant whose facing was cleared and one who never had a facing
+            # would arrive identical. One key per combatant buys the
+            # distinction. See :data:`LIVE_KEYS`.
+            "facing": creature.facing,
             # Null in an interlude, where nothing was rolled — reported rather
             # than omitted, because the key belongs to the brief's creature
             # classification and a conditional key would leave the two halves

@@ -61,7 +61,7 @@ from typing import Any
 from ..kernel.grid import FEET_PER_SQUARE, as_point
 from ..kernel.rules import Ability
 from ..model.creature import AttackOption, Creature
-from ..model.encounter import EncounterMode
+from ..model.encounter import EncounterMode, sheet_of
 from ..paths import (
     REPLAYS_ENV,
     REPLAYS_SUBDIR,
@@ -95,6 +95,7 @@ __all__ = [
     "replays_root",
     "serialize_bundle",
     "sha256_bytes",
+    "sheet_sha256",
     "validate_adventure_replay",
     "validate_replay",
 ]
@@ -208,6 +209,32 @@ def _canonical_bytes(value: Any) -> bytes:
 def canonical_sha256(value: Any) -> str:
     """Stable SHA-256 of a JSON value, independent of mapping insertion order."""
     return sha256(_canonical_bytes(value)).hexdigest()
+
+
+def sheet_sha256(entry: Mapping[str, Any]) -> str:
+    """One combatant's static half, digested so a stale sheet cannot stay quiet.
+
+    :data:`~fivee_sim.model.encounter.SHEET_KEYS` is a **bandwidth** claim — the
+    keys a fight is believed not to move, and so the keys a later response need
+    not repeat. This is what makes being wrong about one cost bandwidth rather
+    than correctness: the digest is taken over the sheet **as serialised**, from
+    the live payload, every time it is asked for. A declared-static field that
+    ever moves — a new effect, a content pack, a defect — moves this with it, and
+    a caller holding the old digest refetches instead of believing what it has.
+
+    Canonical rather than ``json.dumps``, so a caller can recompute it from the
+    payload it received and the published key set and get the same string; and
+    **per combatant** rather than one digest over the roster, because a roster
+    digest can always be derived from these and these can never be recovered
+    from it. One creature whose sheet moved must not send a caller back for the
+    other five.
+
+    It lives here rather than beside the key sets because ``model/`` may not
+    reach ``service/``: canonical hashing is this module's, and the
+    classification is the model's. :func:`~fivee_sim.model.encounter.sheet_of`
+    is the seam between them.
+    """
+    return canonical_sha256(sheet_of(entry))
 
 
 def sha256_bytes(value: bytes) -> str:

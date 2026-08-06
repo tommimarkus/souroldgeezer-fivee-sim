@@ -6508,10 +6508,19 @@ class TestFacing:
     cases pin that it is recorded and reported faithfully, and nothing more.
     """
 
-    def test_a_creature_nobody_tracks_reports_no_facing(self) -> None:
+    def test_a_creature_nobody_tracks_is_reported_as_null_rather_than_north(
+        self,
+    ) -> None:
+        """The key is always there; what is absent is a *direction*.
+
+        The payload used to omit the key entirely. It reports ``None`` now, for
+        a reason that has nothing to do with facing — see ``LIVE_KEYS`` and
+        ``tests/test_state_split.py`` — and the claim this case actually owns is
+        unchanged: an untracked creature is not quietly handed a bearing.
+        """
         fight = Encounter([fighter("Thora"), fighter("Goblin", team="monsters")], Random(1))
 
-        assert "facing" not in fight.state()["combatants"][0]
+        assert fight.state()["combatants"][0]["facing"] is None
 
     def test_a_creature_given_one_reports_it(self) -> None:
         thora = fighter("Thora")
@@ -6556,7 +6565,7 @@ class TestFacing:
         fight.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), Random(1))
 
         assert thora.facing is None
-        assert "facing" not in fight.state()["combatants"][0]
+        assert fight.state()["combatants"][0]["facing"] is None
 
     def test_an_explicit_facing_beats_what_the_move_derived(self) -> None:
         thora = fighter("Thora", position=(0, 0))

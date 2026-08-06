@@ -495,7 +495,7 @@ default every kernel function falls back to and the kernel may not do I/O.
 `content.py` renders that table as a synthetic pack so it still goes through the
 same validation.
 
-**A new `Creature` field crosses eight checkpoints, and a survey of its *type*
+**A new `Creature` field crosses nine checkpoints, and a survey of its *type*
 finds two of them.** Five consecutive steps rediscovered this list one miss at a
 time, so it is written down rather than relearned. `grep save_bonuses` walks the
 whole of it and is the fastest way to see a worked example:
@@ -510,6 +510,7 @@ whole of it and is the fastest way to see a worked example:
 | 6 | `ENEMY_VISIBLE_KEYS` / `ENEMY_WITHHELD_KEYS` | only if `_creature_state` emits it as a **top-level** key |
 | 7 | `CARRIED_STATE_KEYS` (`service/adventures.py`) | only if the **fight changes it** |
 | 8 | a `validation.py` reader primitive | only if none of the existing ones fits |
+| 9 | `SHEET_KEYS` / `LIVE_KEYS` (`model/encounter.py`) | only if `_creature_state` emits it as a **top-level** key |
 
 Two of those conditions are the ones that get missed. **Checkpoint 2 is not
 automatic**: `hp`, `position` and `temp_hp` are per-instance and deliberately
@@ -519,6 +520,17 @@ classified in the brief *and* listed in `CARRIED_STATE_KEYS`, or it silently
 fails to survive an adventure chapter boundary. A field nested inside the
 existing `speeds`/`senses` dicts needs neither, because the brief test
 classifies top-level keys only.
+
+**Checkpoints 6 and 9 have the same condition and ask different questions**, and
+conflating them is the mistake to avoid: 6 is the brief's *may this seat see
+it*, 9 is *can the fight move it*. A key belongs to one bucket of each pair, and
+`tests/test_player_brief.py` and `tests/test_state_split.py` derive their halves
+from the model separately rather than either importing the other's sets. Nine is
+also the one row where the wrong answer is cheap: a field nobody classified
+falls to the live half, so it is re-sent rather than dropped, and a
+`sheet_sha256` taken over the sheet as serialised means a declared-static field
+that ever moves moves the digest with it. **The split is bandwidth and never a
+claim about the rules.**
 
 Definition of done: `uv run pytest` green with the field exercised end to end,
 and every row above either edited or consciously ruled out. Checkpoints 3 and 4

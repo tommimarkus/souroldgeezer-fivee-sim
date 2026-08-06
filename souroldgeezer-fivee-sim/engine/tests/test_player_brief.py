@@ -542,12 +542,14 @@ class TestTheClassificationIsTotal:
     def test_the_fixture_reaches_the_fields_the_model_only_sometimes_emits(
         self,
     ) -> None:
-        """Three keys are conditional, so a thin fixture would skip classifying them.
+        """Two keys are conditional, so a thin fixture would skip classifying them.
 
-        ``facing`` appears only when something is tracking it, and ``level`` and
-        ``elevation`` only on a battle map. A mapless roster would let the case
-        above pass while three real fields stayed undecided — which is exactly
-        how ``elevation`` sat unclassified through a release.
+        ``level`` and ``elevation`` appear only on a battle map. A mapless
+        roster would let the case above pass while two real fields stayed
+        undecided — which is exactly how ``elevation`` sat unclassified through
+        a release. ``facing`` was a third until it became unconditional, and it
+        stays named here because a fixture that carries one is what proves the
+        classification covers a facing that was actually set.
         """
         snapshot = api.encounter_state(fight())
         emitted = {key for creature in snapshot["combatants"] for key in creature}

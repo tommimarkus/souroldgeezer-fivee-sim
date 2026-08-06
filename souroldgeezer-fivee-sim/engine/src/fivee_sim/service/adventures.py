@@ -188,8 +188,11 @@ def carry_forward(
     job only it can do: say what the fight *changed*.
 
     The overlay is by presence, not by default. A key the state payload omits —
-    ``facing`` for a combatant nobody is tracking, ``level`` on a fight with no
-    map — leaves the captured value alone rather than being read as ``None``.
+    ``level`` on a fight with no map — leaves the captured value alone rather
+    than being read as ``None``. ``facing`` used to be the other example here
+    and is not one any more: it is reported unconditionally, so a combatant
+    nobody tracked carries its ``None`` forward, which is the same answer the
+    capture already held.
     """
     spec = deepcopy(dict(normalized))
     for key in CARRIED_STATE_KEYS:
