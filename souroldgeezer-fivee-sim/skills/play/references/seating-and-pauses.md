@@ -1,14 +1,15 @@
 # Seating, pauses, and resume
 
-The roster is the whole of the harness's configuration. Everything else — whether
-the run is unattended, where it stops, what a resume has to rebuild — follows
-from it.
+The roster is the whole of the coordinator's configuration. Everything else —
+whether the run is unattended, where it stops, what a resume has to rebuild —
+follows from it.
 
 ## roster.json
 
 ```json
 {
-  "id": "playtest-1",
+  "id": "play-1",
+  "mode": "play",
   "adventure": "/abs/path/to/module.md",
   "seed": 20260805,
   "adventure_id": "adv-1",
@@ -32,28 +33,31 @@ must list every tool it has or say `none`; record that response under
 `tool_check`. Under `require-none`, stop the run on any reported tool before the
 first player-facing scene or brief. Do not silently downgrade and continue.
 
-Continue only when the developer explicitly approves the weaker boundary. The
-harness then changes `tool_policy` in `roster.json` to `allow-reported`, appends
-that approval, the seat, and its reported tool list to `findings.jsonl`, and
-calls the run **honour-system mode** in the report. The player still must not use
-its tools or seek the adventure, but that instruction is cooperation rather
-than structural isolation. An unattended run with reported tools stops for this
-approval; having no human seats does not waive the gate.
+Continue only when the user explicitly approves the weaker boundary. Change
+`tool_policy` in `roster.json` to `allow-reported` and append the approval, seat,
+and reported tools to `transcript.md`. In playtest mode, also append it to
+`findings.jsonl` and call the run **honour-system mode** in `report.md`. The
+player still must not use its tools or seek the adventure, but that instruction
+is cooperation rather than structural isolation. An unattended run with
+reported tools stops for this approval; having no human seats does not waive the
+gate.
 
 Re-ask every agent player after a re-spawn or resume, update `tool_check`, and
 apply the gate again before sending new player-facing material. A new child may
 have different tools from the one whose answer is on disk. `allow-reported`
 remains explicit for the run, but every new non-`none` tool list still belongs
-in `findings.jsonl` and the report. A new `none` answer belongs only in
-`tool_check`.
+in the transcript and, in playtest mode, `findings.jsonl` and the report. A new
+`none` answer belongs only in `tool_check`.
 
 `kind` is `agent` or `human`, and it is the only thing that changes how a seat is
 asked for a decision. `game_master.kind` may be `human`, in which case there is
-no game-master agent and the harness puts the situation to the person instead.
+no game-master agent and the coordinator puts the situation to the person
+instead.
 
-**Nobody human anywhere** means the run is unattended: play it to the end and
-hand back the report. **Anyone human** means it pauses, and the files on disk are
-what let it start again.
+`mode` is `play` unless the request explicitly activated `playtest`. **Nobody
+human anywhere** means the run is unattended: play it to the end and hand back
+the completed replay, plus a report only in playtest mode. **Anyone human** means
+it pauses, and the files on disk are what let it start again.
 
 The `sheet` is a combatant spec the engine will accept — name, team, ac, max_hp,
 position, attacks, and whatever else the character has. The bundled parties in
@@ -128,8 +132,8 @@ Every pause can be the last thing that happens for a week. Before you stop:
 
 1. `transcript.md` is current through the last resolved beat.
 2. Each `seats/<name>.md` holds what that seat has witnessed, in their voice.
-3. `findings.jsonl` has everything noticed so far.
-4. `roster.json` records the adventure id and the encounter id in play.
+3. In playtest mode, `findings.jsonl` has everything noticed so far.
+4. `roster.json` records the mode, adventure id, and encounter id in play.
 
 The engine's own state needs no help — the fight is in its journal and the run is
 in its adventure document. What you are saving is the *table*: who knows what.
@@ -138,8 +142,9 @@ in its adventure document. What you are saving is the *table*: who knows what.
 
 1. Read `roster.json`.
 2. Re-spawn the game master through the host-specific dispatch; hand it the
-   adventure path and its run sheet position — it re-reads the module, which is
-   cheap and exact.
+   adventure path, mode, and current run position — it re-reads the module,
+   which is cheap and exact. In playtest mode, also restore its run-sheet
+   position.
 3. Re-spawn each agent seat through the host-specific dispatch; hand it **only**
    `seats/<name>.md`, its sheet, its temperament and its voice. Re-run the tool
    check and apply `tool_policy` before sending player-facing material.

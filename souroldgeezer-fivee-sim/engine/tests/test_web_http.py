@@ -2872,7 +2872,7 @@ class TestThePlayerBriefOnTheWrites:
     one.
 
     **The parameter is optional, and its absence is a promise.** The CLI, the
-    ``encounter-sim`` skill and the ``playtest`` skill all read ``state`` from
+    ``encounter-sim`` skill and the ``play`` skill all read ``state`` from
     these answers, so a call that names no chair must get back exactly what it
     got before — which is a claim in its own right below, not an assumption.
 

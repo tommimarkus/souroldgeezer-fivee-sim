@@ -1,6 +1,6 @@
 {
   "about": [
-    "Pregenerated parties for a playtest, so a developer with no characters to hand can still run their adventure.",
+    "Pregenerated parties for play or playtest, so a table with no characters to hand can still run an adventure.",
     "Each member has a `sheet` — an engine combatant spec, accepted as-is by encounter.create and adventure.encounter — a `gear` list, and a persona the harness uses when briefing the seat. Only `sheet` reaches the engine: it refuses unknown spec keys, so `temperament`, `voice` and `gear` may never be folded into it.",
     "The engine models no character building: there are no classes, species, backgrounds, feats, or levels here, and none of these numbers were derived from a class table. They are hand-picked to be ordinary for their tier, and the class-flavoured names are description only.",
     "Five spells are executable in the bundled slice — Guiding Bolt, Shatter, Hold Person, Fireball, Cure Wounds — so the casters use those and nothing else. Cure Wounds adds the caster's spellcasting ability modifier, which is why a healer's sheet names `spellcasting_ability`; a sheet that omits it heals the flat dice. Positions are a loose marching order; the game master places the party for the scene.",

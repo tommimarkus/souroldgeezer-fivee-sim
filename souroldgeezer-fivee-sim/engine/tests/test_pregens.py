@@ -1,6 +1,6 @@
-"""The playtest pregens are sheets the shipped engine can actually run.
+"""The play pregens are sheets the shipped engine can actually run.
 
-``skills/playtest/assets/pregens.json`` is handed to seats by the playtest skill,
+``skills/play/assets/pregens.json`` is handed to seats by the play skill,
 and nothing in this suite loaded it until healing arrived. The trap it guards is
 specific and quiet: a creature may **hold an item no content defines**, and
 ``encounter.create`` accepts the sheet without a word — the refusal arrives at
@@ -25,7 +25,7 @@ from fivee_sim.service.specs import attack_from_spec
 
 from . import api
 
-PREGENS = Path(__file__).resolve().parents[2] / "skills/playtest/assets/pregens.json"
+PREGENS = Path(__file__).resolve().parents[2] / "skills/play/assets/pregens.json"
 
 
 def _parties() -> dict[str, Any]:

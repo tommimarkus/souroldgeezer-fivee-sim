@@ -40,11 +40,12 @@ to another virtual tabletop as Universal VTT.
 
 | Plugin | Version | Skills | Claude Code agents |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.08.87` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
+| `souroldgeezer-fivee-sim` | `2026.08.87` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [play](souroldgeezer-fivee-sim/skills/play/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
 
-Claude Code discovers the role profiles as named agents; Codex's playtest skill
+Claude Code discovers the role profiles as named agents; Codex's play skill
 injects the same role bodies into fresh child prompts. If a player child reports
-tools, the playtest stops by default rather than claiming structural isolation.
+tools, play stops by default rather than claiming structural isolation. Add an
+explicit `test` or `playtest` request to collect findings and an author report.
 
 ## Install
 
@@ -415,7 +416,7 @@ format, the precedence rules, and a worked example.
 |---|---|
 | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | running and narrating a fight — the skill the assistant loads |
 | [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md) | making, editing, and fighting on battle maps |
-| [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | running a written adventure as a table — agent or human seats — and reporting what broke |
+| [play](souroldgeezer-fivee-sim/skills/play/SKILL.md) | running a written adventure as a table with agent or human seats; explicit test/playtest mode also reports what broke |
 | [MAPS.md](souroldgeezer-fivee-sim/docs/MAPS.md) | the map document field by field, edit operations, the editor, the replay bundle, UVTT |
 | [CONTENT-PACKS.md](souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md) | the content pack format and the rules the loader enforces |
 | [COVERAGE.md](souroldgeezer-fivee-sim/docs/COVERAGE.md) | generated catalog and executable totals |

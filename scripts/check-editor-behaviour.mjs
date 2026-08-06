@@ -196,12 +196,12 @@ const animatedFamilies = JSON.parse(readFileSync(path.join(
   REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "tests", "fixtures",
   "animated-event-families.json"
 ), "utf8"));
-/* The playtest pregens, read rather than retyped. Each member's `sheet` is a
+/* The play pregens, read rather than retyped. Each member's `sheet` is a
  * combatant spec `encounter.create` already accepts — which is the whole claim
  * the roster cases make about the specs the editor carries, so a spec invented
  * here would be checking the harness against itself. */
 const pregens = JSON.parse(readFileSync(path.join(
-  REPO_ROOT, "souroldgeezer-fivee-sim", "skills", "playtest", "assets", "pregens.json"
+  REPO_ROOT, "souroldgeezer-fivee-sim", "skills", "play", "assets", "pregens.json"
 ), "utf8"));
 
 /* --- preflight ------------------------------------------------------------
@@ -3898,7 +3898,7 @@ await suite("editor.html: the roster is the scene, never the map",
   check("a second one takes the next free hint rather than stacking",
     show(scene.combatants[2].position) === show([30, 20]), show(scene.combatants[2]));
 
-  /* 4. A described spec — the shape the playtest pregens already ship — is
+  /* 4. A described spec — the shape the play pregens already ship — is
    *    carried into the scene exactly as written. */
   page.element("roster-list").children[0].click();
   page.element("roster-spec").value = JSON.stringify(PREGEN_SHEET, null, 2);

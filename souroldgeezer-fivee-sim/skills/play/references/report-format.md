@@ -1,7 +1,7 @@
 # The report, and what counts as a finding
 
-`report.md` is what the developer actually reads. Write it for someone who wants
-to know what to change, not what happened.
+In playtest mode, `report.md` is what the developer actually reads. Write it for
+someone who wants to know what to change, not what happened.
 
 Lead with what is wrong. A playtest report that opens with a summary of the plot
 is a report that has forgotten who it is for.

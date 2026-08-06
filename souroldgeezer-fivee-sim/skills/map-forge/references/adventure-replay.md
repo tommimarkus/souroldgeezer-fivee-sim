@@ -15,7 +15,7 @@ initiative and no rounds, and carries what happened instead — the moves, the
 notes with their speakers, and every check rolled against that chapter's id. A
 run whose non-combat scenes were never linked as chapters composes to its fights
 alone and quietly loses the rest of the day, which is why the encounter-sim and
-playtest skills both say to link them.
+play skills both say to link them.
 
 ```bash
 fivee adventure.list                                  # the runs on disk

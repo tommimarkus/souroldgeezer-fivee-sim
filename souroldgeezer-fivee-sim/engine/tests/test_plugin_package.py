@@ -113,7 +113,7 @@ def test_the_launcher_the_skills_name_is_there_and_runnable() -> None:
     assert launcher.is_file()
     assert os.access(launcher, os.X_OK), f"{LAUNCHER} must be executable"
 
-    for skill in ("encounter-sim", "map-forge"):
+    for skill in ("encounter-sim", "map-forge", "play"):
         text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
         assert "../../scripts/fivee.py" in text, skill
 
@@ -204,8 +204,8 @@ def test_host_manifests_identify_the_same_plugin() -> None:
         assert codex[field] == claude[field]
 
 
-def test_playtest_skill_points_at_both_packaged_role_profiles() -> None:
-    skill_path = PLUGIN_ROOT / "skills/playtest/SKILL.md"
+def test_play_skill_points_at_both_packaged_role_profiles() -> None:
+    skill_path = PLUGIN_ROOT / "skills/play/SKILL.md"
     skill = skill_path.read_text(encoding="utf-8")
     targets = set(re.findall(r"\[[^]]+\]\(([^)]+)\)", skill))
     expected = {"../../agents/game-master.md", "../../agents/typical-player.md"}
@@ -215,8 +215,8 @@ def test_playtest_skill_points_at_both_packaged_role_profiles() -> None:
         assert (skill_path.parent / target).is_file(), target
 
 
-def test_playtest_skill_dispatches_the_shared_roles_for_each_host() -> None:
-    skill = _text("skills/playtest/SKILL.md")
+def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
+    skill = _text("skills/play/SKILL.md")
 
     claude = _markdown_section(skill, "### Claude Code")
     assert "named agent" in claude.lower()
@@ -246,7 +246,7 @@ def test_playtest_skill_dispatches_the_shared_roles_for_each_host() -> None:
 
 
 def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> None:
-    seating = _text("skills/playtest/references/seating-and-pauses.md")
+    seating = _text("skills/play/references/seating-and-pauses.md")
     roster_example = re.search(r"```json\s+(?P<body>.*?)```", seating, flags=re.DOTALL)
     assert roster_example is not None
     assert '"tool_policy": "require-none"' in roster_example.group("body")
@@ -268,7 +268,7 @@ def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> Non
 
 
 def test_require_none_is_a_gate_not_a_capability_claim() -> None:
-    skill = _text("skills/playtest/SKILL.md")
+    skill = _text("skills/play/SKILL.md")
 
     assert re.search(
         r"`require-none`.{0,100}\bdoes not\b.{0,100}\b(?:remove|disable)\b"
@@ -277,6 +277,39 @@ def test_require_none_is_a_gate_not_a_capability_claim() -> None:
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert "Under `require-none`, agent seats hold no engine access" not in skill
+
+
+def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:
+    skill = _text("skills/play/SKILL.md")
+    frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", skill, flags=re.DOTALL)
+
+    assert frontmatter is not None
+    metadata = frontmatter.group("body")
+    assert re.search(r"^name:\s*play\s*$", metadata, flags=re.MULTILINE)
+    assert "playing" in metadata.lower()
+    assert "playtesting" in metadata.lower()
+
+    mode = _markdown_section(skill, "## Choose the mode")
+    assert re.search(r"\bdefault\b.{0,100}\bplay\b", mode, flags=re.IGNORECASE | re.DOTALL)
+    assert re.search(
+        r"\b(?:test|playtest)\b.{0,200}\bplaytest\b",
+        mode,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    test_only = _markdown_section(skill, "## Playtest only")
+    for obligation in (
+        "findings.jsonl",
+        "report.md",
+        "references/report-format.md",
+        "fivee analytics.rounds",
+    ):
+        assert obligation in test_only
+    assert re.search(
+        r"\bdo not\b.{0,200}\b(?:ordinary|plain) play\b",
+        test_only,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
 
 
 def test_packaged_player_profile_still_declares_no_tools() -> None:
@@ -327,7 +360,7 @@ def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> No
         assert withheld in reference_plain
 
     protocol = _markdown_section(
-        _text("skills/playtest/SKILL.md"), "### Rules questions from a player"
+        _text("skills/play/SKILL.md"), "### Rules questions from a player"
     )
     for command in (
         "fivee catalog.search",
@@ -341,5 +374,5 @@ def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> No
         flags=re.IGNORECASE | re.DOTALL,
     )
     protocol_plain = " ".join(protocol.lower().split())
-    for withheld in ("module", "hidden state", "monster statistics"):
+    for withheld in ("adventure", "hidden state", "monster statistics"):
         assert withheld in protocol_plain
