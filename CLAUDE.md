@@ -606,6 +606,12 @@ uv run pytest
 uv run python -m fivee_sim.coverage   # regenerate docs/COVERAGE.md
 uv run python -m fivee_sim.rulings    # regenerate docs/RULINGS.md
 
+# Mutation testing. Opt-in, never a gate, and always aimed at one function —
+# note the x_ prefix mutmut mangles into every mutant name. See below for what
+# it can and cannot reach before spending time on it.
+uv run mutmut run "fivee_sim.service.adventures.x_carry_forward__mutmut_*"
+uv run mutmut results                 # what survived, after a run
+
 # From the repo root, against a contributor's verified local extraction.
 python3 scripts/srd-catalog-batch.py --source-root /path/to/extracted validate
 
@@ -671,6 +677,64 @@ sha256 of an exported replay: a v2 bundle stamps every event and checkpoint with
 the wall clock, so it is not byte-reproducible and never will be. The
 timestamp-free integrity hashes — initial state, actions, latest state, map,
 content — are compared instead, and those are what the seed determines.
+
+**`mutmut` is opt-in, and nothing requires it.** It is in the dev group and
+configured in `pyproject.toml`, so `uv run mutmut run "<glob>"` works — but it is
+not a gate, no step of any workflow calls for it, and that is a conclusion from
+measurement rather than an omission.
+
+**What it reaches, measured.** 34,983 mutants across 63 files, covering
+module-level functions everywhere and the methods of **plain** classes —
+`model/encounter.py` alone contributes 4,823, including 101 method symbols, so
+`Encounter._do_attack` and `Encounter._death_save` are genuinely mutated.
+
+**What it does not reach is the methods of a `@dataclass`.** `model/creature.py`
+yields **zero** mutants; so do `Spell`'s methods in `kernel/spells.py` and the
+effect rows in `kernel/grid.py` and `kernel/conditions.py`, whose files score
+only on their module-level functions. That carve-out lands squarely on
+`Creature` — `add_condition`, `take_damage`, `heal`, `grant_temp_hp`,
+`save_modifier`, `check_modifier`, `attack_modifier`, `speed_for` — which is a
+large share of where a rules defect actually lives. There is no config switch
+for it: the option surface is `source_paths`, `only_mutate`, `do_not_mutate`,
+`max_stack_depth`, `also_copy` and test selection. Module-level **constants** are
+out of reach too, so a frozenset like `CARRIED_STATE_KEYS` produces no mutants
+at all.
+
+The measurement is easy to get backwards, so check before trusting a summary of
+it: mutmut names a plain class's method `xǁEncounterǁ_do_attack__mutmut_1` with
+a `ǁ` separator rather than the `x_name__mutmut_N` used for a module-level
+function, and a sorted sample of symbol names shows only the latter.
+
+**Why nothing requires it.** All four defects the parity work actually found sit
+outside that reach, and not by coincidence — three of the four are in exactly the
+shapes listed above. A negative condition level was in `Creature.add_condition`, a
+`@dataclass` method. A state key that failed to carry was a module-level
+constant. An SRD quotation was data. A site registry that accepted any
+justification was test logic. Thirteen hand-written mutations against those areas
+were all killed, and so were the twelve mutants mutmut generated for
+`carry_forward`. **No case in this repository has yet demonstrated that mutmut
+would have caught something review did not.**
+
+So it is required nowhere, and the falsifiable condition for that changing is
+worth writing down: **the first defect found inside its reach — a module-level
+function, or a plain class's method — that a test should have caught** is the
+first case where mutmut would have had a chance and did not get one. Until then,
+running it is a judgement call, not an obligation.
+
+**Two traps if you do run it.** Fifteen test files are excluded in
+`[tool.mutmut]` for three distinct reasons, each named there — they read the
+repository around the engine, they parse the engine's source with `ast` (mutmut
+rewrites every function into mutant copies, so a source walker sees hundreds of
+symbols that do not exist — which is also why mutmut cannot be used to check a
+derived test), or they spawn subprocesses that collide with mutmut's own child
+reaping. And a whole-file run is not the small step it sounds like:
+`service/adventures.py` alone is 800 mutants against a suite that takes over two
+minutes.
+
+**The dev group pays for this**: mutmut brings sixteen packages, `textual` and
+`rich` among them, where the group previously had three direct entries. It
+changes nothing at runtime — `[project] dependencies` stays empty — and the
+Python gate is unaffected.
 
 **`node` is a dependency of exactly one check.**
 `scripts/check-editor-behaviour.mjs` is the only thing in the repo that wants

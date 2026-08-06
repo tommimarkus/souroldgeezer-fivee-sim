@@ -26,6 +26,13 @@ dev = [
   "pytest>=8",
   "mypy>=1.11",
   "ruff>=0.6",
+  # Mutation testing. Opt-in and required by nothing — CLAUDE.md carries the
+  # measurement that says why, and the condition that would change it. It is
+  # the heaviest thing in this group by a wide margin: sixteen packages arrive
+  # with it, textual and rich among them. It changes nothing about the runtime:
+  # [project] dependencies stays empty and a cold install still pulls exactly
+  # this package and nothing else.
+  "mutmut>=3.7",
 ]
 
 # Keep uv's cache inside the project: the default (~/.cache/uv) is read-only in
@@ -54,3 +61,59 @@ files = ["src", "tests", "../scripts/fivee.py"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+# Mutation testing. Never run over the whole tree — that is 35k mutants against
+# a suite taking over two minutes. Target one function, and note the ``x_``
+# prefix mutmut mangles into every mutant name; the obvious glob matches nothing
+# and fails with "Filtered for specific mutants, but nothing matches":
+#     uv run mutmut run "fivee_sim.service.adventures.x_carry_forward__mutmut_*"
+# ``also_copy`` is the part that goes wrong silently: mutmut works from a copied
+# tree, and the suite reads JSON packs and fixtures that are not Python. Miss one
+# and every mutant is "killed" by a collection error, which reads exactly like a
+# suite that catches everything. The whole directory is named rather than the
+# handful of files inside it, because mutmut copies each entry without creating
+# its parent — a nested path fails outright with FileNotFoundError, which is at
+# least loud, but the directory form has nothing to keep in step either.
+#
+# Fifteen test files are excluded, for three distinct reasons, grouped below.
+# The first group reads the repository *around* the engine — the two plugin
+# manifests, the generated COVERAGE.md and RULINGS.md, the launcher at
+# ../scripts/fivee.py, the SRD catalog batch script — and none of that exists
+# beside a copied tree. Excluding them costs nothing: not one asserts engine
+# behaviour a mutant could change. A sixteenth such test announces itself as a
+# collection error rather than a silent pass, which is the failure mode worth
+# having.
+[tool.mutmut]
+source_paths = ["src/fivee_sim"]
+also_copy = ["tests/"]
+pytest_add_cli_args_test_selection = [
+  "tests/",
+  "--ignore=tests/test_catalog_batch.py",
+  "--ignore=tests/test_content.py",
+  "--ignore=tests/test_coverage.py",
+  "--ignore=tests/test_launcher.py",
+  "--ignore=tests/test_plugin_package.py",
+  "--ignore=tests/test_pregens.py",
+  "--ignore=tests/test_rulings.py",
+  "--ignore=tests/test_srd_catalog.py",
+  "--ignore=tests/test_version.py",
+  # A second, sharper reason. These read the engine's own source with ``ast``
+  # rather than calling it, and mutmut rewrites every mutated function into a
+  # family of ``x__name__mutmut_N`` copies in the tree it runs from. A source
+  # walker therefore sees hundreds of call sites and symbols that do not exist
+  # in the real engine, and fails on all of them. It is not a defect in either
+  # side; a derived test's subject is the source text, and mutation testing's
+  # method is to rewrite it. Worth knowing before reaching for mutmut to check
+  # a derived test — it cannot, and this is why.
+  "--ignore=tests/test_d20_penalty_sites.py",
+  "--ignore=tests/test_layering.py",
+  "--ignore=tests/test_player_brief.py",
+  # A third reason. These spawn their own subprocesses — a server, the client
+  # binary, a second writer racing a lock. mutmut forks a child per mutant and
+  # reaps by pid, so a test that forks children of its own makes it collect an
+  # exit status it never registered and die with a bare KeyError. Nothing here
+  # is wrong with either; they just cannot share a process tree.
+  "--ignore=tests/test_client_cli.py",
+  "--ignore=tests/test_durable_writes.py",
+  "--ignore=tests/test_web_lifecycle.py",
+]
