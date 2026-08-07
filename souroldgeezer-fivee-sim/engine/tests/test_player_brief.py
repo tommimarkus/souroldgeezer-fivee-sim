@@ -1529,3 +1529,91 @@ class TestASeatTheFightDoesNotHold:
             )
 
         assert api.encounter_list("all")["encounters"] == before
+
+
+#: A correction's reason, in the same unmistakable-value idiom as the numbers
+#: above: no other field of any fixture here can produce this string.
+CORRECTION_REASON = "the fireball never landed on Grelkzzz"
+
+
+class TestACorrectionIsNoWindowOnTheOtherSide:
+    """``encounter.correct`` writes the sheet, so its event carries the sheet.
+
+    Driven through the model rather than through an operation, because the
+    operation that will call it does not exist yet — but the classification and
+    the projection are both the model's, so the claim is testable now and would
+    otherwise be tested only after the leak had a route to the wire.
+    """
+
+    def corrected(self, target: str) -> tuple[Encounter, list[dict[str, Any]]]:
+        encounter = Encounter(
+            [
+                fighter(VIEWER, position=(0, 0)),
+                fighter("Grelkzzz", team="monsters", position=(10, 10)),
+            ],
+            Random(3),
+        )
+        opened = len(encounter.log)
+        encounter.correct(
+            target, {"ac": FOE_AC, "hp": FOE_HP}, reason=CORRECTION_REASON
+        )
+        return encounter, [event.as_dict() for event in encounter.log[opened:]]
+
+    def test_the_fixture_really_puts_the_secrets_on_the_wire(self) -> None:
+        """The vacuity guard: every assertion below is an absence."""
+        _encounter, events = self.corrected("Grelkzzz")
+
+        whole = serialised({"events": events})
+        for secret in (CORRECTION_REASON, str(FOE_AC), str(FOE_HP)):
+            assert secret.encode("utf-8") in whole, secret
+
+    def test_neither_value_nor_the_reason_reaches_the_other_side(self) -> None:
+        encounter, events = self.corrected("Grelkzzz")
+
+        briefed = encounter.brief_events(events, encounter.state(), VIEWER)
+
+        assert briefed, "the correction was dropped whole rather than projected"
+        body = serialised({"events": briefed})
+        for secret in (CORRECTION_REASON, str(FOE_AC), str(FOE_HP)):
+            assert secret.encode("utf-8") not in body, (
+                f"{secret!r} is the other side's sheet, or the game master's "
+                f"own note about it, and it reached the player's response"
+            )
+
+    def test_not_even_which_field_moved(self) -> None:
+        """``field`` is withheld from the other side, and that is not fussiness.
+
+        ``field: "ac"`` on an enemy tells a party that the Armor Class they have
+        spent three rounds bracketing off hits and misses is no longer the
+        number they bracketed — the same arithmetic the ``hit``-versus-``total``
+        split already refuses to hand over.
+        """
+        encounter, events = self.corrected("Grelkzzz")
+
+        briefed = encounter.brief_events(events, encounter.state(), VIEWER)
+
+        for event in briefed:
+            assert "field" not in event["data"], event
+
+    def test_your_own_correction_names_the_field_and_still_withholds_the_values(
+        self,
+    ) -> None:
+        """The line inside the withheld half, where it bites.
+
+        A correction to your own combatant is your own side's business, so the
+        seat is told which field the table overwrote. The values stay back
+        regardless: ``before`` and ``after`` carry whatever the corrected key
+        holds, so there is no reading of them that could be classified in
+        advance — the same argument that omits ``detail`` outright.
+        """
+        encounter, events = self.corrected(VIEWER)
+
+        briefed = encounter.brief_events(events, encounter.state(), VIEWER)
+
+        fields = sorted(
+            str(event["data"]["field"]) for event in briefed if "field" in event["data"]
+        )
+        assert fields == ["ac", "hp"]
+        for event in briefed:
+            assert not set(event["data"]) & {"before", "after"}, event
+            assert "detail" not in event, event

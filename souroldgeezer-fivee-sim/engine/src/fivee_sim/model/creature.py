@@ -915,13 +915,34 @@ class Creature:
             self.concentrating_on = None
             self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
-        self.stable = False
         if already_down:
+            # ``stable`` is cleared on both branches and used to sit above this
+            # check; it moved inside so :meth:`_drop_to_zero` can own the whole
+            # of the other branch. Nothing between here and there reads it.
+            self.stable = False
             self.death_save_failures += 2 if critical else 1
             if self.death_save_failures >= DEATH_SAVES_TO_DIE:
                 self.dead = True
                 self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
+        self._drop_to_zero()
+
+    def _drop_to_zero(self) -> None:
+        """What reaching 0 Hit Points costs, whatever brought the creature there.
+
+        Extracted because there is a second way to arrive: a game master
+        correcting hit points the simulation got wrong
+        (:meth:`~fivee_sim.model.encounter.Encounter.correct`) drops a creature
+        exactly as damage does, and a raw assignment there would leave one
+        ``dying`` but not Unconscious, not Prone, still concentrating, and still
+        holding whatever death saves it had banked. One writer, so the
+        correction cannot drift from the fight's own answer.
+
+        It is deliberately *not* :meth:`take_damage` with a computed amount: that
+        spends Temporary Hit Points and can kill by overflow, neither of which a
+        correction means.
+        """
+        self.stable = False
         self.death_save_successes = 0
         self.death_save_failures = 0
         self.concentrating_on = None
@@ -931,16 +952,46 @@ class Creature:
         self.add_condition(Condition.UNCONSCIOUS, override_immunity=True)
         self.add_condition(Condition.PRONE, override_immunity=True)
 
+    def _rise_from_zero(self) -> None:
+        """The other threshold: back above 0, and so back on your feet.
+
+        Prone stays, which is the difference from :meth:`_drop_to_zero`'s
+        inverse — the SRD stands nobody up for regaining Hit Points.
+        """
+        self.stable = False
+        self.death_save_successes = 0
+        self.death_save_failures = 0
+        self.remove_condition(Condition.UNCONSCIOUS)
+
     def heal(self, amount: int) -> None:
         if self.dead or amount <= 0:
             return
         was_down = self.hp == 0
         self.hp = min(self.max_hp, self.hp + amount)
         if was_down and self.hp > 0:
-            self.stable = False
-            self.death_save_successes = 0
-            self.death_save_failures = 0
-            self.remove_condition(Condition.UNCONSCIOUS)
+            self._rise_from_zero()
+
+    def set_hp(self, value: int) -> None:
+        """Write Hit Points to what the table says they should have been.
+
+        Neither damage nor healing, and routed through neither: a correction
+        spends no Temporary Hit Point buffer, clamps to no maximum, and cannot
+        kill by overflow, because none of those is a thing the game master
+        said happened. What it does share with both is the two thresholds —
+        crossing 0 in either direction carries the same bookkeeping it carries
+        for a blow or a potion, from the same two helpers.
+
+        The value is written as given, including one above ``max_hp``. Whether a
+        stated total is *plausible* is the caller's to judge; re-deciding it here
+        would turn a soft drift warning into a refusal that costs a whole fight
+        the day a content edit moves a maximum under a live encounter.
+        """
+        before = self.hp
+        self.hp = value
+        if before > 0 and self.hp <= 0:
+            self._drop_to_zero()
+        elif before <= 0 and self.hp > 0:
+            self._rise_from_zero()
 
     # ruling: temp_hp_grant_takes_the_higher_value
     def grant_temp_hp(self, amount: int) -> None:

@@ -428,7 +428,15 @@ EVENT_WITHHELD_KEYS: frozenset[str] = frozenset({
     "ammunition_remaining",
     "damage", "bonus_damage", "advantage_bonus_damage", "advantage_bonus_reason",
     "detach_after_damage",
+    # ``field`` names which of a corrected combatant's keys the table
+    # overwrote. Withheld rather than visible because the *name* alone is an
+    # arithmetic leak of exactly the kind the ``hit``-versus-``total`` split
+    # already refuses: ``field: "ac"`` on an enemy tells a party that the AC
+    # they have spent three rounds bracketing off hits and misses is no longer
+    # the number they bracketed. Withholding is the reversible direction.
+    "field",
     # and the sharper half below, which no seat is served at all
+    "before", "after",
     "dc", "check", "linked", "triggered_by", "planned_destination",
     "planned_to_level",
 })
@@ -446,7 +454,15 @@ EVENT_WITHHELD_KEYS: frozenset[str] = frozenset({
 #: the square a cut-short move was *making for* — intent rather than
 #: observation, which the battlefield never shows and which the mover already
 #: knows, having asked for it.
+#:
+#: ``before`` and ``after`` are a correction's two values, and they are here for
+#: the reason ``detail`` is omitted outright: they carry *whatever the corrected
+#: key holds*, so one event's pair is a position and the next one's is an exact
+#: hit-point total or an AC. A key whose value cannot be classified until it
+#: arrives cannot be allowlisted at all, and the seat that owns the creature is
+#: not an exception — a corrected fight is re-read, not diffed off an event.
 EVENT_NEVER_KEYS: frozenset[str] = frozenset({
+    "before", "after",
     "dc", "check", "linked", "triggered_by", "planned_destination",
     "planned_to_level",
 })
@@ -508,11 +524,18 @@ SHEET_KEYS: frozenset[str] = frozenset({
     # place in the engine — ``service/analytics.py``'s ``simulate_dpr`` dummy,
     # which it builds itself and which is never in an ``Encounter``.
     "name", "team",
-    # The printed sheet. None of these is assigned anywhere: ``heal`` clamps to
-    # ``max_hp`` without writing it, and ``ac`` is never modified — this engine
-    # models a condition's effect on being hit as Advantage, not as an AC
-    # adjustment. If that ever changes, ``ac`` moves to LIVE_KEYS and the digest
-    # is what makes the day it changes visible.
+    # The printed sheet. Nothing in the *fight* assigns any of these: ``heal``
+    # clamps to ``max_hp`` without writing it, and ``ac`` is never modified —
+    # this engine models a condition's effect on being hit as Advantage, not as
+    # an AC adjustment.
+    #
+    # The *table* can, and that is a different question from the one this pair
+    # asks. :meth:`Encounter.correct` overwrites ``ac`` and ``max_hp`` when a
+    # game master says the stat block was transcribed wrong, which is rare, out
+    # of band, and exactly what ``sheet_sha256`` covers: the digest is taken
+    # over the sheet as serialised, so a corrected field moves it and the
+    # caller refetches. Declaring them live to save that one refetch would cost
+    # a repeat of both numbers on every response of every fight.
     "ac", "max_hp", "senses", "death_rule",
     # Capability, all of it immutable in shape as well as in value:
     # ``terrain_cost_overrides`` and ``bonus_actions`` are frozensets,
@@ -525,10 +548,6 @@ SHEET_KEYS: frozenset[str] = frozenset({
     # named at creation and never written. ``present`` — whether that round has
     # come — is its live counterpart.
     "arrival_round",
-    # Rolled once, in ``Encounter.__init__``, and never again: ``self.initiative``
-    # has no other write site. A recovered fight re-rolls it from the same seed
-    # and lands on the same number. Static despite reading like a fight fact.
-    "initiative",
 })
 
 #: The other half: what a turn can leave different from how it found it.
@@ -554,6 +573,14 @@ LIVE_KEYS: frozenset[str] = frozenset({
     # ground under it is. ``level`` is assigned by the two connector moves in
     # ``_do_move``; ``elevation`` follows from it and from ``position``.
     "position", "facing", "level", "elevation",
+    # Rolled once in ``Encounter.__init__`` and never again *by the fight* — and
+    # live anyway, which is the one entry here that is not about a turn. A game
+    # master may correct it (:meth:`Encounter.correct`), and unlike ``ac`` and
+    # ``max_hp`` above it has a partner in the payload that always travels:
+    # ``order``. A response carrying a re-sorted ``order`` while the number that
+    # sorted it sat behind a sheet digest would disagree with itself until the
+    # caller refetched, so this one is re-sent instead.
+    "initiative",
     # Whether the round it was waiting for has arrived.
     "present",
     # The turn's own bookkeeping, reset by ``_begin_turn`` and written by the
@@ -562,6 +589,96 @@ LIVE_KEYS: frozenset[str] = frozenset({
     # What a fight consumes: slots on a cast, charges on an item, and the
     # concentration a cast starts and damage ends.
     "spell_slots", "items", "concentrating_on",
+})
+
+
+#: What a game master may overwrite when the simulation got it wrong, and what
+#: they may not.
+#:
+#: The **third** classification of the same combatant payload, and orthogonal to
+#: both of the others. The brief's ``ENEMY_*`` pair asks *may this seat see it*;
+#: :data:`SHEET_KEYS` / :data:`LIVE_KEYS` asks *can the fight move it*; this one
+#: asks *can the table overwrite it*. A key belongs to one bucket of each, for
+#: three unrelated reasons, and no pair may be read as another —
+#: ``tests/test_correction.py`` derives its halves from a real payload without
+#: importing either of the other two.
+#:
+#: **This is not a secret and not a bandwidth split.** Getting it wrong costs a
+#: game master a channel, or gives them one that leaves the fight inconsistent.
+#: The rule that decides it: *anything a fight can change, the table can
+#: correct* — which is why every member of ``service.adventures``'
+#: ``CARRIED_STATE_KEYS``, the fight's own account of what a combatant ended up
+#: different about, is here. State the engine moves and nobody can put back is
+#: the failure this exists to prevent.
+#:
+#: Three additions beyond what a fight moves. ``max_hp`` and ``ac`` are the
+#: transcription errors — a stat block typed wrong, discovered three rounds in —
+#: and ``initiative`` is the roll a table announces out loud and can get wrong,
+#: guarded in :meth:`Encounter.correct` because re-sorting a walked order is
+#: unsound.
+CORRECTABLE_KEYS: frozenset[str] = frozenset({
+    # Damage and its bookkeeping. ``hp`` runs the same two threshold helpers a
+    # blow and a potion run; the rest are plain writes.
+    "hp", "max_hp", "temp_hp", "death_saves", "stable", "dead", "surrendered",
+    # Conditions, written through :meth:`Encounter.set_condition` rather than
+    # onto the dict, so the effect ledger cannot be orphaned. ``conditions`` and
+    # ``condition_levels`` are one field in two keys and are read as a pair.
+    "conditions", "condition_levels",
+    # The printed sheet's two correctable numbers. See :data:`SHEET_KEYS`.
+    "ac",
+    # Resources, which a table tracks on paper and the engine can disagree with.
+    "spell_slots", "items",
+    # Where it is, which storey it is on, and which way it looks.
+    "position", "level", "facing",
+    # Whether it is on the battlefield yet: ``_arrive_for_round`` writes
+    # ``Creature.arrived``, so the table can too.
+    "present",
+    # Guarded, and refused outright in an interlude and once the order has been
+    # walked.
+    "initiative",
+})
+
+#: The other half, with the reason per group. **Withholding is the reversible
+#: direction**: opening one of these later is one line and a reviewer, where a
+#: key that should have been protected is a fight left inconsistent by a
+#: correction nobody refused.
+UNCORRECTABLE_KEYS: frozenset[str] = frozenset({
+    # **Derived, with no setter at all.** ``conscious`` and ``dying`` are
+    # properties over ``hp`` and ``dead``; ``speeds`` is ``Creature.speed_for``
+    # with the held conditions' reduction folded in; ``elevation`` is the ground
+    # under the creature, which belongs to the map and the storey. Each is
+    # corrected by correcting what it is derived from.
+    "conscious", "dying", "speeds", "elevation",
+    # **Identity.** ``name`` keys ``initiative``, ``order``, ``_dodging``,
+    # ``_disengaged``, ``_reaction_available`` and every ``OngoingEffect``'s
+    # ``source`` and ``target``; a rename here would leave all of them pointing
+    # at nobody. ``team`` decides which side a creature is on and so whether the
+    # fight is over — a real question, and one for a new encounter rather than a
+    # live overwrite.
+    "name", "team",
+    # **Creation input rather than fight state**, and the payload is lossy for
+    # most of it: ``attacks`` is emitted as bare names, which is why
+    # ``carry_forward`` refuses to overlay it either, and ``senses``,
+    # ``bonus_actions``, ``terrain_cost_overrides``, ``spells``,
+    # ``death_rule`` and ``redirect_attack`` are the stat block's own shape. A
+    # wrong stat block is fixed in the content pack, and the next fight starts
+    # from it.
+    "attacks", "spells", "senses", "bonus_actions", "terrain_cost_overrides",
+    "death_rule", "redirect_attack",
+    # The round a reinforcement was *scheduled* for, which is creation input
+    # like the rest. ``present`` is its live counterpart and is correctable.
+    "arrival_round",
+    # **One end of a two-ended fact.** ``concentrating_on`` names a spell whose
+    # other end is the ongoing-effect ledger, and a bare write to it either
+    # orphans those effects or invents a concentration nothing sustains.
+    # ``_end_concentration`` is the one owner of ending it; opening this key
+    # means routing through that, and nothing has asked for it yet.
+    "concentrating_on",
+    # **This turn's bookkeeping, owned by the encounter and reset at the next
+    # turn boundary.** ``_begin_turn`` clears all three, so a correction to one
+    # is erased by the very next ``advance`` — a channel that appears to work
+    # and does not.
+    "dodging", "disengaged", "reaction_available",
 })
 
 
@@ -1368,17 +1485,7 @@ class Encounter:
                 # folded away.
                 modifier -= d20_test_penalty(creature.conditions, self.condition_effects)
                 self.initiative[creature.name] = roll.natural + modifier
-            self.order = sorted(
-                names,
-                key=lambda name: (
-                    -self.initiative[name],
-                    # The SRD tie-break in its own right, not a stand-in for the
-                    # bonus above: it reads the Dexterity modifier even for a
-                    # creature whose total came from a printed Initiative bonus.
-                    -self.creatures[name].ability_mod(Ability.DEXTERITY),
-                    name,
-                ),
-            )
+            self.order = self._initiative_order()
         self.turn_index = 0
         if self.mode is EncounterMode.COMBAT:
             # The fight opens the way every later turn does: round 1 and the
@@ -1398,6 +1505,29 @@ class Encounter:
             self._emit("round", detail=f"round {self.round} begins", round=self.round)
             self._emit("turn_start", self.current_name)
             self._begin_turn(rng)
+
+    def _initiative_order(self) -> list[str]:
+        """The cast in the order initiative puts them, and the only place it is sorted.
+
+        One function because there are two callers: the roll in ``__init__``, and
+        :meth:`correct` when a game master says a number was announced wrong. A
+        second copy of the tie-break would drift the first time either half of it
+        changes, and the two would then disagree about the same fight.
+
+        The key is total — the name breaks every remaining tie — so it does not
+        depend on the order it is handed.
+        """
+        return sorted(
+            self.creatures,
+            key=lambda name: (
+                -self.initiative[name],
+                # The SRD tie-break in its own right, not a stand-in for a
+                # printed Initiative bonus: it reads the Dexterity modifier even
+                # for a creature whose total came from one.
+                -self.creatures[name].ability_mod(Ability.DEXTERITY),
+                name,
+            ),
+        )
 
     # --- the battle map ---------------------------------------------------
     def _adopt_map(self, document: MapDocument, combatants: Sequence[Creature]) -> None:
@@ -2082,6 +2212,24 @@ class Encounter:
             raise EncounterError(f"no combatant named {as_name!r} in this encounter")
         return seats
 
+    def _require_combatant(self, target_name: str) -> Creature:
+        """The named combatant, refused by name *and with the cast* if unknown.
+
+        The opposite choice from :meth:`_named_actor` and
+        :meth:`_seats_of`, deliberately: those answer a *seat*, where listing
+        everybody would hand a player-chair client the ambusher the brief works
+        hardest to hide. This one answers the game master, who is holding the
+        roster already and whose likeliest mistake is a typo — so the sentence
+        says what the fight has.
+        """
+        target = self.creatures.get(target_name)
+        if target is None:
+            known = ", ".join(sorted(self.creatures)[:MAX_LISTED_COMBATANTS])
+            raise EncounterError(
+                f"no combatant named {target_name!r} in this encounter; there is: {known}"
+            )
+        return target
+
     def set_condition(
         self, target_name: str, condition: str, *, applied: bool, levels: int = 1
     ) -> None:
@@ -2109,12 +2257,7 @@ class Encounter:
         only accumulates when the effect row marks the condition ``cumulative``,
         so a ruling on an ordinary condition needs no opinion about it.
         """
-        if target_name not in self.creatures:
-            known = ", ".join(sorted(self.creatures)[:MAX_LISTED_COMBATANTS])
-            raise EncounterError(
-                f"no combatant named {target_name!r} in this encounter; there is: {known}"
-            )
-        target = self.creatures[target_name]
+        target = self._require_combatant(target_name)
         if applied:
             was_dead = target.dead
             # ``add_condition`` looks the name up before recording it, so an
@@ -2153,6 +2296,246 @@ class Encounter:
             f"{condition} lifted by ruling",
             condition=condition, ruling=True,
         )
+
+    # --- the table overruling the fight -----------------------------------
+    def correct(
+        self, target_name: str, changes: Mapping[str, Any], *, reason: str
+    ) -> None:
+        """Overwrite one combatant's state, because the simulation got it wrong.
+
+        An engine defect, a rule this engine does not model, or an input the
+        game master only later learns was wrong: all three end with a fight
+        holding a number nobody at the table believes. Every other mutator here
+        is a *rule* — this one is the table saying what was actually true, and
+        it is the only thing in the model that writes state without a mechanism
+        behind it. ``reason`` is why it says so, and it is required: a
+        correction with no account of itself is indistinguishable, three rounds
+        later, from a defect.
+
+        **What may be written is** :data:`CORRECTABLE_KEYS`, whose classification
+        and reasoning live there. Anything else is refused by name, including a
+        key that is not a field at all, so a caller who mistyped one and a
+        caller who named a derived one are told the same thing and both are told
+        what they may write.
+
+        **The model writes what it is given.** Structural refusals only — an
+        unknown combatant, an uncorrectable key, and initiative's own guard
+        below — and no opinion at all about whether a value is *plausible*. Two
+        reasons, both load-bearing. A journal replay calls straight into here,
+        and a caller-facing refusal raised during recovery is a diagnostic lost
+        rather than a defect caught. And a model that re-decided ``hp <=
+        max_hp`` would turn a soft drift warning into a refusal that costs a
+        whole fight, the day a content edit moves a maximum under a live
+        encounter. Types, ranges and an empty ``reason`` belong to the caller.
+
+        **Hit points are written first**, whatever order the keys arrive in, and
+        that is what lets one call say "she is down, with two failures":
+        crossing 0 carries the same bookkeeping a blow carries — Unconscious,
+        Prone, concentration dropped, death saves reset — and every other stated
+        field then overrides that reset rather than being erased by it.
+
+        **Conditions go through** :meth:`set_condition`, never onto
+        ``Creature.conditions``. Replacing that dict wholesale is safe at
+        construction and wrong here: it orphans every ongoing effect naming a
+        wiped condition, and the effect then ends by lifting a condition the
+        creature no longer holds.
+
+        **There is deliberately no "the fight is over" guard.** "It ended and it
+        should not have" is one of the corrections this exists for, and
+        :attr:`over` is derived — so reviving the last enemy simply un-ends the
+        fight, with no machinery. What is terminal is *finalization*, which is
+        the service layer's line and not this one's.
+
+        One ``correction`` event per field the caller named, plus one for ``hp``
+        when a lowered ``max_hp`` pulled it down — the single case where this
+        moves a field nobody asked about.
+        """
+        target = self._require_combatant(target_name)
+        self.check_correctable(changes)
+        # Every refusal is behind us, so nothing below leaves a combatant half
+        # corrected — the same discipline ``_begin_beat`` is called under.
+        stated = ["hp"] if "hp" in changes else []
+        stated += [key for key in sorted(changes) if key != "hp"]
+        before = self._creature_state(target)
+        for key in stated:
+            if key == "conditions" and "condition_levels" in changes:
+                continue  # written as a pair, at ``condition_levels`` above
+            self._write_correction(target, key, changes)
+        after = self._creature_state(target)
+        reported = list(stated)
+        if "hp" not in changes and after.get("hp") != before.get("hp"):
+            reported.append("hp")
+        for key in reported:
+            # ``reason`` rides as ``detail`` and as nothing else. ``detail`` is
+            # already withheld from every seat by omission, so a second copy in
+            # ``data`` would have byte-identical reach and be one more key to
+            # keep in step; the audit copy that matters is in the journalled
+            # arguments. ``before`` and ``after`` are read off the payload
+            # rather than echoed from the request, so a floor, a clamp or a
+            # condition's own rules cannot leave the event claiming something
+            # the fight does not say.
+            self._emit(
+                "correction", "", target_name, reason,
+                field=key, before=before.get(key), after=after.get(key),
+            )
+
+    def check_correctable(self, changes: Mapping[str, Any]) -> None:
+        """Refuse the structural mistakes, without writing anything.
+
+        Public, and called twice for one fight. :meth:`correct` calls it for
+        the callers that arrive here directly — ``sessions._replay_correct``
+        chief among them, which a recovery drives with no service layer in
+        front of it. ``service/encounters.py`` calls it *ahead* of the write,
+        for every combatant a multi-combatant correction names, because that
+        request is applied whole or not at all: a refusal discovered while
+        writing the second combatant would leave the first one corrected.
+
+        So the check has two callers and its sentences have one owner. The
+        alternative — the service restating them — was written first and is
+        the drift this exists to make impossible: each layer's tests assert
+        only against its own copy, so a reworded refusal would leave both
+        suites green and the two doors answering the same mistake differently.
+        """
+        refused = sorted(set(changes) - CORRECTABLE_KEYS)
+        if refused:
+            listed = ", ".join(sorted(CORRECTABLE_KEYS))
+            raise EncounterError(
+                f"{refused[0]!r} cannot be corrected; correctable fields are: {listed}"
+            )
+        if "initiative" in changes:
+            self._refuse_a_walked_initiative()
+
+    def _refuse_a_walked_initiative(self) -> None:
+        """Why a corrected initiative is only ever a correction to the opening roll.
+
+        Re-sorting an order the fight has already started walking is unsound in
+        **both** directions, and measurably so: a combatant moved above the
+        pointer never acts that round, one moved below it acts twice, and
+        ``_expire_timed``'s creature-anchored riders fire early or late because
+        the slot they are anchored to has moved.
+
+        ``turn_index == 0`` is *not* the fix it looks like, which is worth
+        writing down because it is the obvious one. At the top of round two the
+        creature on top has already had ``_begin_turn`` run for it and may
+        already have spent its action: promoting somebody else there hands the
+        newcomer a used-up budget and gives the demoted creature a second full
+        turn in the same round. Both were reproduced against the stepper.
+
+        So the line is drawn where it is provably safe: before the order has
+        been walked at all. ``advance`` records an :class:`ActionRecord` of its
+        own, so an empty ``actions`` means no turn has passed and no act has
+        happened — and with no act there is no ongoing effect and no attachment
+        to anchor either.
+        """
+        if self.mode is EncounterMode.EXPLORATION:
+            raise EncounterError("an interlude has no initiative to correct")
+        if self.actions:
+            raise EncounterError(
+                "initiative can only be corrected before the first turn is taken"
+            )
+
+    def _write_correction(
+        self, target: Creature, field: str, changes: Mapping[str, Any]
+    ) -> None:
+        """Apply one corrected field, given the whole request.
+
+        The whole request rather than one value, because ``conditions`` and
+        ``condition_levels`` are one field wearing two keys and are read
+        together.
+        """
+        value = changes[field]
+        if field == "hp":
+            target.set_hp(int(value))
+        elif field == "max_hp":
+            # Floored rather than refused, and floored at 1: ``health_band``
+            # reads a maximum of 0 or less as permanently "unharmed" while
+            # ``take_damage``'s overflow check kills on the first point past
+            # zero, so a fight holding one lies about the same creature twice.
+            target.max_hp = max(1, int(value))
+            if target.hp > target.max_hp:
+                # A maximum lowered under the creature's current total pulls it
+                # down with it, and says so in its own event: leaving a
+                # combatant above its own maximum would be a state no other
+                # path in the engine can produce.
+                target.set_hp(target.max_hp)
+        elif field == "temp_hp":
+            target.temp_hp = int(value)
+        elif field == "ac":
+            target.ac = int(value)
+        elif field in ("conditions", "condition_levels"):
+            self._correct_conditions(target, changes)
+        elif field == "death_saves":
+            target.death_save_successes = int(value["successes"])
+            target.death_save_failures = int(value["failures"])
+        elif field in ("stable", "dead", "surrendered"):
+            setattr(target, field, bool(value))
+        elif field == "present":
+            target.arrived = bool(value)
+        elif field == "spell_slots":
+            target.spell_slots = {int(k): int(v) for k, v in value.items()}
+        elif field == "items":
+            target.items = {str(k): int(v) for k, v in value.items()}
+        elif field == "position":
+            target.position = as_point(
+                value if isinstance(value, int) else (int(value[0]), int(value[1]))
+            )
+        elif field == "level":
+            target.level = int(value)
+        elif field == "facing":
+            target.facing = None if value is None else str(value)
+        elif field == "initiative":
+            self._correct_initiative(target.name, int(value))
+        else:  # pragma: no cover - CORRECTABLE_KEYS is what lets a field in here
+            raise AssertionError(
+                f"{field!r} is declared correctable and nothing here writes it"
+            )
+
+    def _correct_conditions(self, target: Creature, changes: Mapping[str, Any]) -> None:
+        """The stated conditions, reached through the ledger's own owner.
+
+        ``conditions`` names the whole set and ``condition_levels`` puts a level
+        on a name in it; stating ``condition_levels`` alone re-levels against
+        what the creature already holds, which is the reading that needs no
+        refusal for a level naming a condition nobody has.
+
+        Every removal goes through :meth:`set_condition`, which also clears
+        whatever ongoing effect was sustaining the condition. A *re-level* does
+        not: the ledger keys on the condition being held at all, so an effect
+        survives its level changing — but the level has to be dropped and
+        re-imposed rather than added to, because
+        :meth:`Creature.add_condition` accumulates on a cumulative row and "her
+        exhaustion is 3" would otherwise come out at 5.
+        """
+        current = dict(target.conditions)
+        if "conditions" in changes:
+            wanted = {str(name): 1 for name in changes["conditions"]}
+        else:
+            wanted = dict(current)
+        for name, level in changes.get("condition_levels", {}).items():
+            wanted[str(name)] = int(level)
+        for name in sorted(current):
+            if name not in wanted:
+                self.set_condition(target.name, name, applied=False)
+        for name in sorted(wanted):
+            if target.conditions.get(name) == wanted[name]:
+                continue
+            if name in target.conditions:
+                target.remove_condition(name)
+            self.set_condition(target.name, name, applied=True, levels=wanted[name])
+
+    def _correct_initiative(self, name: str, value: int) -> None:
+        self.initiative[name] = value
+        leader = self.current_name
+        self.order = self._initiative_order()
+        if self.current_name != leader:
+            # ``__init__`` opened the turn for whoever was on top, so the budget
+            # standing on the table belongs to them — their Speed, their extra
+            # attacks, their attachment. Promoting somebody else without
+            # re-deriving it would hand the newcomer another creature's turn.
+            # Safe to do without the RNG ``_begin_turn`` needs precisely because
+            # the guard above ran: nothing has acted, so there is no attached
+            # damage to resolve and no death save owed.
+            self._turn = self._opening_turn_state(self.current)
 
     def state(self) -> dict[str, Any]:
         return {
@@ -2409,12 +2792,7 @@ class Encounter:
         self._disengaged[creature.name] = False
         self._reaction_available[creature.name] = True
         if not creature.arrived:
-            self._turn = TurnState(
-                movement_left=0,
-                action_used=True,
-                bonus_action_used=True,
-                attacks_left=0,
-            )
+            self._turn = self._opening_turn_state(creature)
             return
         self._resolve_attached_damage(creature, rng)
         if creature.dying:
@@ -2436,6 +2814,25 @@ class Encounter:
         # A death save can kill, and :meth:`_death_save` marks the creature dead
         # without going through ``take_damage``, so nothing else would notice.
         self._reconcile_concentration()
+
+    def _opening_turn_state(self, creature: Creature) -> TurnState:
+        """The budget a creature's turn opens with, reinforcements included.
+
+        One writer for the *whole* of that question, where
+        :meth:`_fresh_turn_state` answers only the arrived half. The second
+        caller is :meth:`_correct_initiative`, which can promote a creature into
+        a turn that has already been opened for somebody else and must give it
+        the budget ``_begin_turn`` would have — including the empty one a
+        combatant whose arrival round has not come is held to.
+        """
+        if not creature.arrived:
+            return TurnState(
+                movement_left=0,
+                action_used=True,
+                bonus_action_used=True,
+                attacks_left=0,
+            )
+        return self._fresh_turn_state(creature)
 
     def _fresh_turn_state(self, creature: Creature) -> TurnState:
         """The budget a creature opens a turn — or an interlude's beat — with.
