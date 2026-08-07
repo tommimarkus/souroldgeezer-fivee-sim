@@ -147,7 +147,8 @@ Before a fight's council or adjudication, have mechanics read
 `fivee encounter.state <id>` and invite only the seat whose creature is up. Do
 not remember or infer the order. A fight's act names no `actor`, so the engine
 cannot reject a declaration from the wrong seat; it instead acts as the current
-creature. A declaration by a seat that is not up is therefore not adjudicated:
+creature, whichever creature is up. A declaration by a seat that is not up is
+therefore not adjudicated:
 hold it and hand the decision back. Re-read after every resolved turn; one turn
 may contain several acts and moves only on `encounter.advance`. Offer Reactions
 to their owner, and keep enemies in the same initiative order.
