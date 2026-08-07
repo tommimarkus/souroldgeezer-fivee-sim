@@ -14,6 +14,7 @@ follows from it.
   "seed": 20260805,
   "adventure_id": "adv-1",
   "game_master": {"kind": "agent"},
+  "council": {"communication": "fictional"},
   "seats": [
     {"name": "Thora",  "kind": "agent", "temperament": "bold",
      "voice": "blunt, soldierly, jokes when frightened", "sheet": {...}},
@@ -48,10 +49,16 @@ disk. A `none` answer or the exact expected Claude Code inventory above belongs
 only in `tool_check`; every other inventory also belongs in the transcript and,
 in playtest mode, `findings.jsonl` and the report.
 
-`kind` is `agent` or `human`, and it is the only thing that changes how a seat is
-asked for a decision. `game_master.kind` may be `human`, in which case there is
-no game-master agent and the coordinator puts the situation to the person
-instead.
+`kind` is `agent` or `human`, and it is the only thing that changes the transport
+used to ask a seat for a decision. It does not change council eligibility,
+information, or ownership of a turn. `game_master.kind` may be `human`, in which
+case there is no game-master agent and the coordinator puts the situation to the
+person instead.
+
+`council.communication` defaults to `fictional` when omitted. The game master
+then names only seats whose characters can currently communicate in the
+established fiction. Set it to `table-wide` only when the table explicitly opts
+into out-of-character discussion across fictional separation.
 
 `mode` is `play` unless the request explicitly activated `playtest`. **Nobody
 human anywhere** means the run is unattended: play it to the end and hand back
@@ -103,18 +110,63 @@ seat can be restored, the adventure itself cannot be read, or no audit record
 can be preserved — may the coordinator stop as blocked. Preserve the pause
 artifacts and report the exact blocker without asking the user for confirmation.
 
+## Party council
+
+The coordinator opens a party council after narration and before an acting seat
+commits. Every participant receives only its own allowlisted player brief. The
+coordinator never sends one participant another seat's brief and never creates a
+shared fact from private memory that nobody actually shared.
+
+Use one proposal pass and one response or revision pass, ending early when all
+participants are ready. Agent participants in a pass are messaged together;
+human participants use the host's user-input operation with the same visible
+discussion; after both transports answer, the coordinator relays their `TABLE`
+messages to the other participants. A human may explicitly request another pass,
+one at a time. A material or plan-breaking event reopens a fresh bounded council
+instead of silently carrying the plan forward.
+
+Record the current bounded state in `council.json`, not the raw discussion:
+
+```json
+{
+  "status": "open",
+  "encounter_id": "enc-1",
+  "decision_owners": ["Thora"],
+  "participants": ["Thora", "Kesh", "Ilma"],
+  "pass": 1,
+  "current_plan": "At most 200 words of shared, table-only strategy.",
+  "open_questions": [],
+  "ready": ["Kesh"]
+}
+```
+
+`participants` is the visibility boundary. `pass` is the pass to resume;
+`current_plan` is a rolling summary built only from narration and messages those
+participants actually shared; `open_questions` holds only exact player-facing
+questions still awaiting an answer. Keep `current_plan` at or below 200 words.
+The full labeled exchange belongs in `transcript.md` for chronology and in each
+participant's private memory according to what it witnessed, but it is never
+used wholesale to rehydrate a role.
+
+`TABLE` is advisory out-of-character strategy, `SAY` is in-world speech routed
+through the game master, and only a decision owner may send `COMMIT` for its own
+character. Close the council after commitment or record the new pass before any
+pause.
+
 ## Asking a seat
 
 ### An agent seat
 
 Message the child spawned for that seat through the host's subagent operation,
 keeping it alive across the whole run so it remembers the session. Dispatch
-independent agent seats together; do not walk them one at a time.
+agent seats in the same council pass together; do not walk them one at a time or
+let a later responder see an answer from the same pass.
 
 A resumed run has no live children. Re-spawn each one through the host-specific
 dispatch in the main skill and brief it from `seats/<name>.md`, its sheet,
-temperament, and voice **and nothing else**. Re-run the player tool inventory
-before sending the next scene or brief.
+temperament, and voice **and nothing else**, except the compact `council.json`
+summary when that seat is a participant in an open council. Re-run the player
+tool inventory before sending the next scene or brief.
 
 ### A human seat
 
@@ -125,6 +177,10 @@ pause when the host supports it; beyond that, pause again.
 Offer two or three plausible actions as options and let the free-text answer
 carry anything else. The options are a convenience, not the menu: a real player
 says something the list did not have.
+
+During council, ask for a brief `TABLE` proposal or response, an optional `SAY`,
+and whether the person is ready. After council, ask only a decision owner what it
+`COMMIT`s. Do not turn another player's proposed plan into the human's answer.
 
 ```
 ── The Chantry stair · Ilma ──
@@ -174,6 +230,8 @@ Every pause can be the last thing that happens for a week. Before you stop:
 2. Each `seats/<name>.md` holds what that seat has witnessed, in their voice.
 3. In playtest mode, `findings.jsonl` has everything noticed so far.
 4. `roster.json` records the mode, adventure id, and encounter id in play.
+5. `council.json` records the current participants, pass, rolling plan, open
+   questions, and readiness without copying the raw discussion.
 
 The engine's own state needs no help — the fight is in its journal and the run is
 in its adventure document. What you are saving is the *table*: who knows what.
@@ -186,12 +244,18 @@ in its adventure document. What you are saving is the *table*: who knows what.
    which is cheap and exact. In playtest mode, also restore its run-sheet
    position.
 3. Re-spawn each agent seat through the host-specific dispatch; hand it **only**
-   `seats/<name>.md`, its sheet, its temperament and its voice. Re-run the tool
-   inventory and record its classification before sending player-facing
+   `seats/<name>.md`, its sheet, its temperament and its voice. If `council.json`
+   says that seat is a participant in an open council, also hand it only the
+   bounded `current_plan`, `open_questions`, pass, decision owners, and readiness
+   needed to resume that council. Never hand any role the full transcript. Re-run
+   the tool inventory and record its classification before sending player-facing
    material.
-4. Read the fight back from `fivee encounter.state` or `fivee adventure.state`.
+4. Restore an open council at its recorded pass, using the same mixed human and
+   agent transports. Give the game master only the bounded table-only plan and
+   addressed questions, never the raw discussion.
+5. Read the fight back from `fivee encounter.state` or `fivee adventure.state`.
    Never reconstruct mechanical state from the transcript.
-5. Say where play stands, and continue.
+6. Say where play stands, and continue.
 
 A resumed player who is briefed from the transcript instead of their own file has
 just been told what the rest of the party did while they were elsewhere. That

@@ -69,6 +69,10 @@ Create `.fivee-sim/plays/<id>/roster.json`, choose a master seed, and quote it.
 The seed makes engine outcomes reproducible. Read
 [`references/seating-and-pauses.md`](references/seating-and-pauses.md) for the
 roster, human-seat prompts, tool inventory, pause, and resume protocol.
+Party councils default to `fictional` communication: only seats whose characters
+can presently communicate participate. A table-wide out-of-character channel is
+available only when the table explicitly opts into `table-wide` communication in
+the roster.
 
 ## 2. Brief the seats
 
@@ -101,7 +105,9 @@ has taken a seat.
 
 The game-master prompt may add the adventure path, party, and active mode. A
 player prompt may add only that seat's character sheet, temperament, and voice;
-on resume it may also add that seat's private memory. Never put the
+on resume it may also add that seat's private memory and, when that seat is a
+participant in an open party council, the compact current council summary. Never
+put the
 adventure's path, name, directory, module text, or run sheet in a player prompt;
 keep other roster entries and the full transcript out too.
 
@@ -137,13 +143,13 @@ no agent; print the same player-facing narration and ask the person directly.
 ## 3. Run the beat loop
 
 ```text
-game master narrates the beat and names who must decide
+game master narrates the beat, names who must decide, and names who can confer
   ↓
 coordinator prints the player-facing text
   ↓
-each acting seat declares a whole turn in plain language
-  agent seat  → message its live child; dispatch independent seats together
-  human seat  → use the host's user-input operation, up to four in one pause
+coordinator opens a bounded party council for the eligible seats
+  ↓
+the acting seat commits its own whole turn in plain language
   ↓
 if a human seat's action needs a d20, ask for the face and explain the dice
   ↓
@@ -161,7 +167,53 @@ Every seat plays its own character. Movement, action, bonus action, target,
 spell and slot level, item use, and retreat belong to the seat. Return a refused
 declaration with the engine's reason rather than replacing it with a legal move.
 
-Before each decision, serve that seat:
+### Party council
+
+Between the game master's narration and an acting seat's declaration, open a
+short party council. The game master names the eligible participants: by default
+they are the present player seats whose characters can currently communicate in
+the established fiction. A separated or otherwise isolated seat gets no
+omniscient channel. `table-wide` communication is an explicit roster opt-in, not
+the default. Human and agent seats follow the same protocol; only their transport
+differs.
+
+Before discussion, serve each participant only its own player brief. Never give
+one player or seat another player's brief. A participant learns another
+character's private observation only if that player chooses to share it. The
+coordinator relays council messages among the named participants and must not
+merge private seat memories or unshared briefs into a common account.
+
+Use three message kinds:
+
+- **`TABLE`** is out-of-character strategy for council participants. It consumes
+  no action or fictional time, and it does not enter the world or alert an enemy.
+- **`SAY`** is speech in the world. Relay it to the game master, which decides who
+  can hear it, records it in the encounter where applicable, and returns any
+  consequence.
+- **`COMMIT`** is a final declaration. Only a named acting seat may commit its own
+  turn; advice from another seat never becomes that character's action.
+
+A participant may mark an exact question `GM QUESTION:` and may mark itself
+`READY: yes`. Relay only the addressed question to the game master, then return
+only its player-facing answer. For an ordinary council, dispatch one proposal
+pass and then one response pass for revision, ending early when everyone is
+ready. Agent participants in the same pass may be dispatched together; human
+participants use the host's user-input operation and receive the same relayed
+messages. A human may explicitly continue discussion one pass at a time.
+
+Keep the plan advisory. After the council closes, the acting seat alone chooses
+and sends `COMMIT`. If a material or plan-breaking event changes the situation,
+reopen a fresh bounded council for the newly eligible participants rather than
+silently applying the old plan.
+
+Keep raw discussion in the coordinator, participating player contexts, and the
+labeled chronology; do not send the raw or full council discussion to the game
+master. Give it only exact addressed questions, `SAY`, final `COMMIT`
+declarations, and a clearly labelled table-only plan summary of at most 200
+words. Table-only knowledge never becomes NPC or monster knowledge.
+
+Before a participant's first council response and before the acting seat's final
+commit if the situation changed, serve that seat:
 
 ```bash
 fivee encounter.brief <id> --as "<name>"
@@ -263,11 +315,15 @@ Keep these files under `.fivee-sim/plays/<id>/` in both modes:
 | `roster.json` | mode, seats, master seed, adventure id, and current encounter |
 | `transcript.md` | shared table-facing record |
 | `seats/<name>.md` | one seat's private memory, containing only what it witnessed |
+| `council.json` | bounded current council state; never the raw discussion |
 
 Write private memory in the player's voice. On resume, re-spawn that player from
-its sheet, temperament, voice, and private memory only. Re-spawn the game master
-with the adventure path and current run position, then read the authoritative
-state from `fivee encounter.state` or `fivee adventure.state`.
+its sheet, temperament, voice, and private memory only, plus the compact
+`council.json` summary when it is a participant in an open council. Never use the
+full transcript as resume context. Re-spawn the game master with the adventure
+path and current run position, plus only a bounded table-only plan summary when a
+council is open, then read the authoritative state from `fivee encounter.state`
+or `fivee adventure.state`.
 
 Finalize every chapter and export `fivee adventure.replay` when play ends. Hand
 over the replay path with a concise account of where play stopped or concluded.
