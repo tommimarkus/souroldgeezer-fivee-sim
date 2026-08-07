@@ -49,8 +49,9 @@ A player prompt may add **only** identity, character sheet, gear, rules brief,
 temperament, voice, its `seats/<name>.md` rehydration, and the participant-scoped
 bounded council projection. Never include the adventure's path, module text,
 run sheet, other roster entries, or full transcript. A play-mechanics prompt may
-add only the compact mechanical brief: encounter id, exact adjudicated request,
-participant labels, baseline/delta needs, and recovery note when applicable. It
+add only the compact mechanical brief: run id, canonical operation name,
+resource identifiers, adjudicated request, argument values, participant labels,
+baseline/delta needs, and recovery note when applicable. It
 receives no adventure or module material and no player or seat private memory.
 
 Fresh context and allowlisted prompts minimise disclosure; they do not restrict

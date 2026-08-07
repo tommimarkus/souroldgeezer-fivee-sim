@@ -38,6 +38,13 @@ launcher operation.
 
 Accept exactly one `MECHANICAL BRIEF` containing:
 
+- **run id** — the adventure run selector, except for its initial creation;
+- **canonical operation name** — one exact `group.operation`, never a shell
+  command or an inferred alias;
+- **resource identifiers** — adventure, encounter, map, actor, target, or chair
+  identifiers required by that operation;
+- **argument values** — named values already chosen or adjudicated upstream,
+  kept separate from CLI flags;
 - **encounter id** — when the requested operation is encounter-scoped;
 - **adjudicated request** — one exact operation and intended rules outcome;
 - **actor and target** — only when the operation needs them;
@@ -53,12 +60,20 @@ underspecified adjudication by reading files or reconstructing prior play.
 
 ## One-beat procedure
 
-1. Validate the brief and identify the single operation. If its exact syntax is
-   present, use it. Otherwise consult `fivee help <operation>`; use general
-   `fivee help` first only when the operation name itself is uncertain. Spend at
-   most two help calls for the whole beat. Help discovers syntax; it does not
-   license extra work.
+1. Validate the semantic fields without translating them from a supplied shell
+   string. The only syntax fixed by this profile is the state and chair-delivery
+   forms printed in steps 2 and 4. For every other requested operation, consult
+   `fivee help <operation>` before its first execute call, even when the command
+   looks familiar. Use general `fivee help` only when the canonical operation
+   name is uncertain, and then do not execute until operation-specific help has
+   resolved it. Spend at most two help calls for the whole beat. Never invoke an
+   operation to discover or learn its arguments, parameters, or syntax.
+   Construct the call from the help example and argument list, using only the
+   exact identifiers and values supplied in the brief. Never invent a value,
+   flag, positional argument, empty placeholder, or JSON field.
 2. When continuity must be checked, make at most one authoritative state read.
+   Its fixed form is `fivee --run <run-id> encounter.state <encounter-id>` plus
+   selectors only; do not add an actor flag or replace the positional id.
    Select only the control facts needed for the beat, for example
    `--select turn=/turn --select mode=/mode --select over=/over --select
    winner=/winner`; never launch Python or another parser around a launcher
@@ -72,7 +87,10 @@ underspecified adjudication by reading files or reconstructing prior play.
    be retried. A lookup-only or delivery-only beat performs no mutation. Never
    choose an action, target, resource, or tactic for a player.
 4. Ask the engine for only the requested chair deliveries. Use a chair-safe full
-   brief for `baseline`, or a chair-safe resume delta for `delta`. Accept an
+   brief for `baseline` with `fivee --run <run-id> encounter.brief
+   <encounter-id> --as <chair>`, or a chair-safe resume delta for `delta` with
+   `fivee --run <run-id> encounter.resume <encounter-id> --as <chair> --view
+   delta`. Accept an
    engine `full` fallback as the new baseline. Emit one named chair frame at a
    time; never combine chairs, expose one chair's payload to another, or derive
    a projection yourself.
@@ -112,11 +130,15 @@ and rest recovery is caller-asserted rather than modelled. Check bounded
 
 ## Failure and correction
 
-Never make an identical retry. If and only if the engine reports a syntactic or
-argument-shape error and bounded help establishes the exact fix, make at most one
-corrected call. If that correction fails, help cannot establish the syntax, the
-engine is unavailable, or support is missing, return `STATUS: blocked` and
-terminate. Do not improvise state, roll outside the engine, or ask the user.
+Never make an identical retry. A parameter or argument error after the required
+help call is a blocked beat unless the just-read help proves that this child
+made a simple transcription error. Only that transcription case permits one
+retry: make at most one corrected call, then block if it fails. Never try a
+synonym, alternate flag, different positional shape, or guessed JSON field. If
+that correction fails, help cannot establish
+the syntax, the engine is unavailable, or support is missing, return `STATUS:
+blocked` and terminate. Do not improvise state, roll outside the engine, or ask
+the user.
 
 `RECOVERY` names the exact refusal, whether the one correction was spent, and
 one coordinator-owned next step. For a dropped or ambiguous chair delivery,

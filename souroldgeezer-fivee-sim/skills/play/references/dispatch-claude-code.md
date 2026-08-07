@@ -39,11 +39,12 @@ before the first player-facing material in every interval. The expected
 is honour-system and is reported without pausing.
 
 For each decision beat the controller spawns a fresh named `play-mechanics`
-agent with only encounter id, exact adjudicated request, participant labels,
-baseline/delta needs, and recovery note when applicable. It receives no
-adventure or module text and no player or seat private memory. End it after its
-bounded one-beat return. The named `encounter-sim` agent remains available for
-direct encounter-sim workflows; never use it as the live play beat child.
+agent with only run id, canonical operation name, resource identifiers,
+adjudicated request, argument values, participant labels, baseline/delta needs,
+and recovery note when applicable. It receives no adventure or module text and
+no player or seat private memory. End it after its bounded one-beat return. The
+named `encounter-sim` agent remains available for direct encounter-sim
+workflows; never use it as the live play beat child.
 
 Claude Code discovers every packaged named agent and applies its shared
 frontmatter, including tools, model, and effort; do not reproduce or override

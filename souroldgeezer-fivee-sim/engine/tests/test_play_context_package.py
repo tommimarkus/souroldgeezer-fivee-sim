@@ -120,6 +120,37 @@ def test_root_is_a_thin_supervisor_with_a_closed_return_boundary() -> None:
     assert re.search(r"800 stable-proxy tokens", plain)
 
 
+def test_supervisor_owns_run_identity_but_not_fivee_syntax() -> None:
+    skill = _text("skills/play/SKILL.md")
+    engine = _section(skill, "## Engine boundary")
+    plain = " ".join(engine.replace("`", "").replace("*", "").split())
+
+    assert "adventure id" in plain.lower()
+    assert "play-mechanics" in plain
+    assert re.search(r"root.{0,160}never.{0,120}(?:invoke|run).{0,80}fivee", plain, re.I)
+    assert re.search(r"(?:never|do not).{0,180}(?:construct|guess).{0,120}(?:flag|syntax|command)", plain, re.I)
+    assert "fivee help <operation>" not in engine
+
+
+def test_controller_briefs_mechanics_with_values_not_a_guessed_command() -> None:
+    controller = CONTROLLER_PATH.read_text(encoding="utf-8")
+    loop = _section(controller, "## Run the table")
+    plain = " ".join(loop.replace("`", "").replace("*", "").split())
+
+    for field in ("run id", "canonical operation name", "resource identifiers", "argument values"):
+        assert field in plain.lower()
+    assert re.search(r"(?:do not|never).{0,160}(?:construct|guess).{0,120}(?:shell|flag|syntax)", plain, re.I)
+
+    table_loop = _text("skills/play/references/table-loop.md")
+    assert "fivee --run" not in table_loop
+    for dispatch in (
+        _text("skills/play/references/dispatch-codex.md"),
+        _text("skills/play/references/dispatch-claude-code.md"),
+    ):
+        for field in ("run id", "canonical operation name", "resource identifiers", "argument values"):
+            assert field in dispatch.lower()
+
+
 def test_fresh_interval_rehydrates_roles_from_bounded_table_state() -> None:
     controller = CONTROLLER_PATH.read_text(encoding="utf-8")
     rehydration = _section(controller, "## Fresh interval rehydration")

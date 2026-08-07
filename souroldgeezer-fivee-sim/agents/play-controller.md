@@ -92,10 +92,13 @@ a replacement merely because the user is choosing. A roll never creates a
 human prompt.
 
 Use one fresh mechanics child for the whole decision beat, including requested
-chair deliveries. Relay each exact chair payload only to its named seat, update
-`brief-cursors.json` only after acknowledged delivery, give the game master only
-the bounded control fields, and keep raw engine traffic out of every durable
-table artifact.
+chair deliveries. Its compact brief supplies the run id, canonical operation
+name, resource identifiers, adjudicated request, and argument values as separate
+fields. Never construct a shell command or guess CLI syntax or flags; mechanics
+owns that translation against current operation help. Relay each exact chair
+payload only to its named seat, update `brief-cursors.json` only after
+acknowledged delivery, give the game master only the bounded control fields, and
+keep raw engine traffic out of every durable table artifact.
 
 Append shared chronology and seat-witnessed memory after relays, then discard
 raw council and worker returns from the live working set. In playtest mode also

@@ -90,6 +90,9 @@ def test_play_mechanics_runs_one_bounded_decision_beat() -> None:
     for obligation in (
         "one decision beat",
         "compact mechanical brief",
+        "run id",
+        "canonical operation name",
+        "argument values",
         "encounter id",
         "adjudicated request",
         "participant",
@@ -122,6 +125,37 @@ def test_play_mechanics_runs_one_bounded_decision_beat() -> None:
     )
     assert re.search(r"OUTCOME:.{0,100}(?:120|160) words", plain, re.IGNORECASE)
     assert _proxy_tokens(agent) <= 2_750
+
+
+def test_play_mechanics_discovers_syntax_before_execution() -> None:
+    agent = _agent()
+    procedure = _section(agent, "## One-beat procedure")
+    failure = _section(agent, "## Failure and correction")
+    plain = " ".join(procedure.replace("`", "").replace("*", "").split())
+
+    assert re.search(
+        r"fivee help <operation>.{0,240}(?:before|prior to).{0,160}"
+        r"(?:execute|invoke|call)",
+        plain,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"never.{0,160}(?:execute|invoke|call).{0,160}(?:discover|learn).{0,100}"
+        r"(?:argument|parameter|syntax)",
+        plain,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:example|help).{0,240}(?:only|exact).{0,160}(?:supplied|brief).{0,100}"
+        r"(?:value|field)",
+        plain,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:parameter|argument).{0,120}error.{0,220}(?:blocked|transcription)",
+        " ".join(failure.split()),
+        flags=re.IGNORECASE | re.DOTALL,
+    )
 
 
 def test_play_mechanics_retains_the_moved_roll_interlude_and_limit_contracts() -> None:

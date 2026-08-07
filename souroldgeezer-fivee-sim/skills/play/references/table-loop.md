@@ -10,32 +10,29 @@ relays or receives their raw returns.
 The interval controller owns a **resettable mechanical context** separate from
 the narrative game master. Use the packaged `play-mechanics` role for one decision beat,
 then end it immediately after its bounded return.
-Give it encounter ids and exact adjudicated operation requests, never the module,
-run sheet, transcript, or player memories. Reset it after each decision beat and
-at every encounter or chapter checkpoint so raw engine traffic does not
-accumulate in the controller or game-master context and is never forwarded to
-the root.
+Give it the run id, canonical operation name, resource identifiers, adjudicated
+request, and argument values as separate semantic fields, never a constructed
+shell command. Do not give it the module, run sheet, transcript, or player
+memories. Reset it after each decision beat and at every encounter or chapter
+checkpoint so raw engine traffic does not accumulate in the controller or
+game-master context and is never forwarded to the root.
 
 For a decision beat, the mechanical context reads one authoritative
 `encounter.state` snapshot to identify the turn and detect whether state changed.
-Use CLI `--select` for the bounded control facts rather than wrapping the result
-in a Python parser; any unselected raw snapshot remains inside the resettable
-context. Never derive or project a player's payload from `encounter.state`;
-`--as` is the engine-owned redaction boundary, including creatures hidden by
-total cover.
+Ask mechanics to select only the bounded control facts rather than wrapping the
+result in a Python parser; any unselected raw snapshot remains inside the
+resettable context. Never derive or project a player's payload from
+`encounter.state`; the chair identity supplied to an engine-owned brief or
+resume operation is the redaction boundary, including creatures hidden by total
+cover.
 
-Establish **one full baseline** per seat when it first joins an encounter:
-
-```bash
-fivee --run <adv-id> encounter.brief <id> --as "<seat>"
-```
+Establish **one full baseline** per seat when it first joins an encounter by
+requesting `encounter.brief` with the run, encounter, and chair identifiers.
 
 Relay that exact chair-safe payload once. After any resolved state change, ask
-for one **per-seat delta** for each participant before its next decision:
-
-```bash
-fivee --run <adv-id> encounter.resume <id> --as "<seat>" --view delta
-```
+for one **per-seat delta** for each participant before its next decision by
+requesting `encounter.resume` with the run and encounter identifiers, chair
+identity, and a `delta` view value.
 
 Relay `state_delta` without paraphrasing. If the returned `view` is `full`, the
 engine lost that chair's baseline; accept its chair-specific state as the new
@@ -52,10 +49,10 @@ baseline. Mark delivery unknown after a dropped return or missing
 acknowledgement.
 
 On a player re-spawn, or whenever its delivery acknowledgement is unknown,
-force one fresh `fivee --run <adv-id> encounter.brief <id> --as "<seat>"` and relay that full
-chair-safe baseline before asking for another delta. Do not use `--view delta`
-until this re-baseline is acknowledged and its cursor is current. This recovery
-exception is not permission to repeat full briefs on a council pass or response.
+force one fresh `encounter.brief` request and relay that full chair-safe baseline
+before asking for another delta. Do not request a delta view until this
+re-baseline is acknowledged and its cursor is current. This recovery exception
+is not permission to repeat full briefs on a council pass or response.
 
 Use exactly one mechanical-context invocation for the decision beat, not one
 invocation per chair. It may emit several sequential delivery frames from that

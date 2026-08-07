@@ -116,20 +116,20 @@ def test_neither_host_manifest_asks_to_spawn_a_server() -> None:
 
 
 def test_the_launcher_the_skills_name_is_there_and_runnable() -> None:
-    """Both skills tell the reader to fall back to this path, so it must exist.
+    """Command-driving guidance points at the packaged executable launcher.
 
-    They locate it relative to the skill directory the harness announces —
+    Direct engine skills locate it relative to the skill directory —
     ``../../scripts/fivee.py`` from ``skills/<name>/`` — which is this file.
-    A rename that missed the skills would leave that instruction pointing at
-    nothing, and the reader would find out mid-fight.
+    Play delegates launcher ownership to its scoped mechanics role instead.
     """
     launcher = PLUGIN_ROOT / LAUNCHER
     assert launcher.is_file()
     assert os.access(launcher, os.X_OK), f"{LAUNCHER} must be executable"
 
-    for skill in ("encounter-sim", "map-forge", "play"):
+    for skill in ("encounter-sim", "map-forge"):
         text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
         assert "../../scripts/fivee.py" in text, skill
+    assert "scripts/fivee.py" in _text("agents/play-mechanics.md")
 
 
 def test_encounter_analysis_guidance_is_conditionally_packaged() -> None:
@@ -219,11 +219,22 @@ def test_shipped_guidance_carries_the_adventure_run_selector() -> None:
     resume = _text("skills/play/references/resume.md")
     replay = _text("skills/map-forge/references/adventure-replay.md")
 
-    for entry_skill in (encounter, map_forge, play):
+    for entry_skill in (encounter, map_forge):
         assert "fivee adventure.create" in entry_skill
         assert "fivee --run <adv-id>" in entry_skill
         assert "shared" in entry_skill.lower()
         assert "read-only" in entry_skill.lower()
+
+    for obligation in (
+        "adventure.create",
+        "adventure id",
+        "run id",
+        "canonical operation name",
+        "argument values",
+        "shared",
+        "read-only",
+    ):
+        assert obligation in play.lower()
 
     for command in (
         "fivee --run adv-1 adventure.encounter",
@@ -238,8 +249,14 @@ def test_shipped_guidance_carries_the_adventure_run_selector() -> None:
     ):
         assert command in map_forge
     assert "fivee --run adv-1 adventure.replay" in replay
-    assert "fivee --run <adv-id> encounter.brief" in table_loop
-    assert "fivee --run <adv-id> encounter.resume" in table_loop
+    assert "fivee --run" not in table_loop
+    for obligation in (
+        "run id",
+        "canonical operation name",
+        "encounter.brief",
+        "encounter.resume",
+    ):
+        assert obligation in table_loop
     assert "fivee --run <adv-id> encounter.state" in resume
     assert "fivee --run <adv-id> adventure.state" in resume
 
@@ -781,11 +798,15 @@ def test_play_skill_uses_one_brief_baseline_then_chair_scoped_deltas() -> None:
         "exactly one mechanical-context invocation",
         "not one invocation per chair",
         "encounter.resume",
-        '--view delta',
+        "`delta` view value",
         'view` is `full',
     ):
         assert obligation in delivery_plain
-    assert re.search(r"--as.{0,300}\bengine.{0,200}\bredact", delivery, flags=re.I | re.S)
+    assert re.search(
+        r"chair identity.{0,300}\bengine.owned.{0,200}\bredact",
+        delivery,
+        flags=re.I | re.S,
+    )
     assert re.search(
         r"(?:never|do not).{0,200}(?:derive|project).{0,200}encounter\.state",
         delivery,
@@ -821,7 +842,10 @@ def test_brief_delivery_cursor_forces_safe_rebaseline_after_lost_ownership() -> 
     assert "state_sha256" in guidance
     assert re.search(r"only after.{0,100}successful.{0,100}relay", guidance)
     assert re.search(r"(?:unknown|missing).{0,160}(?:ack|acknowledg)", guidance)
-    assert re.search(r"re-spawn.{0,200}encounter\.brief.{0,120}--as", guidance)
+    assert re.search(
+        r"re-spawn.{0,200}encounter\.brief.{0,160}chair.safe baseline",
+        guidance,
+    )
     assert re.search(
         r"(?:never|do not).{0,180}(?:delta|--view delta).{0,180}(?:re-baseline|baseline)",
         guidance,
