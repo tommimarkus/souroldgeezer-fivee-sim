@@ -3,7 +3,6 @@
 import re
 from pathlib import Path
 
-
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -91,8 +90,16 @@ def test_live_play_routes_one_beat_to_play_mechanics_not_encounter_sim() -> None
 
     assert "`play-mechanics`" in mechanical
     assert re.search(r"one decision beat", mechanical, flags=re.IGNORECASE)
-    assert re.search(r"(?:end|terminate).{0,120}(?:after|following).{0,120}(?:return|beat)", mechanical, flags=re.I | re.S)
+    assert re.search(
+        r"(?:end|terminate).{0,120}(?:after|following).{0,120}(?:return|beat)",
+        mechanical,
+        flags=re.I | re.S,
+    )
     assert "packaged `encounter-sim` role" not in mechanical
+    for field in ("OUTCOME:", "STATE DELTA:", "RECOVERY:"):
+        assert field in mechanical
+    assert "RESULT:" not in mechanical
+    assert "BRIEF:" not in mechanical
 
     skill = _text("skills/play/SKILL.md")
     assert "../../agents/play-mechanics.md" in skill
@@ -109,8 +116,16 @@ def test_each_host_dispatches_canonical_roles_without_copying_role_bodies() -> N
     for role in ("adventure-prep", "game-master", "typical-player", "play-mechanics"):
         assert f"agents/{role}.md" in codex
     assert re.search(r"minimal bootstrap", codex, flags=re.IGNORECASE)
-    assert re.search(r"child.{0,240}read.{0,200}(?:own|canonical).{0,120}role", codex, flags=re.I | re.S)
-    assert re.search(r"(?:do not|never).{0,180}(?:inject|copy).{0,120}role bod", codex, flags=re.I | re.S)
+    assert re.search(
+        r"child.{0,240}read.{0,200}(?:own|canonical).{0,120}role",
+        codex,
+        flags=re.I | re.S,
+    )
+    assert re.search(
+        r"(?:do not|never).{0,180}(?:inject|copy).{0,120}role bod",
+        codex,
+        flags=re.I | re.S,
+    )
 
 
 def test_preparation_and_mechanical_children_receive_no_player_private_memory() -> None:

@@ -84,9 +84,9 @@ def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None
 
     for field in (
         "schema_version",
-        "source.path",
-        "source.sha256",
-        "source.format",
+        "source_path",
+        "source_sha256",
+        "source_format",
         "entries",
         "id",
         "kind",
@@ -103,6 +103,7 @@ def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None
     assert re.search(r"(?:at most|max(?:imum)?)\s*20\s+entries", frames, flags=re.I)
     assert re.search(r"(?:at most|max(?:imum)?)\s*1[, ]?200\s+proxy tokens", frames, flags=re.I)
     assert "complete manifest" in frames.lower()
+    assert re.search(r'"?complete"?\s*:\s*true', frames, flags=re.I)
     assert re.search(r"coordinator.{0,200}\.partial", frames, flags=re.I | re.S)
     assert re.search(r"coordinator.{0,220}(?:atomic|publish)", frames, flags=re.I | re.S)
     assert re.search(

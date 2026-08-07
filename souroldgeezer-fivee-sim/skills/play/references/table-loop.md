@@ -54,15 +54,22 @@ exception is not permission to repeat full briefs on a council pass or response.
 
 Use exactly one mechanical-context invocation for the decision beat, not one
 invocation per chair. It may emit several sequential delivery frames from that
-one snapshot, but each frame contains at most one named chair payload. After all
-requested chair frames, it emits one bounded control frame and exits:
+one snapshot, but each frame contains at most one named chair payload:
+
+```text
+STATE DELTA: <chair> | full | delta
+PAYLOAD: <exact chair-safe engine payload>
+```
+
+After all requested chair frames, it emits one bounded control frame and exits:
 
 ```text
 STATUS: ok | refused | degraded | blocked
-RESULT: at most 160 words; exact arithmetic or refusal and changed public facts
+OUTCOME: at most 120 words; exact arithmetic or refusal and changed public facts
 EVIDENCE: encounter id plus event/action indexes or durable artifact paths
-BRIEF: absent, or one exact engine payload for one named seat (full | delta)
-NEXT: one requested mechanical action or none
+STATE DELTA: none, or names and full/delta kinds already emitted
+RECOVERY: at most 60 words; none, exact refusal, correction state, and next step
+NEXT: one coordinator request or none
 ```
 
 Do not combine chair payloads into one `BRIEF`, re-read state between chair
@@ -71,10 +78,10 @@ the return. If it reports a malformed or unsupported call, give it one bounded
 correction naming that call; a second failure is `blocked`, not a reason to load
 the full encounter skill into the beat.
 
-Raw state, logs, and reasoning stay in that resettable context. The exact `BRIEF`
-exception is immediately relayed only to its named seat and is never sent to the
-game master, another seat, or a later prompt. Give the game master only `RESULT`,
-`EVIDENCE`, and `NEXT`.
+Raw state, logs, and reasoning stay in that resettable context. Each exact
+`PAYLOAD` is immediately relayed only to its named seat and is never sent to the
+game master, another seat, or a later prompt. Give the game master only
+`OUTCOME`, `EVIDENCE`, `RECOVERY`, and `NEXT`.
 
 ## Party council
 

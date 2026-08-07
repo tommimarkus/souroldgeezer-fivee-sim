@@ -50,14 +50,12 @@ Emit the data for private `module-index.json`. Its contract is:
 ```json
 {
   "schema_version": 1,
-  "source": {
-    "path": "<coordinator-supplied path>",
-    "sha256": "<coordinator-supplied digest>",
-    "format": "markdown|text|pdf|other"
-  },
+  "source_path": "<coordinator-supplied path>",
+  "source_sha256": "<coordinator-supplied digest>",
+  "source_format": "markdown|text|pdf|other",
   "entries": [
     {
-      "id": "scene-001",
+      "id": "m0001",
       "kind": "scene|keyed-area|encounter|npc|treasure|route|other",
       "title": "Source title or compact label",
       "locator": {"kind": "line|page", "start": 1, "end": 4},
@@ -67,12 +65,12 @@ Emit the data for private `module-index.json`. Its contract is:
 }
 ```
 
-The dotted fields `source.path`, `source.sha256`, and `source.format` are
-required. Entries remain source-ordered. Give every entry a stable ID derived
-from its kind and source order; later frames must reuse it. A line or page
-locator must be sufficient for a fresh game master to read that section without
-searching or reading the whole adventure. `related_ids` contains only IDs that
-exist in the complete index.
+The fields `source_path`, `source_sha256`, and `source_format` are required.
+Entries remain source-ordered. Give every entry a stable ID derived from global
+source order (`m0001`, `m0002`, and so on); later frames must reuse it. A line or
+page locator must be sufficient for a fresh game master to read that section
+without searching or reading the whole adventure. `related_ids` contains only
+IDs that exist in the complete index.
 
 Do not place playtest findings in `module-index.json`. Emit them as separate
 run-sheet inventory data keyed by the same stable IDs so the coordinator can
@@ -81,10 +79,11 @@ own the existing `run-sheet.json` artifact.
 ## Output frames
 
 Return consecutive private frames of at most 20 entries and at most 1,200 proxy tokens
-each. Each frame names its mode, source digest, frame number, entry range,
-and whether more frames remain. End with a complete manifest giving the total
-frame and entry counts, all emitted ID ranges, and any unresolved cross-reference
-IDs. Never repeat earlier frames merely to make the last one self-contained.
+each. Each frame names its mode, source digest, frame number, total frame
+count, entry range, and whether more frames remain. End with a complete manifest
+giving the total frame and entry counts, all emitted ID ranges, any unresolved
+cross-reference IDs, and `"complete": true`. Never repeat earlier frames merely
+to make the last one self-contained.
 
 You emit data; you do not write or publish either artifact. The coordinator
 writes `module-index.json.partial`, validates each frame and the complete

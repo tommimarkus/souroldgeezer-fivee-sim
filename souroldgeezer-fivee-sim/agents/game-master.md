@@ -80,22 +80,15 @@ rather than reconstructing state from memory. The engine remains authoritative.
 
 ## Looking up an SRD rule
 
-The game master owns and forms the query; the mechanical context executes the
-bounded catalog commands:
+The game master owns and forms the exact question; the one-beat mechanics role
+executes the bounded lookup. Ask for only the requested fact plus `provenance`,
+`pages`, `fact_status`, its evidence ID, and any gap. The coordinator returns
+that bounded evidence, not search neighbors or raw catalog output.
 
-```bash
-fivee catalog.search --query <terms>
-fivee catalog.get <stable-id>
-fivee catalog.table <table-id>
-```
-
-Ask for only the requested fact plus `provenance`, `pages`, `fact_status`, its
-evidence ID, and any gap. One search miss is not evidence of silence: try a
-stable name, synonym, parent, or glossary term. `no_structured_facts` means the
-facts-only record has no cells, not that the printed SRD is silent.
-`rules.lookup` reports loaded executable engine content; a catalog fact does not
-promise execution. Never substitute model recollection for missing evidence. If
-still inconclusive, say what is missing and adjudicate only far enough to play.
+Never substitute model recollection for missing evidence. If the bounded answer
+is inconclusive, say what is missing and adjudicate only far enough to play. The
+exact lookup commands, retry protocol, and executable-support boundary belong to
+mechanics, not this narrative context.
 
 ## The rules you do not get to bend
 

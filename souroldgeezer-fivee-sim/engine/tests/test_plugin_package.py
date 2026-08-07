@@ -1150,29 +1150,16 @@ def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> N
         "fivee catalog.get",
         "fivee catalog.table",
     ):
-        assert command in lookup
+        assert command not in lookup
     lookup_plain = " ".join(lookup.lower().split())
     assert re.search(
         r"game master.{0,180}(?:owns|chooses|forms).{0,180}(?:query|question)",
         lookup_plain,
     )
-    assert re.search(
-        r"mechanical context.{0,180}(?:executes|runs).{0,180}catalog",
-        lookup_plain,
-    )
+    assert re.search(r"mechanic.{0,180}(?:executes|runs).{0,180}(?:lookup|query)", lookup_plain)
     for evidence_field in ("provenance", "pages", "fact_status"):
         assert evidence_field in lookup_plain
-    assert "no_structured_facts" in lookup
-    assert re.search(
-        r"one search.{0,300}\b(?:silent|silence)\b",
-        lookup,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
-    assert re.search(
-        r"`rules\.lookup`.{0,400}\b(?:executable|engine)\b",
-        lookup,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
+    assert re.search(r"bounded.{0,160}(?:evidence|answer)", lookup_plain)
     assert re.search(
         r"model recollection.{0,200}\b(?:never|not|no)\b|"
         r"\b(?:never|not|no)\b.{0,200}model recollection",
