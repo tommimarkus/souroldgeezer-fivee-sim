@@ -10,7 +10,8 @@ Before a controller returns its write lease:
 1. `transcript.md` is current through the last resolved beat.
 2. Every `seats/<name>.md` contains only what that seat witnessed.
 3. In playtest mode, `findings.jsonl` and `run-sheet.json` are current.
-4. `roster.json` names mode, adventure, seats, and encounter in play.
+4. `roster.json` v2 names mode, adventure, seats, encounter, and privacy
+   projection references. A saved v1 inline roster stays readable and unchanged.
 5. `council.json` holds participants, pass, rolling plan, open questions, and
    readiness without raw discussion.
 6. `brief-cursors.json` records acknowledged chair delivery ownership.
@@ -25,7 +26,7 @@ frame to the root.
 
 ## Resume
 
-1. The root reads `roster.json` only long enough to recover mode, seat bootstrap,
+1. The root uses the helper's roster loader only long enough to recover mode, seat bootstrap,
    source pointer, run ID, and current engine/adventure IDs. It does not open the
    transcript, seat memory, module-index locators, run sheet, council returns, or
    game-master private checkpoint. It gives a fresh controller the redacted
@@ -45,17 +46,20 @@ frame to the root.
    requiring an explicit restart-or-resume decision: restart preparation against
    the changed source, or restore the original source and resume. Do not narrate
    meanwhile.
-4. Re-spawn each agent player fresh with only identity, sheet, gear, rules brief,
+4. Re-spawn each agent player fresh from v2 `inputs/seats/<name>.json` (or the
+   existing v1 inline entry) with only identity, sheet, gear, rules brief,
    temperament, voice, and `seats/<name>.md`; when participating in an open
    council, add only bounded `current_plan`, `open_questions`, pass, decision
    owners, and readiness. Never hand any role the full transcript. Re-run tool
    inventory before new player-facing material.
 5. Restore an open council at its recorded pass with the same transports. Give
    the game master only its table-only plan and exact addressed questions.
-6. Read authoritative mechanics from `fivee --run <adv-id> encounter.state` or
-   `fivee --run <adv-id> adventure.state` through a fresh one-beat mechanics child; never
-   reconstruct state from chronology.
-7. If the roster has a human player seat, ask mechanics to run
+6. The controller reads authoritative mechanics from
+   `fivee --run <adv-id> encounter.state` or
+   `fivee --run <adv-id> adventure.state` directly with `--select`; never
+   reconstruct state from chronology. Use the one-beat mechanics fallback only
+   when the narrow launcher is unavailable.
+7. If the roster has a human player seat, the controller runs
    `fivee --run <adv-id> serve`.
    Read its fresh `viewer_url` and reconstruct each fresh seat URL using the human-seats
    procedure and send it to the root only as that seat's ephemeral human prompt.

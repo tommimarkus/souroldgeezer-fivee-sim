@@ -1,4 +1,4 @@
-"""Package contract for the disposable live-play mechanics role.
+"""Package contract for the conditional live-play mechanics fallback.
 
 The full encounter skill is useful when a user asks to run or analyse a fight,
 but loading it for every adventure decision beat is avoidable context.  These
@@ -68,6 +68,11 @@ def test_play_mechanics_has_only_launcher_bash_and_read() -> None:
         "mcp__*",
     } <= denied
     assert "Skill" not in _metadata_value(metadata, "tools")
+    assert re.search(
+        r"fallback.{0,200}(?:controller|launcher).{0,200}unavailable",
+        body,
+        re.I | re.S,
+    )
     assert "skills/encounter-sim" not in body
     assert "encounter-sim/SKILL.md" not in body
     assert re.search(

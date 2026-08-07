@@ -1,66 +1,36 @@
 # Codex dispatch
 
-Load this file only when Codex is the active host.
+Load only on Codex. The common prepared Markdown path uses
+`scripts/fivee-play.py` and no `adventure-prep` model. If setup requests
+fallback, spawn one child with `fork_turns="none"`; it reads
+`../../agents/adventure-prep.md`, receives only source/digest/mode/staging, and
+no player or seat private memory.
 
-Codex packaging does not activate Claude agent files as named agents. Use a
-minimal bootstrap that tells each child to read its own canonical role file,
-ignore the leading YAML frontmatter, follow the remaining role, and handle only
-its bounded assignment. Do not read, copy, or inject a role body into a child
-prompt. Resolve these packaged paths to absolute paths:
+The root spawns one `play-controller` with `fork_turns="none"`. Its minimal bootstrap
+contains only mode, artifact pointers/digests, current IDs, kinds,
+and returned write lease—never content/maps/scenes/full pregens, the adventure's path,
+module text, run sheet, or full transcript. The child reads its own
+canonical `../../agents/play-controller.md`; never inject or copy a role body.
 
-- `../../agents/play-controller.md`
-- `../../agents/adventure-prep.md`
-- `../../agents/game-master.md`
-- `../../agents/typical-player.md`
-- `../../agents/play-mechanics.md`
+The controller concurrently spawns one `game-master` and every `typical-player`
+with `fork_turns="none"`. The game-master reads
+`../../agents/game-master.md`, inherits the controller model/effort, and receives
+the party rules brief through `inputs/party-gm.json` plus private index pointers. Each
+typical-player reads `../../agents/typical-player.md` with
+`model="gpt-5.6-terra"`, `reasoning_effort="medium"`, and receives only its own
+identity, character sheet, gear, rules brief, temperament, voice, and seat-memory
+reference. Its first return is tool inventory before any scene or brief.
+The player prompt contains only that character sheet, gear, rules brief,
+temperament, voice, current chair payload, and witnessed memory.
 
-Before live intervals, the root may spawn disposable `adventure-prep` with
-`fork_turns="none"`, `model="gpt-5.6-terra"`, and
-`reasoning_effort="medium"`. The root validates its manifest, writes initial
-artifacts, and ends it before granting the live write lease.
+The controller drives the direct `fivee.py` launcher. Every control
+result uses `--select`; every chair payload uses `--as`. Give it a run id,
+canonical operation name, resource identifiers, and argument values, never a
+constructed command; it discovers current CLI syntax. Thus the ordinary path
+spawns no `play-mechanics` model. Only when the direct launcher capability is
+unavailable may it spawn the conditional fallback reading
+`../../agents/play-mechanics.md` with `fork_turns="none"`; that child receives no
+module, transcript, or player/seat private memory and ends after one beat.
 
-For every live interval the root spawns `play-controller` with
-`fork_turns="none"` and lets model and reasoning effort inherit. Its prompt may
-add only the redacted table bootstrap, mode, current engine/adventure IDs,
-artifact pointers and digests, bounded rehydration, the opaque game-master
-launch fields, and the 800-token return contract. Never add module text, hidden
-module state, current locators, full roster, transcript, raw council, or raw
-engine traffic. The root communicates only the four allowed frame types and
-does not spawn or message live roles around the controller.
-
-The controller owns all live children. It spawns `game-master` with
-`fork_turns="none"` and lets model and reasoning effort inherit. It spawns each
-`typical-player` with `fork_turns="none"`, `model="gpt-5.6-terra"`, and
-`reasoning_effort="medium"`. It spawns each fresh `play-mechanics` child with
-`fork_turns="none"`, `model="gpt-5.6-terra"`, and
-`reasoning_effort="medium"`. Every child uses the same minimal-bootstrap rule
-and reads its own canonical role profile.
-
-The prep prompt may add only adventure path, source digest and format, active
-mode, and bounded frame contract; it receives no player or seat private memory.
-The game-master prompt may add source path and digest, module-index pointer and
-digest, current entry IDs, party summary including each seat's rules brief,
-active mode, and bounded private checkpoint. The game master resolves current
-IDs to locators and reads those sections; the controller never receives the
-locators or module text. In playtest it also receives the run-sheet pointer,
-digest, and current IDs, never the whole run sheet.
-
-A player prompt may add **only** identity, character sheet, gear, rules brief,
-temperament, voice, its `seats/<name>.md` rehydration, and the participant-scoped
-bounded council projection. Never include the adventure's path, module text,
-run sheet, other roster entries, or full transcript. A play-mechanics prompt may
-add only the compact mechanical brief: run id, canonical operation name,
-resource identifiers, adjudicated request, argument values, participant labels,
-baseline/delta needs, and recovery note when applicable. It
-receives no adventure or module material and no player or seat private memory.
-
-Fresh context and allowlisted prompts minimise disclosure; they do not restrict
-Codex filesystem or tools. The controller records player tool inventory before
-the first player-facing scene or brief in every interval. Report tools as
-honour-system without pausing.
-
-End `adventure-prep` after its complete manifest and `play-mechanics` after its
-one-beat return. At the six-beat, encounter, or chapter boundary, the controller
-flushes artifacts, terminates the game master, every player, mechanics, and any
-descendant, returns the bounded interval frame, and ends. The root starts a new
-controller with `fork_turns="none"` when play continues.
+The controller alone writes table artifacts, returns the bounded frame, and
+ends. Root starts a fresh controller when play continues.

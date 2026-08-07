@@ -1,99 +1,48 @@
 # Core seating
 
-Load this core for every run. The root establishes the roster before live play;
-each disposable interval controller receives only a redacted seat bootstrap and
-owns live seat children for that interval. Human transport, failure handling,
-and pause/resume are separate conditional references linked from `SKILL.md`.
+Load in every interval. Root has already published roster v2; the controller
+receives redacted references, not the complete roster.
 
 ## roster.json
 
 ```json
-{
-  "id": "play-1",
-  "mode": "play",
-  "adventure": "/abs/path/to/module.md",
-  "seed": 20260805,
-  "adventure_id": "adv-1",
-  "game_master": {"kind": "agent"},
-  "council": {"communication": "fictional"},
-  "seats": [
-    {"name": "Thora", "kind": "agent", "class": "Fighter",
-     "species": "Human", "background": "Soldier", "temperament": "bold",
-     "voice": "blunt, soldierly, jokes when frightened", "gear": [...],
-     "rules": {...}, "sheet": {...}},
-    {"name": "Kesh", "kind": "agent", "class": "Rogue",
-     "species": "Halfling", "background": "Criminal", "temperament": "cautious",
-     "voice": "quiet, asks one question too many", "gear": [...],
-     "rules": {...}, "sheet": {...}}
-  ],
-  "tool_check": {"Thora": "none", "Kesh": "none"}
-}
+{"schema_version":2,"mode":"play","seed":20260805,"adventure_id":"adv-1","party_engine":"inputs/party-engine.json","party_gm":"inputs/party-gm.json","game_master":{"kind":"agent","input":"inputs/party-gm.json"},"seats":[{"name":"Thora","kind":"agent","input":"inputs/seats/thora.json","memory":"seats/thora.md"}],"tool_check":{"Thora":"none"}}
 ```
 
-`kind` is `agent` or `human`; it changes only the transport used to ask the
-seat, never council eligibility, information, or ownership of a turn.
-`game_master.kind` follows the same rule. `mode` is `play` unless the request
-explicitly activated `playtest`.
+Kinds are `agent` or `human` and change transport only. `mode` defaults to play.
+Each input is an allowlisted projection: engine gets only selected sheets; GM
+gets identity/class/species/background/gear/rules; a player gets only its own
+identity/sheet/gear/rules/temperament/voice. V1 inline rosters remain readable
+on resume and are never rewritten.
 
-`council.communication` defaults to `fictional`. Set it to `table-wide` only
-when the table explicitly opts into out-of-character discussion across fictional
-separation. A `sheet` is the combatant spec accepted by the engine. Identity,
-`gear`, and the `rules` brief are seat and game-master context only; never post
-them to an engine operation. Bundled parties in `../assets/pregens.json` already
-separate those shapes.
+Council communication defaults to fictional; table-wide requires explicit
+opt-in. Eligibility follows who can communicate, never transport.
 
 ## Player tool inventory
 
-Every agent player's first response must list every tool and scope or say `none`;
-record it under `tool_check`. For Claude Code, exactly `Read (player-visible/** only)`
-is the intended confined profile. Codex does not apply
-that profile, so a Codex seat with reported tools is in **honour-system mode**.
-Treat a broader Claude inventory the same way.
+Every fresh agent player's first response lists exact tools/scopes or `none`.
+For Claude Code, `Read (player-visible/** only)` is the intended confined profile.
+Codex seats with reported tools are in **honour-system mode**; broader Claude
+access is classified the same way. Record under `tool_check`.
 
-The live interval controller appends each honour-system classification, seat,
-and reported tools to `transcript.md`; in playtest mode it also appends the
-finding to `findings.jsonl` and the report. Continue without asking for approval
-solely because tools are present. The player still must not use them or seek the
-adventure.
-
-Re-ask in every fresh interval and after any in-interval re-spawn or saved-run
-resume, then record the new inventory before new player-facing material. A new
-child may have different tools. `none` or the exact confined Claude profile
-belongs only in `tool_check`; every other inventory also belongs in the
-chronology and, in playtest mode, the findings and report.
+Append honour-system seat/tools to `transcript.md` and, in playtest, to
+`findings.jsonl`. Continue without asking for approval; the player must not use
+tools or seek the adventure. Re-ask after every re-spawn or resume and record it
+before new player-facing material.
 
 ## Agent seats
 
-Keep one child per agent player alive only for the current interval. At the
-interval boundary persist its witnessed state, end it, and let the next
-controller spawn a fresh child from `seats/<name>.md`. Dispatch participants in
-the same council pass together; no responder sees another answer from that pass.
-Spread temperaments such as cautious, bold, thorough, and social.
-
-The interval controller stores what each seat witnesses in `seats/<name>.md`,
-but never feeds that file back to the same live child. It is fresh-interval
-rehydration material only. The full transcript, another seat's memory, module
-identity, and run sheet never enter a player prompt.
+Keep one child per player only for the interval. Persist witnessed memory, end
+it, and rehydrate a fresh child from its input reference and `seats/<name>.md`.
+Dispatch same-pass participants together. Never prompt with another seat's
+memory, full transcript, module identity, or run sheet.
 
 ## council.json
 
-Record bounded current state rather than raw discussion:
-
 ```json
-{
-  "status": "open",
-  "encounter_id": "enc-1",
-  "decision_owners": ["Thora"],
-  "participants": ["Thora", "Kesh"],
-  "pass": 1,
-  "extension_passes_since_checkpoint": 0,
-  "current_plan": "At most 200 words of shared, table-only strategy.",
-  "open_questions": [],
-  "ready": ["Kesh"]
-}
+{"status":"open","encounter_id":"enc-1","decision_owners":["Thora"],"participants":["Thora"],"pass":1,"extension_passes_since_checkpoint":0,"current_plan":"bounded table-only plan","open_questions":[],"ready":[]}
 ```
 
-`participants` is the visibility boundary. Build `current_plan` only from
-narration and facts those participants shared. Keep it at or below 200 words.
-`open_questions` holds exact player-facing questions still awaiting answers.
-Close the council after commitment or persist the next pass before any pause.
+Participants define visibility. `current_plan` is at most 200 words and uses
+only shared facts; `open_questions` are exact pending player-facing questions.
+Persist any next pass before a pause and close after commitment.

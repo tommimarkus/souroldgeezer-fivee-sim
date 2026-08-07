@@ -28,20 +28,25 @@ def _proxy_tokens(text: str) -> int:
     return len(re.findall(r"\w+|[^\w\s]", text))
 
 
-def test_adventure_prep_is_a_disposable_read_only_role() -> None:
+def test_adventure_prep_is_disposable_and_writes_only_private_staging() -> None:
     prep = _text("agents/adventure-prep.md")
     frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", prep, flags=re.DOTALL)
 
     assert frontmatter is not None
     metadata = frontmatter.group("body")
     assert re.search(r"^name:\s*adventure-prep\s*$", metadata, flags=re.MULTILINE)
-    assert re.search(r"^tools:\s*Read\s*$", metadata, flags=re.MULTILINE)
+    tools = re.search(r"^tools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE)
+    assert tools is not None
+    assert {tool.strip() for tool in tools.group("value").split(",")} == {
+        "Read",
+        "Write(.fivee-sim/prep/**)",
+    }
     denied_match = re.search(
         r"^disallowedTools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE
     )
     assert denied_match is not None
     denied = {tool.strip() for tool in denied_match.group("value").split(",")}
-    assert {"Agent", "Bash", "Edit", "Skill", "Write", "mcp__*"} <= denied
+    assert {"Agent", "Bash", "Edit", "Skill", "mcp__*"} <= denied
 
     body = prep[frontmatter.end() :]
     assert re.search(r"\bdisposable\b.{0,180}\bend\b", body, flags=re.I | re.S)
@@ -82,7 +87,7 @@ def test_prep_modes_separate_structural_indexing_from_playtest_review() -> None:
         assert obligation in playtest_plain
 
 
-def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None:
+def test_prep_writes_partial_files_and_returns_only_a_compact_manifest() -> None:
     prep = _text("agents/adventure-prep.md")
     contract = _section(prep, "## Module index contract")
     frames = _section(prep, "## Output frames")
@@ -111,17 +116,16 @@ def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None
         flags=re.I | re.S,
     )
 
-    assert re.search(r"(?:at most|max(?:imum)?)\s*20\s+entries", frames, flags=re.I)
-    assert re.search(r"(?:at most|max(?:imum)?)\s*1[, ]?200\s+proxy tokens", frames, flags=re.I)
     assert "complete manifest" in frames.lower()
     assert re.search(r'"?complete"?\s*:\s*true', frames, flags=re.I)
-    assert re.search(r"root supervisor.{0,200}\.partial", frames, flags=re.I | re.S)
-    assert re.search(r"root supervisor.{0,220}(?:atomic|publish)", frames, flags=re.I | re.S)
+    assert re.search(r"prep.staging.{0,220}\.partial", frames, flags=re.I | re.S)
+    assert re.search(r"fivee-play\.py.{0,220}(?:validate|publish)", frames, flags=re.I | re.S)
     assert re.search(
-        r"(?:do not|never).{0,200}(?:write|publish).{0,100}artifact",
+        r"(?:do not|never).{0,200}(?:write|publish).{0,100}final",
         frames,
         flags=re.I | re.S,
     )
+    assert re.search(r"(?:at most|max(?:imum)?)\s*400\s+proxy tokens", frames, flags=re.I)
 
 
 def test_live_game_master_reads_only_current_indexed_module_sections() -> None:
@@ -151,5 +155,5 @@ def test_prep_and_live_gm_prompts_stay_inside_load_budgets() -> None:
     prep = _text("agents/adventure-prep.md")
     game_master = _text("agents/game-master.md")
 
-    assert _proxy_tokens(prep) <= 3_250
-    assert _proxy_tokens(game_master) <= 3_250
+    assert _proxy_tokens(prep) <= 2_000
+    assert _proxy_tokens(game_master) <= 1_800

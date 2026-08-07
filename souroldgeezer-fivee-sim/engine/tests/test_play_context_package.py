@@ -43,6 +43,7 @@ def test_play_controller_tools_are_scoped_to_roles_references_and_play_artifacts
     assert tools == {
         "Agent",
         "SendMessage",
+        "Bash(python3 /${CLAUDE_PLUGIN_ROOT}/scripts/fivee.py:*)",
         "Read(/${CLAUDE_PLUGIN_ROOT}/agents/**)",
         "Read(/${CLAUDE_PLUGIN_ROOT}/skills/play/references/**)",
         "Read(.fivee-sim/plays/**)",
@@ -54,7 +55,6 @@ def test_play_controller_tools_are_scoped_to_roles_references_and_play_artifacts
     }
     assert {
         "AskUserQuestion",
-        "Bash",
         "Skill",
         "WebFetch",
         "WebSearch",
@@ -120,26 +120,31 @@ def test_root_is_a_thin_supervisor_with_a_closed_return_boundary() -> None:
     assert re.search(r"800 stable-proxy tokens", plain)
 
 
-def test_supervisor_owns_run_identity_but_not_fivee_syntax() -> None:
+def test_root_owns_run_identity_while_controller_discovers_fivee_syntax() -> None:
     skill = _text("skills/play/SKILL.md")
     engine = _section(skill, "## Engine boundary")
     plain = " ".join(engine.replace("`", "").replace("*", "").split())
 
     assert "adventure id" in plain.lower()
-    assert "play-mechanics" in plain
+    assert "controller" in plain.lower()
     assert re.search(r"root.{0,160}never.{0,120}(?:invoke|run).{0,80}fivee", plain, re.I)
-    assert re.search(r"(?:never|do not).{0,180}(?:construct|guess).{0,120}(?:flag|syntax|command)", plain, re.I)
+    assert re.search(
+        r"(?:never|do not).{0,180}(?:construct|guess).{0,120}(?:flag|syntax|command)",
+        plain,
+        re.I,
+    )
     assert "fivee help <operation>" not in engine
 
 
-def test_controller_briefs_mechanics_with_values_not_a_guessed_command() -> None:
+def test_controller_receives_values_and_discovers_direct_command_syntax() -> None:
     controller = CONTROLLER_PATH.read_text(encoding="utf-8")
     loop = _section(controller, "## Run the table")
     plain = " ".join(loop.replace("`", "").replace("*", "").split())
 
     for field in ("run id", "canonical operation name", "resource identifiers", "argument values"):
         assert field in plain.lower()
-    assert re.search(r"(?:do not|never).{0,160}(?:construct|guess).{0,120}(?:shell|flag|syntax)", plain, re.I)
+    assert re.search(r"discover.{0,120}syntax", plain, re.I)
+    assert re.search(r"(?:do not|never).{0,160}guess.{0,120}(?:flag|syntax)", plain, re.I)
 
     table_loop = _text("skills/play/references/table-loop.md")
     assert "fivee --run" not in table_loop
@@ -147,7 +152,12 @@ def test_controller_briefs_mechanics_with_values_not_a_guessed_command() -> None
         _text("skills/play/references/dispatch-codex.md"),
         _text("skills/play/references/dispatch-claude-code.md"),
     ):
-        for field in ("run id", "canonical operation name", "resource identifiers", "argument values"):
+        for field in (
+            "run id",
+            "canonical operation name",
+            "resource identifiers",
+            "argument values",
+        ):
             assert field in dispatch.lower()
 
 
@@ -181,19 +191,23 @@ def test_host_dispatch_puts_the_controller_between_root_and_live_roles() -> None
         flags=re.I | re.S,
     )
     assert re.search(
-        r"controller.{0,240}(?:game-master|typical-player|play-mechanics)"
+        r"controller.{0,240}(?:game-master|typical-player)"
         r".{0,300}fork_turns=\"none\"",
         codex,
         flags=re.I | re.S,
     )
+    assert re.search(r"direct.{0,160}fivee\.py", codex, re.I | re.S)
+    assert re.search(r"play-mechanics.{0,180}(?:fallback|unavailable)", codex, re.I | re.S)
 
     claude = _text("skills/play/references/dispatch-claude-code.md")
     assert re.search(r"root.{0,200}named agent `play-controller`", claude, re.I | re.S)
     assert re.search(
-        r"play-controller.{0,300}owns.{0,240}(?:game-master|typical-player|play-mechanics)",
+        r"play-controller.{0,300}owns.{0,240}(?:game-master|typical-player)",
         claude,
         flags=re.I | re.S,
     )
+    assert re.search(r"direct.{0,160}fivee\.py", claude, re.I | re.S)
+    assert re.search(r"play-mechanics.{0,180}(?:fallback|unavailable)", claude, re.I | re.S)
     assert re.search(
         r"Agent.? tool.{0,240}(?:depth|nested).{0,240}blocked",
         claude,
@@ -205,7 +219,7 @@ def test_play_prepares_a_private_module_index_before_spawning_the_game_master() 
     skill = _text("skills/play/SKILL.md")
     briefing = _section(skill, "## 2. Brief the seats")
 
-    assert "references/module-prep.md" in briefing
+    assert "references/startup.md" in briefing
     prep = _text("skills/play/references/module-prep.md")
     guidance = " ".join(prep.lower().split())
 
@@ -214,8 +228,10 @@ def test_play_prepares_a_private_module_index_before_spawning_the_game_master() 
     assert re.search(r"ordinary play.{0,240}structur", guidance)
     assert re.search(r"ordinary play.{0,500}(?:does not|never).{0,120}(?:gap|omission)", guidance)
     assert re.search(r"playtest.{0,300}(?:semantic|full).{0,200}inventory", guidance)
-    assert re.search(r"(?:20 entries|twenty entries).{0,160}1,200", guidance)
+    assert "scripts/fivee-play.py" in guidance
+    assert re.search(r"cache.{0,240}source sha-256.{0,160}indexer version", guidance)
     assert re.search(r"complete manifest.{0,240}(?:publish|rename)", guidance)
+    assert re.search(r"prep-staging.{0,240}\.partial", guidance)
     assert re.search(r"unreadable|incomplete", guidance)
     assert re.search(r"one bounded correction.{0,160}blocked", guidance)
 
@@ -263,29 +279,30 @@ def test_checkpoint_rehydrates_only_current_index_entries_and_rejects_source_dri
     assert re.search(r"restart.{0,120}resume.{0,120}decision", guidance)
 
 
-def test_live_play_routes_one_beat_to_play_mechanics_not_encounter_sim() -> None:
+def test_live_play_uses_direct_controller_mechanics_with_conditional_fallback() -> None:
     table_loop = _text("skills/play/references/table-loop.md")
     mechanical = _section(table_loop, "## Mechanical context and briefs")
 
     assert "`play-mechanics`" in mechanical
+    assert "fivee.py" in mechanical
+    assert re.search(r"controller.{0,180}direct", mechanical, re.I | re.S)
+    assert re.search(r"play-mechanics.{0,180}(?:fallback|unavailable)", mechanical, re.I | re.S)
     assert re.search(r"one decision beat", mechanical, flags=re.IGNORECASE)
+    assert "--select" in mechanical
+    assert "--as" in mechanical
     assert re.search(
-        r"(?:end|terminate).{0,120}(?:after|following).{0,120}(?:return|beat)",
+        r"raw engine output.{0,180}(?:never|not).{0,180}(?:artifact|game master|root)",
         mechanical,
-        flags=re.I | re.S,
+        re.I | re.S,
     )
     assert "packaged `encounter-sim` role" not in mechanical
-    for field in ("OUTCOME:", "STATE DELTA:", "RECOVERY:"):
-        assert field in mechanical
-    assert "RESULT:" not in mechanical
-    assert "BRIEF:" not in mechanical
 
     skill = _text("skills/play/SKILL.md")
     assert "../../agents/play-mechanics.md" in skill
     assert "encounter-sim" in _section(skill, "## 4. Carry the adventuring day")
 
 
-def test_skill_descriptions_exclude_the_self_contained_mechanics_child() -> None:
+def test_skill_descriptions_name_the_conditional_mechanics_fallback() -> None:
     for relative_path in ("skills/play/SKILL.md", "skills/encounter-sim/SKILL.md"):
         skill = _text(relative_path)
         frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", skill, flags=re.DOTALL)
@@ -294,7 +311,7 @@ def test_skill_descriptions_exclude_the_self_contained_mechanics_child() -> None
         description = frontmatter.group("body")
         assert "play-mechanics" in description
         assert re.search(
-            r"play-mechanics.{0,160}(?:self-contained|do not load|not for)",
+            r"play-mechanics.{0,160}(?:fallback|unavailable|do not load|not for)",
             description,
             flags=re.IGNORECASE | re.DOTALL,
         )
@@ -320,6 +337,18 @@ def test_each_host_dispatches_canonical_roles_without_copying_role_bodies() -> N
         codex,
         flags=re.I | re.S,
     )
+
+
+def test_controller_spawns_gm_and_agent_players_concurrently_after_setup() -> None:
+    controller = _text("agents/play-controller.md")
+    rehydration = _section(controller, "## Fresh interval rehydration")
+    assert re.search(
+        r"(?:concurrent|together).{0,240}game.master.{0,240}player",
+        rehydration,
+        flags=re.I | re.S,
+    )
+    assert re.search(r"game master.{0,180}lazy", rehydration, re.I | re.S)
+    assert re.search(r"player.{0,180}tool inventory", rehydration, re.I | re.S)
 
 
 def test_every_host_gives_seats_their_identity_gear_and_rules_brief() -> None:
@@ -353,7 +382,7 @@ def test_every_host_gives_seats_their_identity_gear_and_rules_brief() -> None:
     )
 
 
-def test_preparation_and_mechanical_children_receive_no_player_private_memory() -> None:
+def test_fallback_children_receive_no_player_private_memory() -> None:
     dispatch = (
         _text("skills/play/references/dispatch-codex.md")
         + _text("skills/play/references/dispatch-claude-code.md")
