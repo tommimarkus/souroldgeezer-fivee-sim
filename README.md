@@ -40,7 +40,7 @@ to another virtual tabletop as Universal VTT.
 
 | Plugin | Version | Skills | Claude Code agents |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.08.116` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [play](souroldgeezer-fivee-sim/skills/play/SKILL.md) | [adventure-prep](souroldgeezer-fivee-sim/agents/adventure-prep.md), [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [play-mechanics](souroldgeezer-fivee-sim/agents/play-mechanics.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
+| `souroldgeezer-fivee-sim` | `2026.08.117` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [play](souroldgeezer-fivee-sim/skills/play/SKILL.md) | [adventure-prep](souroldgeezer-fivee-sim/agents/adventure-prep.md), [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [play-mechanics](souroldgeezer-fivee-sim/agents/play-mechanics.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
 
 Claude Code discovers the role profiles as named agents; Codex's play skill
 spawns fresh children that read the same canonical role files. If a player child reports
