@@ -62,6 +62,12 @@ def test_prep_modes_separate_structural_indexing_from_playtest_review() -> None:
         ordinary,
         flags=re.I | re.S,
     )
+    assert re.search(r"heading.{0,160}explicit.{0,120}(?:key|label)", ordinary, re.I | re.S)
+    assert re.search(
+        r"(?:do not|never).{0,180}prose.only.{0,160}(?:npc|treasure|route|secret)",
+        ordinary,
+        flags=re.I | re.S,
+    )
 
     playtest_plain = " ".join(playtest.lower().split())
     for obligation in (
@@ -99,6 +105,11 @@ def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None
     assert re.search(r"source[- ]ordered", contract, flags=re.I)
     assert re.search(r"stable.{0,100}\bid\b", contract, flags=re.I | re.S)
     assert re.search(r"(?:line|page).{0,100}locator", contract, flags=re.I | re.S)
+    assert re.search(
+        r"title.{0,180}(?:heading|key|neutral).{0,180}secret",
+        contract,
+        flags=re.I | re.S,
+    )
 
     assert re.search(r"(?:at most|max(?:imum)?)\s*20\s+entries", frames, flags=re.I)
     assert re.search(r"(?:at most|max(?:imum)?)\s*1[, ]?200\s+proxy tokens", frames, flags=re.I)
