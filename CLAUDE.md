@@ -289,6 +289,15 @@ more than that and serialisation; `tests/api.py` is the suite's in-process door
 to the same functions and translates nothing at all. An operation body written
 into an adapter belongs here instead.
 
+**Caller-owned integer coercion is known service-boundary debt.** Bare `int(...)`
+sites in `service/specs.py` accept booleans, truncate non-integral floats, and can
+let `TypeError` escape as a 500. Do not add another one. The required boundary is
+one strict helper that rejects booleans, nulls, non-numeric values, and
+non-integral floats, and translates every failure into a key-naming
+`RequestError`. Definition of done for retiring the debt: service and routed
+tests cover each rejected shape and its refusal detail while valid integer
+spellings remain compatible.
+
 **A scene is a saved `encounter.create` body, and `scenes.py` validates the
 envelope only.** That bound is the point: whether a combatant spec is legal is
 `encounter.create`'s to say, and a second copy of that rule in `scenes.py` would
@@ -322,6 +331,14 @@ from the model — from real payloads for the creature, map and fixture sets, an
 for events by reading every `_emit` call site out of `model/encounter.py` with
 `ast`, because a sampled set is only whatever the fixture happened to make
 happen. A new field lands in no bucket and fails until someone decides.
+
+**A multi-field mutation plans, then applies.** Coerce, resolve, and validate
+the complete caller-supplied change before the first write; the apply phase must
+not be able to raise on caller data. Otherwise a quiet 4xx can leave live state
+changed while its journal records only a refusal, so recovery reconstructs a
+different fight. Definition of done: put an invalid value late in the payload
+and assert the named refusal plus unchanged live state, journal head, emitted
+events, and recovered state.
 
 **`CORRECTABLE_KEYS` / `UNCORRECTABLE_KEYS` is a seventh pair over the same
 payload, and it exists for a different reason than the six above.** Every
@@ -702,6 +719,15 @@ diagnostic, because an author fixing a document wants the whole list, while
 `Encounter._adopt_map` raises the first as a fail-fast `EncounterError`, because
 a fight either starts or it does not.
 
+**A persisted map, level, feature, or action field is a propagation change.**
+Trace every whole-payload rebuild and representation boundary: creation,
+parse/serialise, editor-state reconstruction, coordinate transforms (including
+coordinates nested inside records), runtime adoption, journal/replay recovery,
+and rendering. Definition of done: a non-default value survives an unrelated
+edit, resize or transform, save/load, and recovery round trip, and its visible
+behaviour is exercised. A field that survives only its direct parser has not
+shipped.
+
 **Where the SRD does not decide, the decision is declared rather than
 described.** `rulings.py` holds one entry per adjudication — the question, what
 the engine does, why, its SRD citation, and a **`revisit` trigger** naming what
@@ -824,6 +850,14 @@ is the map editor **and the play surface**, `/viewer` the replay viewer, and `/`
 a landing page that links to both and renders the operation list it fetches from
 `GET /api/v1/operations`.
 
+**Served pages and server logs never disclose the launch token.** A page learns
+it only from the user-facing URL fragment printed by the launcher; the injected
+config contains the API base and version, not the credential. Definition of
+done for any serving/authentication change: derive the page-body test from
+`routes.PAGES`, assert every anonymous page response omits the live token,
+account for every token producer with a tree search, and probe the real launcher
+to prove an anonymous page request cannot harvest a working API credential.
+
 **`/editor` has two modes, and that is deliberate rather than crowded.** Edit
 authors the scene — terrain, content packs, and a roster placed on squares; Play
 runs it, live, on the same canvas. One window, no export step between them. The
@@ -883,6 +917,13 @@ would have passed against a server with the check deleted. Every
 every `pytest.raises(api.ToolError)` a `match=`, and
 `tests/test_assertion_discipline.py` parses the suite's own source to fail on a
 call that omits either.
+
+**An equivalence test varies every axis its claim quantifies.** Uniform-only
+examples do not pin an equivalence: walls-only and soft-cover-only cases both
+missed the disagreement that appeared when one corner fan mixed the two. Every
+matrix or property test claiming two operations agree includes a heterogeneous
+case for each relevant axis and, where possible, directly asserts the forbidden
+direction of disagreement.
 
 ## Tooling
 
