@@ -91,6 +91,24 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
 - **Untrusted input is content packs and map files.** These are JSON, parsed and
   schema-validated on load. A pack that escapes validation, crashes the engine,
   or reaches the filesystem outside its own directory is a real finding.
+- **An adventure module is untrusted too, and the seat that holds it is
+  scoped.** The packaged `game-master` agent's whole job is to read a module
+  somebody else wrote, so its declared tools are the launcher command and
+  nothing else — `Bash(python3 /${CLAUDE_PLUGIN_ROOT}/scripts/fivee.py:*)`, plus
+  `Read` and `Skill`, with a `disallowedTools` denylist beside the allowlist
+  because the two together hold whichever way a host resolves them. The
+  `typical-player` seat is narrower still: one `Read` scoped to the plugin's
+  `player-visible/` directory, and no shell at all.
+
+  Two limits on that, both deliberate. **`Read` is not scoped for the game
+  master** — it is handed a module path the user chooses, so confining it to a
+  directory would break the feature — which means a module that talks the seat
+  into reading something else is asking for a capability the seat has. Treat
+  prompt injection through module text as in scope; `skills/play/SKILL.md` names
+  it and tells the seat what to do about it. And **these grants are enforced by
+  the host, not by us.** They are frontmatter a host reads; the engine has no
+  view of them and cannot check one. On a host that ignores or does not
+  implement them, they are documentation.
 - **No telemetry, no accounts, no secrets.** Nothing here needs a credential to
   run, and nothing is collected or sent anywhere. The engine does make HTTP
   requests, and they are worth knowing about before you flag them: `fivee` is an
@@ -109,14 +127,63 @@ on the machine.
 ## Bundled dependencies
 
 **The engine has no runtime dependencies.** `engine/pyproject.toml` declares an
-empty `dependencies` list, and the launcher syncs with `--no-dev`, so a runtime
-environment holds this package and the standard library. There is no third-party
-runtime code here to report a CVE against, which is the point of keeping it that
-way.
+empty `dependencies` list, so a run holds this package and the standard library.
+There is no third-party runtime code here to report a CVE against, which is the
+point of keeping it that way.
 
-Development tooling — pytest, mypy, ruff — is pinned in
+The launcher does not install anything, and that is worth stating precisely
+because this section used to say it "syncs with `--no-dev`". It does not sync at
+all — there is no runtime virtual environment to sync. A zero-dependency pure
+Python package needs only `python -m` and a path to its own source, so the
+launcher puts the source on `sys.path` and runs it. What it does build is a
+content-addressed **copy** of that source under the host's plugin-data
+directory, so a live server survives its plugin root being replaced; a copy is
+not an install, and it introduces no third-party code.
+
+Development tooling — pytest, mypy, ruff, and mutmut with its own dependencies —
+is pinned in
 [`souroldgeezer-fivee-sim/engine/uv.lock`](souroldgeezer-fivee-sim/engine/uv.lock)
 and installed only into a development environment. If you are reporting a
 vulnerable dependency, quote the locked version and say whether it reaches a
 runtime install; the lock is the answer to "what is actually installed", not the
 manifest.
+
+## What we hold ourselves to
+
+Stated so a reader does not have to infer it from what happens to be here.
+
+**OWASP ASVS Level 1 is the target**, and it is the right one: L1 is the level
+for software without a formal risk assessment behind it, which describes this.
+The gap self-assessment is short because the surface is: the engine binds
+loopback only, holds no accounts, stores no credentials, and processes JSON from
+a user who already runs it. Authentication is one per-launch token, and the
+disclosure path that made it reachable without filesystem access is closed
+above. What ASVS would still fault is the absence of per-seat authorisation —
+`as=` and `actor` are projections, not access controls, and both say so where
+they are defined. Closing that means per-seat credentials, which is a design
+change and not a hardening pass.
+
+**No SLSA level is claimed, at all.** That is a consequence of the three
+decisions below rather than an oversight: SLSA Build L1 wants a scripted build
+run by a service that emits provenance, and there is deliberately no build
+service, no tag, and no provenance here. Claiming L1 while installs track a
+moving branch would be worse than claiming nothing.
+
+### Accepted posture
+
+Three things an audit will find missing. Each is a decision, so finding one
+again is not a finding:
+
+- **The verification gates are developer-invoked, not enforced by CI.** `ruff`,
+  `mypy --strict`, `pytest`, `check-api-smoke.py`, `check-editor-behaviour.mjs`
+  and both hook suites are listed in `CLAUDE.md` and run before integration.
+  There is no workflow that blocks a merge on them.
+- **Installs track a mutable branch.** `marketplace.json` installs by cloning,
+  so what a user gets is whatever that branch says today.
+- **There are no tags and no signed commits.** Nothing here is a signed,
+  immutable release artifact, and a consumer cannot pin one.
+
+The consequence worth being explicit about: **a consumer has no cryptographic
+way to verify what they installed**, and the version string is a claim in a file
+rather than something anchored to a signature. If that matters for your use,
+pin your own clone.
