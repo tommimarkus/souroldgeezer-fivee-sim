@@ -10,7 +10,6 @@ All provenance: SRD 5.2.1 (see NOTICE).
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from random import Random
@@ -135,19 +134,15 @@ def make_d20_test(
     dc: int,
     advantage: Advantage = Advantage.NONE,
     auto_fail: bool = False,
-    supplied: Sequence[int] | None = None,
 ) -> D20Test:
     """Roll a d20 test. An auto-failed test still consumes a roll, keeping streams aligned.
 
     Rolling even when the outcome is forced matters: the analytics replay the same
     RNG stream as live play, and skipping a roll here would desynchronise them.
 
-    ``supplied`` carries faces a caller rolled on their own dice; see
-    :func:`~fivee_sim.kernel.dice.roll_d20`. The modifier and the DC stay ours
-    either way, so an auto-failed test still fails with a reported natural 20.
     """
     return D20Test(
-        roll=roll_d20(rng, advantage, supplied),
+        roll=roll_d20(rng, advantage),
         modifier=modifier,
         dc=dc,
         auto_failed=auto_fail,
@@ -197,7 +192,6 @@ def resolve_attack_roll(
     target_ac: int,
     advantage: Advantage = Advantage.NONE,
     forced_critical: bool = False,
-    supplied: Sequence[int] | None = None,
 ) -> AttackRoll:
     """Resolve an attack roll.
 
@@ -205,13 +199,9 @@ def resolve_attack_roll(
     bonus. ``forced_critical`` covers Paralyzed and Unconscious targets, where a
     melee hit becomes a critical hit — it upgrades a hit, it does not create one.
 
-    ``supplied`` carries faces a caller rolled on their own dice; see
-    :func:`~fivee_sim.kernel.dice.roll_d20`. A reported 20 crits and a reported 1
-    misses exactly as a drawn one does — the face is the only thing that came
-    from outside.
     """
     return AttackRoll(
-        roll=roll_d20(rng, advantage, supplied),
+        roll=roll_d20(rng, advantage),
         attack_bonus=attack_bonus,
         target_ac=target_ac,
         forced_critical=forced_critical,

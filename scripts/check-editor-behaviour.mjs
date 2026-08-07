@@ -4806,10 +4806,12 @@ function playEngine(options) {
        * This stub said `type` for a release and play.js read `type`, so the two
        * agreed with each other and with nothing that ships — which is how "2
        * events · undefined, undefined" reached the panel with this file green. */
+      const actionData = body.kind === "attack"
+        ? { hit: true, natural: 17 } : { hit: true };
       return { status: 200, etag: engine.etag(),
         body: { events: [
-          { kind: "attack", actor: engine.turn, target: "Grub", seq: 4, round: 1,
-            turn: engine.turn, data: { hit: true } },
+          { kind: body.kind, actor: engine.turn, target: "Grub", seq: 4, round: 1,
+            turn: engine.turn, data: actionData },
           { kind: "damage", actor: "", target: "Grub", seq: 5, round: 1,
             turn: engine.turn, data: { amount: 6 } },
         ], state: answered() } };
@@ -5169,97 +5171,39 @@ await suite("play.js: the player's chair", "the play sandbox in playHarness()", 
     show(seated.engine.createdUrl));
 });
 
-await suite("play.js: the dice, and whose hand they are in",
+await suite("play.js: the engine owns the dice",
   "the play sandbox in playHarness()", async () => {
-  const play = playHarness({ manualAnimationFrames: true });
+  const play = playHarness();
   await play.start();
   await play.begin();
 
-  /* 1. The default is the engine rolling, and an omitted face is how that is
-   *    said — a null would be a face the caller reported. */
+  check("the panel offers no self-roll checkbox or face input",
+    play.find("play-roll-own") === null && play.find("play-face") === null,
+    show([play.find("play-roll-own"), play.find("play-face")]));
+
+  /* An action with no d20 still posts immediately and leaves the display idle. */
   play.actionButton("dodge").click();
   await flush();
-  check("by default the engine rolls, and no face is sent at all",
+  check("every action leaves the roll to the engine",
     play.engine.posted[0] !== undefined
       && !("natural" in play.engine.posted[0].body),
     show(play.engine.posted[0] && play.engine.posted[0].body));
+  check("an action with no d20 leaves the display idle",
+    play.text("play-die") === "d20", play.text("play-die"));
 
-  /* 2. Rolling it yourself: the die tumbles, and only then is anything sent. */
-  const own = play.find("play-roll-own");
-  own.checked = true;
-  own.dispatch("change", {});
-  play.actionButton("dodge").click();
-  await flush();
-  check("with the dice in your hand nothing is posted while the die is still turning",
-    play.engine.posted.length === 1, show(play.engine.posted.length));
-  const faces = [];
-  for (let i = 0; i < 12; i += 1) {
-    play.page.frame(i * 20);
-    faces.push(play.text("play-die"));
-  }
-  check("and the die really turns rather than showing one number for a while",
-    new Set(faces).size > 1, show(faces));
-  check("still nothing posted, because the face is not known yet",
-    play.engine.posted.length === 1, show(play.engine.posted.length));
-
-  play.page.frame(5000);
+  /* An attack returns the generated face in its event, and that output alone
+   * is what stocks the display. */
+  play.actionButton("attack").click();
+  play.clickCell(6, 4);
   await flush();
   const rolled = play.engine.posted[1];
-  const shown = play.text("play-die");
-  check("when it settles the face it shows is the face that was sent",
-    rolled !== undefined && String(rolled.body.natural) === String(shown),
-    show([shown, rolled && rolled.body.natural]));
-  check("and the number is a d20 face, not a frame counter",
-    Number(shown) >= 1 && Number(shown) <= 20, shown);
-
-  /* 3. A face rolled on a real die, typed in. Sent exactly as written: a client
-   *    that checked the range would be a second copy of the engine's rule, and
-   *    would be the one that had to be right. */
-  play.find("play-face").value = "21";
-  play.actionButton("dodge").click();
-  await flush();
-  const typed = play.engine.posted[2];
-  check("a typed face is sent as typed, unexamined",
-    typed !== undefined && show(typed.body.natural) === show(21),
-    show(typed && typed.body));
-  check("and shown on the die, so the panel and the audit log say the same thing",
-    play.text("play-die") === "21", play.text("play-die"));
-
-  /* 4. Two faces, which is what advantage is rolled with. */
-  play.find("play-face").value = "17, 4";
-  play.actionButton("dodge").click();
-  await flush();
-  const pair = play.engine.posted[3];
-  check("two typed faces travel as the pair the contract accepts",
-    pair !== undefined && show(pair.body.natural) === show([17, 4]),
-    show(pair && pair.body));
-
-  /* 5. The refusals, verbatim. Both of these are the engine's to make. */
-  play.engine.refuse = () => "a d20 face is between 1 and 20, not 21";
-  play.find("play-face").value = "21";
-  play.actionButton("dodge").click();
-  await flush();
-  check("an out-of-range face is refused in the engine's own words",
-    play.status.text.indexOf("a d20 face is between 1 and 20, not 21") !== -1,
-    show(play.status));
-  play.engine.refuse = () => "this roll takes one face, not 2; advantage and "
-    + "disadvantage are rolled with two dice and a flat roll with one";
-  play.find("play-face").value = "17, 4";
-  play.actionButton("dodge").click();
-  await flush();
-  check("and so is the wrong number of them",
-    play.status.text.indexOf("this roll takes one face, not 2") !== -1,
-    show(play.status));
-
-  /* 6. A death save is the same channel: advance carries the face too. */
-  play.engine.refuse = () => null;
-  play.find("play-face").value = "11";
-  play.press("play-advance");
-  await flush();
-  const ended = play.engine.posted[play.engine.posted.length - 1];
-  check("ending a turn carries the face as well, for the death save that may be due",
-    /\/advance$/.test(ended.url) && show(ended.body.natural) === show(11),
-    show(ended.body));
+  check("the attack body still carries no face",
+    rolled !== undefined && !("natural" in rolled.body),
+    show(rolled && rolled.body));
+  check("the die displays the engine-generated natural from the returned event",
+    play.text("play-die") === "17"
+      && play.find("play-die").classList.contains("is-settled"),
+    show([play.text("play-die"), play.find("play-die").classList.set]));
 });
 
 await suite("play.js: the contract is what stocks the bar",
@@ -5426,44 +5370,22 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
     show([play.actionButton("move").classList.set,
       play.find("play-hint").classList.set]));
 
-  /* 4. The die. The state the panel shows is the state the driver is in, and
-   *    it lands on the same frame the face is sent — which is the whole reason
-   *    the settled look means anything. */
+  /* 4. The die is an output: it changes only after the engine answers with a
+   *    natural, and the request never carries one. */
   const die = play.find("play-die");
-  const own = play.find("play-roll-own");
-  own.checked = true;
-  own.dispatch("change", {});
-  play.actionButton("dodge").click();
-  await flush();
-  check("the die reports that it is turning, from the frame the tumble begins",
-    die.classList.contains("is-rolling") && !die.classList.contains("is-settled"),
-    show(die.classList.set));
-  const before = play.engine.posted.length;
-  play.page.frame(20);
-  check("and is still turning while nothing has been posted",
-    die.classList.contains("is-rolling") && play.engine.posted.length === before,
-    show([die.classList.set, play.engine.posted.length]));
-  play.page.frame(5000);
+  check("before a d20 result it names the die and is not settled",
+    die.textContent === "d20" && !die.classList.contains("is-settled"),
+    show([die.textContent, die.classList.set]));
+  play.actionButton("attack").click();
+  play.clickCell(6, 4);
   await flush();
   const landed = play.engine.posted[play.engine.posted.length - 1];
-  check("when it lands it stops reporting a turn and reports a result",
-    !die.classList.contains("is-rolling") && die.classList.contains("is-settled"),
-    show(die.classList.set));
-  check("and the face it is lit on is the face that was sent",
-    String(landed.body.natural) === String(die.textContent),
-    show([die.textContent, landed.body.natural]));
-  check("one face is set as one face",
-    die.dataset.faces === "one", show(die.dataset.faces));
-
-  play.find("play-face").value = "17, 4";
-  play.actionButton("dodge").click();
-  await flush();
-  check("two faces are marked as a pair, because they do not fit at one face's size",
-    die.dataset.faces === "pair" && die.textContent === "17, 4",
-    show([die.dataset.faces, die.textContent]));
-  check("and a typed face lands lit without tumbling, having not been thrown here",
-    die.classList.contains("is-settled") && !die.classList.contains("is-rolling"),
-    show(die.classList.set));
+  check("the request supplied no natural",
+    landed !== undefined && !("natural" in landed.body), show(landed && landed.body));
+  check("the returned natural is lit as one generated face",
+    die.textContent === "17" && die.dataset.faces === "one"
+      && die.classList.contains("is-settled"),
+    show([die.textContent, die.dataset.faces, die.classList.set]));
 
   /* 5. The rail row stays one text node, which is what makes a health band
    *    undrawable as a bar rather than merely undrawn. */

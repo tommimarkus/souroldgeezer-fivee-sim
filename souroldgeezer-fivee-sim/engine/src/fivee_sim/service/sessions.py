@@ -88,10 +88,12 @@ __all__ = [
 #: records have nothing a later reader wants; version 3 replaced the creation
 #: record's embedded ``content`` and ``map`` payloads with the blob references
 #: ``content_ref`` and ``map_ref``, so a v2 creation record has neither key this
-#: reader looks for. There is no reader for any older format and no migration
+#: reader looks for. Version 4 removed caller-supplied d20 faces; a v3 journal
+#: can therefore contain roll outcomes that the seeded stream cannot reproduce.
+#: There is no reader for any older format and no migration
 #: operation — a clean break, said in full by :func:`_unsupported_format` rather
 #: than left as a missing key.
-JOURNAL_VERSION = 3
+JOURNAL_VERSION = 4
 
 
 @dataclass(slots=True)
@@ -464,11 +466,10 @@ def resolve_battle_map(
 def _replay_act(encounter: Encounter, rng: Random, arguments: Mapping[str, Any]) -> None:
     """Take the act again, from the arguments the caller supplied.
 
-    The actor is an *input* to the act, exactly as a supplied d20 face is: an
-    interlude has no initiative to re-derive it from, so a replay that dropped
-    it would be refused rather than resolving the wrong creature. ``None`` for
-    a fight, and for every act recorded before this key existed — which is the
-    same value they ran with.
+    The actor is an *input* to an interlude act: there is no initiative to
+    re-derive it from, so a replay that dropped it would be refused rather than
+    resolving the wrong creature. ``None`` for a fight, and for every act
+    recorded before this key existed — which is the same value they ran with.
     """
     actor = arguments.get("actor")
     encounter.act(
@@ -498,8 +499,8 @@ def _replay_condition(
 def _replay_advance(
     encounter: Encounter, rng: Random, arguments: Mapping[str, Any]
 ) -> None:
-    """End the turn again, with whatever death-save faces the caller reported."""
-    encounter.advance(rng, tuple(int(f) for f in arguments.get("natural") or ()))
+    """End the turn again, drawing the same death save from the seeded stream."""
+    encounter.advance(rng)
 
 
 def _replay_correct(

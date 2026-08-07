@@ -803,40 +803,39 @@ class TestHelp:
 
 
 class TestScalarsInSchemasThatAlsoTakeArrays:
-    """A bare scalar for an argument that also accepts a list.
+    """The generic scalar-or-array coercion still accepts both point spellings."""
 
-    Several arguments admit both — ``to_position`` and ``center`` take a point
-    *or* a bare number of feet along the x-axis, and ``natural`` takes one
-    reported d20 face or two. The coercion answered the array branch first and
-    raised "write it as JSON" before it ever reached the integer branch, so the
-    bare-number spelling the schema and the skill both advertise was refused by
-    the one surface anybody types into.
-    """
+    @staticmethod
+    def _fight(capsys: pytest.CaptureFixture[str]) -> str:
+        assert run(
+            "encounter.create", "--seed", "3",
+            "--json", json.dumps({"combatants": [HERO, {**GOBLIN, "position": [50, 0]}]}),
+        ) == cli.EXIT_OK
+        return str(out(capsys)["encounter_id"])
 
     def test_a_bare_number_is_accepted_where_the_schema_takes_one(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
     ) -> None:
+        encounter_id = self._fight(capsys)
+
         assert run(
-            "dice.roll", "--expression", "1d20", "--seed", "3", "--natural", "17"
+            "encounter.act", encounter_id, "--kind", "move", "--to-position", "25"
         ) == cli.EXIT_OK
-        assert out(capsys)["natural"] == 17
 
     def test_the_list_spelling_still_works_for_the_same_argument(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
     ) -> None:
+        encounter_id = self._fight(capsys)
+
         assert run(
-            "dice.roll", "--expression", "1d20", "--seed", "3",
-            "--advantage", "advantage", "--natural", "[3, 18]",
+            "encounter.act", encounter_id, "--kind", "move", "--to-position", "[25, 0]"
         ) == cli.EXIT_OK
-        assert out(capsys)["natural"] == 18
 
     def test_a_word_is_still_refused_by_the_scalar_branch(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        # The guard on the fix: falling through to the integer branch must not
-        # mean falling through to accepting anything.
         assert run(
-            "dice.roll", "--expression", "1d20", "--natural", "seventeen"
+            "encounter.act", "missing", "--kind", "move", "--to-position", "nowhere"
         ) == cli.EXIT_USAGE
 
 
@@ -1011,6 +1010,15 @@ class TestFailures:
         assert run("dice.roll", "--expresion", "1d6") == cli.EXIT_USAGE
         message = capsys.readouterr().err
         assert "--expresion" in message and "--expression" in message
+
+    def test_a_caller_cannot_supply_the_d20_face(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run(
+            "dice.roll", "--expression", "1d20", "--natural", "20"
+        ) == cli.EXIT_USAGE
+        message = capsys.readouterr().err
+        assert "dice.roll has no --natural" in message
 
     def test_a_flag_whose_value_was_eaten_by_the_next_flag_is_refused(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]

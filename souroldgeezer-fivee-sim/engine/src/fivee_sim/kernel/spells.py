@@ -18,7 +18,7 @@ from enum import StrEnum
 from random import Random
 
 from .actions import AttackKind
-from .dice import Advantage, Dice, DiceError, DiceRoll, roll_dice
+from .dice import Advantage, Dice, DiceRoll, roll_dice
 from .items import ActionCost
 from .rules import (
     Ability,
@@ -272,14 +272,8 @@ def resolve_spell(
     spell_attack_bonus: int = 0,
     spellcasting_modifier: int = 0,
     targets: Sequence[SpellTarget],
-    supplied: Sequence[int] | None = None,
 ) -> SpellResolution:
     """Resolve ``spell`` against ``targets`` using one slot of ``slot_level``.
-
-    ``supplied`` carries faces a caller rolled themselves, and applies to the
-    spell's attack roll. A spell that rolls an attack against *several* targets
-    rolls a separate d20 for each, so one reported face cannot say which is
-    which — that is refused rather than silently spread across all of them.
 
     ``spellcasting_modifier`` is the caster's own ability modifier, passed in
     like every other value a roll depends on. It reaches the healing only when
@@ -290,12 +284,6 @@ def resolve_spell(
         raise ValueError(
             f"{spell.name} is level {spell.level} and cannot be cast with a "
             f"level {slot_level} slot"
-        )
-    if supplied is not None and spell.requires_attack_roll and len(targets) > 1:
-        raise DiceError(
-            f"{spell.name} rolls a separate attack against each of "
-            f"{len(targets)} targets; a reported face cannot say which roll it is. "
-            "Cast at one target, or let the engine roll."
         )
     dice = spell.damage_at(slot_level)
     healing_dice = spell.healing_at(slot_level)
@@ -316,7 +304,6 @@ def resolve_spell(
                 target_ac=target.ac,
                 advantage=target.attack_advantage,
                 forced_critical=target.forced_critical,
-                supplied=supplied,
             )
             dealt = 0
             if attack.hit and dice is not None:

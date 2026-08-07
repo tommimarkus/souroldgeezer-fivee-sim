@@ -628,6 +628,25 @@ class TestGuards:
         problem = assert_problem(response, 400, "unknown key(s): 'kinds'")
         assert "Valid keys: kind, name, params, save_as, seed" in problem["detail"]
 
+    @pytest.mark.parametrize(
+        ("path", "body"),
+        [
+            ("/api/v1/dice/rolls", {"expression": "1d20", "natural": 20}),
+            ("/api/v1/dice/checks", {"modifier": 0, "dc": 10, "natural": 20}),
+            ("/api/v1/dice/saves", {"modifier": 0, "dc": 10, "natural": 20}),
+            ("/api/v1/encounters/missing/actions", {"kind": "dodge", "natural": 20}),
+            ("/api/v1/encounters/missing/advance", {"natural": 20}),
+        ],
+    )
+    def test_a_caller_supplied_d20_face_is_an_unknown_body_key(
+        self, editor: Editor, path: str, body: dict[str, Any]
+    ) -> None:
+        assert_problem(
+            editor.request("POST", path, json_body=body),
+            400,
+            "unknown key(s): 'natural'",
+        )
+
 
 class TestStaticPages:
     def test_the_editor_page_carries_the_config_exactly_once(self, editor: Editor) -> None:

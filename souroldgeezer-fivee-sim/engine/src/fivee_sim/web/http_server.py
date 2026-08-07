@@ -821,7 +821,6 @@ class _Handler(BaseHTTPRequestHandler):
                 body["encounter_id"],
                 self._idempotency_key(),
                 body["label"],
-                body["natural"],
             ),
         )
 
@@ -839,7 +838,6 @@ class _Handler(BaseHTTPRequestHandler):
                 self._idempotency_key(),
                 body["ability"],
                 body["skill"],
-                body["natural"],
             ),
         )
 
@@ -857,7 +855,6 @@ class _Handler(BaseHTTPRequestHandler):
                 body["encounter_id"],
                 self._idempotency_key(),
                 body["ability"],
-                body["natural"],
             ),
         )
 
@@ -1085,7 +1082,6 @@ class _Handler(BaseHTTPRequestHandler):
             body["movement_mode"],
             body["as_bonus_action"],
             body["facing"],
-            body["natural"],
             self._idempotency_key(),
             request.query["as"],
             actor=body["actor"],
@@ -1098,7 +1094,6 @@ class _Handler(BaseHTTPRequestHandler):
         result = encounter_service.advance(
             self.state,
             request.id,
-            request.body["natural"],
             self._idempotency_key(),
             request.query["as"],
             view=request.query["view"],

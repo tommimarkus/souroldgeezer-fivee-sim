@@ -23,7 +23,6 @@ from typing import Any
 
 from .. import __version__
 from ..kernel.conditions import UnknownCondition, effect_of
-from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
 from ..model.encounter import (
@@ -611,9 +610,9 @@ def _checked_correction(
         if numeric_key in changes:
             # ``bool`` is excluded before the coercion, not after: ``int(True)``
             # is 1, so a caller who sent the wrong type got a fight changed
-            # instead of a refusal. Same idiom as ``parse_natural``'s reported
-            # d20 face and ``parse_carried_flag``'s mirror of it, which already
-            # refuses ``stable: 1`` — this is the other half of that pair.
+            # instead of a refusal. Same idiom as ``parse_carried_flag``, which
+            # already refuses ``stable: 1`` — this is the other half of that
+            # pair.
             if isinstance(changes[numeric_key], bool):
                 raise RequestError(
                     f"{numeric_key} must be a whole number, got {changes[numeric_key]!r}"
@@ -874,7 +873,6 @@ def execute_act(
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
     facing: str | None = None,
-    natural: int | list[int] | None = None,
     *,
     actor: str | None = None,
 ) -> dict[str, Any]:
@@ -975,11 +973,10 @@ def execute_act(
         movement_mode=selected_mode,
         as_bonus_action=as_bonus_action,
         facing=specs.parse_facing(facing),
-        natural=specs.parse_natural(natural),
     )
     try:
         events = session.encounter.act(action, session.rng, actor=actor)
-    except (EncounterError, DiceError) as error:
+    except EncounterError as error:
         raise RequestError(str(error)) from error
     completed_at = sessions.utc_now()
     session.event_timestamps.extend([completed_at] * len(events))
@@ -1011,7 +1008,6 @@ def act(
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
     facing: str | None = None,
-    natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
     *,
@@ -1070,18 +1066,11 @@ def act(
         "movement_mode": movement_mode,
         "as_bonus_action": as_bonus_action,
         "facing": specs.parse_facing(facing),
-        # Recorded for the same reason ``natural`` below is: it is an input the
-        # engine cannot re-derive. An interlude has no initiative, so an act
-        # replayed without its actor is not the act that was taken — it is
-        # refused, and the caller reading the refusal sees a complaint about
-        # initiative rather than a missing field.
+        # An interlude has no initiative, so an act replayed without its actor
+        # is not the act that was taken — it is refused, and the caller reading
+        # the refusal sees a complaint about initiative rather than a missing
+        # field.
         "actor": actor,
-        # Normalised before it is written, like ``facing`` above: a resume reads
-        # this dict back through ``specs.action_from_journal``, so what is
-        # recorded has to be what the action actually ran with. A face left out
-        # here would be re-rolled from the RNG on recovery, and the fight that
-        # came back would disagree with the one the caller was told about.
-        "natural": list(specs.parse_natural(natural)),
     }
     # Refused before the attempt is written, on the terms ``audited_primitive``
     # states: nothing was rolled, so nothing happened to record, and the journal
@@ -1113,7 +1102,6 @@ def act(
             movement_mode,
             as_bonus_action,
             facing,
-            natural,
             actor=actor,
         )
     except (RequestError, EncounterError) as error:
@@ -1145,12 +1133,10 @@ def act(
     return _answered(session, result, viewer, chosen)
 
 
-def execute_advance(
-    state: EngineState, encounter_id: str, natural: int | list[int] | None = None
-) -> dict[str, Any]:
+def execute_advance(state: EngineState, encounter_id: str) -> dict[str, Any]:
     """End the current turn and begin the next, rolling any death saves that are due."""
     session = sessions.session_for(state, encounter_id)
-    events = session.encounter.advance(session.rng, specs.parse_natural(natural))
+    events = session.encounter.advance(session.rng)
     completed_at = sessions.utc_now()
     session.event_timestamps.extend([completed_at] * len(events))
     sessions.capture_checkpoint(session, completed_at)
@@ -1163,7 +1149,6 @@ def execute_advance(
 def advance(
     state: EngineState,
     encounter_id: str,
-    natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
     *,
@@ -1180,10 +1165,7 @@ def advance(
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
         return _answered(session, cached, viewer, views.FULL)
-    # Recorded for the reason ``act`` records its own: a death save the caller
-    # rolled is an input, and a resume that re-rolled it would recover a fight
-    # where somebody died who did not.
-    arguments: dict[str, Any] = {"natural": list(specs.parse_natural(natural))}
+    arguments: dict[str, Any] = {}
     # Before the attempt is written, on ``act``'s terms and for its reasons.
     if session.finalized:
         raise RequestError(f"encounter {encounter_id!r} is finalized")
@@ -1191,8 +1173,8 @@ def advance(
         state, encounter_id, session, "encounter_advance", arguments, request_id
     )
     try:
-        result = execute_advance(state, encounter_id, natural)
-    except (RequestError, EncounterError, DiceError) as error:
+        result = execute_advance(state, encounter_id)
+    except (RequestError, EncounterError) as error:
         sessions.attempt_finished(
             state,
             encounter_id,

@@ -56,10 +56,9 @@ def roll(
     encounter_id: str | None = None,
     request_id: str | None = None,
     label: str | None = None,
-    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     return _primitives.roll(
-        STATE, expression, advantage, seed, encounter_id, request_id, label, natural
+        STATE, expression, advantage, seed, encounter_id, request_id, label
     )
 
 
@@ -72,11 +71,9 @@ def check(
     request_id: str | None = None,
     ability: str | None = None,
     skill: str | None = None,
-    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     return _primitives.check(
         STATE, modifier, dc, advantage, seed, encounter_id, request_id, ability, skill,
-        natural,
     )
 
 
@@ -89,11 +86,9 @@ def save(
     encounter_id: str | None = None,
     request_id: str | None = None,
     ability: str | None = None,
-    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     return _primitives.save(
         STATE, modifier, dc, advantage, auto_fail, seed, encounter_id, request_id, ability,
-        natural,
     )
 
 
@@ -207,7 +202,6 @@ def encounter_act(
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
     facing: str | None = None,
-    natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
     actor: str | None = None,
@@ -234,7 +228,6 @@ def encounter_act(
         movement_mode,
         as_bonus_action,
         facing,
-        natural,
         request_id,
         viewer,
         actor=actor,
@@ -244,13 +237,12 @@ def encounter_act(
 
 def encounter_advance(
     encounter_id: str,
-    natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
     view: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.advance(
-        STATE, encounter_id, natural, request_id, viewer, view=view
+        STATE, encounter_id, request_id, viewer, view=view
     )
 
 

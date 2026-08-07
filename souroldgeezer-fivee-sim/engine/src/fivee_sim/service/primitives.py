@@ -144,26 +144,16 @@ def roll(
     encounter_id: str | None = None,
     request_id: str | None = None,
     label: str | None = None,
-    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     def execute() -> dict[str, Any]:
         used = specs.checked_seed(seed)
         rng = Random(used)
         dice = Dice.parse(expression)
         chosen = specs.parse_advantage(advantage)
-        faces = specs.parse_natural(natural) or None
-        if faces is not None and not (dice.count == 1 and dice.faces == 20):
-            raise RequestError(
-                f"a reported face is a d20 face, and {dice} is not one d20; "
-                "roll the expression or report a d20"
-            )
-        # One d20 goes through ``roll_d20`` whenever there is something for it
-        # to decide — advantage to resolve, or a reported face to honour.
-        # ``roll_dice`` has no way to take a face, so it would ignore one.
-        if dice.count == 1 and dice.faces == 20 and (
-            chosen is not Advantage.NONE or faces is not None
-        ):
-            d20 = roll_d20(rng, chosen, faces)
+        # A single d20 goes through the d20 resolver even without Advantage so
+        # the generated natural remains an explicit output of this operation.
+        if dice.count == 1 and dice.faces == 20:
+            d20 = roll_d20(rng, chosen)
             result: dict[str, Any] = {
                 "expression": str(dice),
                 "seed": used,
@@ -194,7 +184,7 @@ def roll(
         operation="roll",
         arguments={
             "expression": expression, "advantage": advantage, "seed": seed,
-            "label": label, "natural": natural,
+            "label": label,
         },
         execute=execute,
     )
@@ -210,7 +200,6 @@ def check(
     request_id: str | None = None,
     ability: str | None = None,
     skill: str | None = None,
-    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     def execute() -> dict[str, Any]:
         if ability is not None:
@@ -221,7 +210,6 @@ def check(
         test = make_d20_test(
             Random(used), modifier=modifier, dc=dc,
             advantage=specs.parse_advantage(advantage),
-            supplied=specs.parse_natural(natural) or None,
         )
         result: dict[str, Any] = {
             "seed": used,
@@ -244,7 +232,7 @@ def check(
         operation="check",
         arguments={
             "modifier": modifier, "dc": dc, "advantage": advantage, "seed": seed,
-            "ability": ability, "skill": skill, "natural": natural,
+            "ability": ability, "skill": skill,
         },
         execute=execute,
     )
@@ -260,7 +248,6 @@ def save(
     encounter_id: str | None = None,
     request_id: str | None = None,
     ability: str | None = None,
-    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     def execute() -> dict[str, Any]:
         if ability is not None:
@@ -272,7 +259,6 @@ def save(
             dc=dc,
             advantage=specs.parse_advantage(advantage),
             auto_fail=auto_fail,
-            supplied=specs.parse_natural(natural) or None,
         )
         result: dict[str, Any] = {
             "seed": used,
@@ -295,7 +281,6 @@ def save(
         arguments={
             "modifier": modifier, "dc": dc, "advantage": advantage,
             "auto_fail": auto_fail, "seed": seed, "ability": ability,
-            "natural": natural,
         },
         execute=execute,
     )

@@ -10,7 +10,7 @@ All provenance: SRD 5.2.1 (see NOTICE).
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from random import Random
@@ -212,7 +212,6 @@ def resolve_attack(
     bonus_resisted: bool = False,
     bonus_vulnerable: bool = False,
     bonus_immune: bool = False,
-    supplied: Sequence[int] | None = None,
 ) -> AttackResolution:
     """Roll an attack and, if it lands, its damage.
 
@@ -235,7 +234,6 @@ def resolve_attack(
         target_ac=target_ac,
         advantage=advantage,
         forced_critical=forced_critical,
-        supplied=supplied,
     )
     if not attack.hit:
         return AttackResolution(attack=attack, advantage=advantage)

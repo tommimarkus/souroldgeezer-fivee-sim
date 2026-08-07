@@ -706,34 +706,6 @@ class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
         ):
             api.encounter_resume(recorded)
 
-    def test_an_advance_whose_recorded_faces_are_not_a_list_arrives_as_a_refusal(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """The third replayed operation, and the ``TypeError`` route into it.
-
-        Nothing that fails here is the engine call itself: the failure is in
-        reading the recorded arguments back, which is where a journal written
-        against a different argument shape breaks first. It is the same
-        unrecoverable fight to a caller, so it is the same refusal.
-        """
-        root = tmp_path / "journal"
-        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
-        saved = self.a_recorded_fight(root, seed=167)
-        position = result_position(saved, "encounter_advance")
-        arguments = saved[position]["arguments"]
-        assert isinstance(arguments, dict)
-        arguments["natural"] = 19
-
-        recorded = self.replayed(root, saved)
-
-        with pytest.raises(
-            RequestError,
-            match=rf"cannot recover 'enc-9001''s fight: record "
-            rf"{saved[position]['index']} \(encounter_advance, .+\) will not "
-            rf"replay under this build: TypeError: 'int' object is not iterable",
-        ):
-            api.encounter_resume(recorded)
-
     def test_an_action_kind_this_build_does_not_define_arrives_as_a_refusal(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -1361,10 +1333,9 @@ def test_the_arguments_recorded_are_the_ones_the_caller_supplied(
             "kind": "attack",
             "target": "Goblin",
             "attack": "Longsword",
-            # Supplied by ``act`` itself rather than by the caller, and neither
-            # is null: a false flag and an empty sequence are values.
+            # Supplied by ``act`` itself rather than by the caller: a false flag
+            # is a value rather than an omitted null.
             "as_bonus_action": False,
-            "natural": [],
         }
 
 
@@ -1465,6 +1436,7 @@ def test_a_journal_this_build_writes_declares_the_format_it_is_in(
     # comparison alone would hold if ``JOURNAL_VERSION`` became a string or a
     # ``None`` and the writer matched it.
     assert isinstance(sessions_service.JOURNAL_VERSION, int)
+    assert sessions_service.JOURNAL_VERSION == 4
 
 
 # --- what a caller who asked for idempotency keeps --------------------------
@@ -2253,11 +2225,9 @@ def test_the_format_before_this_one_is_refused_by_name_like_every_other(
 
     ``_stripped_of_its_version`` above covers a journal from before the field
     existed. This is the sharper case and the reason the version moved: a
-    version-2 record carries its content and its map as payloads under keys this
-    reader no longer looks for. Without the check it would not fail at the
-    version — it would fail hunting a ``content_ref`` that was never written,
-    well past the point where the message could say anything a caller can act
-    on.
+    version-3 record may carry caller-supplied d20 faces, so replaying it under
+    a reader that always draws from the seeded stream can silently reconstruct
+    a different fight. The version gate refuses before any such replay begins.
     """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))

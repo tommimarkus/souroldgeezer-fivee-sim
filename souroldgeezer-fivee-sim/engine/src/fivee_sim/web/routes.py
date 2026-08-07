@@ -407,19 +407,6 @@ _MAP_KIND: Mapping[str, Any] = {
 _MAP_QUERY: Mapping[str, Any] = {
     "type": "string", "enum": ["distance", "line_of_sight", "path"]
 }
-#: A d20 face the caller rolled themselves — one, or two when the roll has
-#: advantage or disadvantage. Shaped like ``_POINT`` on purpose: a bare integer
-#: or a short array is a grammar ``--natural 17`` and ``--natural '[17, 4]'``
-#: already read, so a person at the table types what they see on the dice.
-_NATURAL: Mapping[str, Any] = {
-    "type": ["integer", "array", "null"],
-    "items": {"type": "integer"},
-    "default": None,
-    "description": (
-        "the d20 face you rolled, or both faces with advantage or disadvantage; "
-        "omit to let the engine roll"
-    ),
-}
 #: Who is taking this act, in a chapter where nothing decided an order. Bounded
 #: like every other journalled name, and nullable because a fight refuses it —
 #: initiative has already answered the question this asks.
@@ -543,7 +530,6 @@ ROUTES: tuple[Route, ...] = (
                 "seed": _SEED,
                 "encounter_id": {"type": ["string", "null"], "default": None},
                 "label": {"type": ["string", "null"], "default": None},
-                "natural": _NATURAL,
             },
             "required": ["expression"],
         },
@@ -563,7 +549,6 @@ ROUTES: tuple[Route, ...] = (
                 "encounter_id": {"type": ["string", "null"], "default": None},
                 "ability": {"type": ["string", "null"], "default": None},
                 "skill": {"type": ["string", "null"], "default": None},
-                "natural": _NATURAL,
             },
             "required": ["modifier", "dc"],
         },
@@ -583,7 +568,6 @@ ROUTES: tuple[Route, ...] = (
                 "seed": _SEED,
                 "encounter_id": {"type": ["string", "null"], "default": None},
                 "ability": {"type": ["string", "null"], "default": None},
-                "natural": _NATURAL,
             },
             "required": ["modifier", "dc"],
         },
@@ -836,7 +820,6 @@ ROUTES: tuple[Route, ...] = (
                 "movement_mode": _MOVEMENT_MODE,
                 "as_bonus_action": {"type": "boolean", "default": False},
                 "facing": _NAME_OR_NULL,
-                "natural": _NATURAL,
                 "actor": _ACTOR,
             },
             "required": ["kind"],
@@ -852,7 +835,7 @@ ROUTES: tuple[Route, ...] = (
         "POST", f"{API_PREFIX}/encounters/{{id}}/advance", "encounter.advance",
         "End this turn, begin the next, and record the transition.",
         params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT, _view("delta")),
-        body_schema={"type": "object", "properties": {"natural": _NATURAL}},
+        body_schema={"type": "object", "properties": {}},
         handler="encounter_advance", errors=(409,),
     ),
     Route(

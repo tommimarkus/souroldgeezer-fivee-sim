@@ -98,10 +98,6 @@ var FiveePlay = (function () {
      square: a fight's positions are feet and the renderer's tokens are
      squares, and confusing the two puts the whole party in one corner. */
   var FEET_PER_SQUARE = 5;
-  /* How long the die turns for. Nothing depends on the number being this one;
-     what depends on it is that the face is not known until it stops. */
-  var TUMBLE_MS = 720;
-
   /* --- state ------------------------------------------------------------- */
   var ctx = null;           /* the context start() was handed */
   var el = null;            /* the elements this driver built */
@@ -112,7 +108,6 @@ var FiveePlay = (function () {
   var snapshot = null;      /* the fight, as this chair may see it */
   var seat = "";            /* "" is the whole table; otherwise a combatant */
   var armed = null;         /* {kind, wants} while waiting for a click */
-  var tumbling = 0;         /* a generation, so a stopped driver settles nothing */
   var onCanvasClick = null;
 
   /* --- small helpers ----------------------------------------------------- */
@@ -338,29 +333,11 @@ var FiveePlay = (function () {
        because a page that must work with no network cannot fetch a picture of
        a die — and drawing it is truer to the object anyway.
 
-       The grid areas are what let the die sit above the controls that feed it
-       while staying last in the markup. play.js builds the checkbox and the
-       box before the thing they act on, and a driver that reordered its own
-       DOM to suit a stylesheet would be letting the look decide the structure. */
+       It is an output only: the engine's returned event stocks its face. */
     ".play-dice {",
-    "  display: grid; grid-template-columns: auto auto auto;",
-    "  grid-template-areas: 'die die die' 'own label face';",
-    "  justify-content: center; align-items: center; gap: 8px 6px;",
+    "  display: flex; justify-content: center; align-items: center;",
     "}",
-    /* The checkbox opts out of the page's blanket input styling, which would
-       otherwise draw a bordered box around the box — the same line
-       `.fixture-row input` takes in editor.html, for the same reason. */
-    ".play-roll-own {",
-    "  grid-area: own; flex: none; padding: 0; border: none; background: none;",
-    "}",
-    ".play-roll-label { grid-area: label; font-size: 12px; color: var(--muted); }",
-    ".play-face {",
-    "  grid-area: face; width: 4.5em; text-align: center;",
-    "  font-family: ui-monospace, monospace; font-variant-numeric: tabular-nums;",
-    "}",
-    ".play-face:disabled { opacity: 0.45; }",
     ".play-die {",
-    "  grid-area: die; justify-self: center;",
     "  position: relative; isolation: isolate;",
     "  width: 84px; height: 84px; padding: 3px 8px 0;",
     "  display: grid; place-items: center;",
@@ -383,18 +360,11 @@ var FiveePlay = (function () {
     "  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);",
     "  background: var(--bg);",
     "}",
-    /* Three states, and each says something different. Idle: nothing has been
-       rolled, so the die names itself and stays quiet. A pair: advantage was
-       rolled with two dice and both faces are shown, so the type steps down to
-       fit them. Settled: this is the face that was sent, and it is lit. */
+    /* Idle names the die before any result. Settled is the selected natural
+       the engine returned, including when it rolled advantage, and it is lit. */
     ".play-die[data-faces='idle'] {",
     "  font-size: 15px; font-weight: 600; letter-spacing: 0.06em;",
     "  color: var(--muted);",
-    "}",
-    ".play-die[data-faces='pair'] { font-size: 14px; letter-spacing: -0.01em; }",
-    ".play-die.is-rolling {",
-    "  animation: play-die-tumble 380ms linear infinite;",
-    "  filter: drop-shadow(0 2px 4px var(--play-glow));",
     "}",
     ".play-die.is-settled {",
     "  animation: play-die-land 320ms cubic-bezier(0.2, 0.9, 0.3, 1) 1;",
@@ -403,16 +373,6 @@ var FiveePlay = (function () {
     "}",
     ".play-die.is-settled::before {",
     "  background: color-mix(in srgb, var(--accent) 12%, var(--bg));",
-    "}",
-    /* A hexagon maps onto itself every 60 degrees, so the silhouette holds
-       still while the printed face turns inside it — which is what a die
-       tumbling towards you actually looks like. */
-    "@keyframes play-die-tumble {",
-    "  0% { transform: rotate(0deg) translateY(0) scale(1); }",
-    "  25% { transform: rotate(120deg) translateY(-3px) scale(1.04); }",
-    "  50% { transform: rotate(180deg) translateY(0) scale(0.98); }",
-    "  75% { transform: rotate(300deg) translateY(-2px) scale(1.03); }",
-    "  100% { transform: rotate(360deg) translateY(0) scale(1); }",
     "}",
     "@keyframes play-die-land {",
     "  0% { transform: scale(1.18); }",
@@ -428,12 +388,10 @@ var FiveePlay = (function () {
     "}",
     ".play-advance:not(:disabled):hover { filter: brightness(1.12); }",
 
-    /* Motion is how the roll reads, so it is the first thing to go. The die
-       still changes its number every frame under this — that is the driver
-       reporting what it is doing, not decoration — and the settled face is
-       still lit, because colour is not movement. */
+    /* The settled face is still lit when motion is reduced because colour is
+       not movement. */
     "@media (prefers-reduced-motion: reduce) {",
-    "  .play-die.is-rolling, .play-die.is-settled, .play-action.is-armed {",
+    "  .play-die.is-settled, .play-action.is-armed {",
     "    animation: none;",
     "  }",
     "}"
@@ -480,27 +438,11 @@ var FiveePlay = (function () {
     el.hint = make("div", "play-hint", "play-hint");
 
     el.dice = make("div", null, "play-row play-dice");
-    el.rollOwn = make("input", "play-roll-own", "play-roll-own");
-    el.rollOwn.type = "checkbox";
-    el.rollOwn.title = "roll the d20 yourself instead of letting the engine roll";
-    el.rollLabel = make("label", null, "play-roll-label");
-    el.rollLabel.textContent = "roll it yourself";
-    /* The words are the checkbox's hit area as well as its name — a label
-       beside a 13px box that does not answer a click is a target most people
-       miss twice before reading it. */
-    el.rollLabel.htmlFor = "play-roll-own";
-    el.face = make("input", "play-face", "play-face");
-    el.face.type = "text";
-    el.face.placeholder = "face";
-    el.face.title = "the face you rolled, or both faces with advantage: 17 or 17, 4";
     el.die = make("div", "play-die", "play-die");
     /* Nothing has been rolled yet, and the die says so by naming itself
        rather than by showing a number nobody threw. */
     el.die.dataset.faces = "idle";
     el.die.textContent = "d20";
-    el.dice.appendChild(el.rollOwn);
-    el.dice.appendChild(el.rollLabel);
-    el.dice.appendChild(el.face);
     el.dice.appendChild(el.die);
 
     el.advance = make("button", "play-advance", "play-advance");
@@ -517,7 +459,6 @@ var FiveePlay = (function () {
     });
     el.start.addEventListener("click", begin);
     el.advance.addEventListener("click", function () { endTurn(); });
-    el.rollOwn.addEventListener("change", renderAll);
   }
 
   /* The cast, offered before the first round: the scene names everyone who
@@ -914,7 +855,6 @@ var FiveePlay = (function () {
     renderBudget();
     renderActions();
     renderHint();
-    el.face.disabled = !el.rollOwn.checked;
   }
 
   /* --- taking a turn ------------------------------------------------------ */
@@ -964,95 +904,24 @@ var FiveePlay = (function () {
   }
 
   /* --- the dice ----------------------------------------------------------- */
-  /* What the caller typed, exactly as typed. One number, or several for a roll
-     made with two dice. Deliberately unchecked: a d20 face's range and how
-     many a roll takes are the engine's rules, and a copy of them here would be
-     a second opinion that has to be right — and would refuse a face the engine
-     would have taken. What comes back instead is the engine's own sentence. */
-  function typedFaces() {
-    var written = String(el.face.value || "").trim();
-    if (written === "") { return undefined; }
-    var parts = written.split(",").map(function (part) { return Number(part.trim()); });
-    return parts.length === 1 ? parts[0] : parts;
-  }
   function showFace(value) {
-    var pair = Array.isArray(value);
-    /* Two faces are advantage, and both are shown. The attribute is how the
-       type steps down to fit them — the panel is 240px wide and "17, 4" set at
-       the size one face is set at does not fit on the printed face. */
-    el.die.dataset.faces = pair ? "pair" : "one";
-    el.die.textContent = pair ? value.join(", ") : String(value);
-  }
-  function randomFace() { return 1 + Math.floor(Math.random() * 20); }
-  /* What the die is doing, said in the one channel a look can use. Presentation
-     only: neither class decides a face, and both are set from the same two
-     moments that write one — the frame the tumble starts on, and the frame it
-     stops on, which is the frame the face is sent. */
-  function dieState(state) {
-    if (el === null) { return; }
-    el.die.classList.toggle("is-rolling", state === "rolling");
-    el.die.classList.toggle("is-settled", state === "settled");
-  }
-
-  /* The face the die stops on is the face that is sent — one variable, written
-     once, read by the panel and by the request body. Nothing is posted while
-     it is still turning, because until it stops there is no face to report. */
-  function withFace(send) {
-    if (!el.rollOwn.checked) { return send(undefined); }
-    var typed = typedFaces();
-    /* A face read off a die on the table was not thrown here, so nothing
-       tumbles — but it is still the face that is about to be sent, and the die
-       shows it lit for the same reason the thrown one does. */
-    if (typed !== undefined) { showFace(typed); dieState("settled"); return send(typed); }
-    var generation = tumbling + 1;
-    tumbling = generation;
-    var frame = window.requestAnimationFrame;
-    var settle = function () {
-      var face = randomFace();
-      showFace(face);
-      dieState("settled");
-      send(face);
-    };
-    if (typeof frame !== "function") { settle(); return undefined; }
-    dieState("rolling");
-    var began = null;
-    var step = function (now) {
-      /* A driver that has been stopped, or a second roll that started while
-         this one was turning: whichever it is, this die is no longer the one
-         anybody is watching, so it settles nothing and sends nothing. */
-      if (generation !== tumbling || el === null) { return; }
-      if (began === null) { began = now; }
-      if (now - began >= TUMBLE_MS) { settle(); return; }
-      showFace(randomFace());
-      window.requestAnimationFrame(step);
-    };
-    window.requestAnimationFrame(step);
-    return undefined;
+    el.die.dataset.faces = "one";
+    el.die.textContent = String(value);
   }
 
   /* --- posting ------------------------------------------------------------ */
   function post(kind, extra) {
     if (encounterId === null) { return; }
-    withFace(function (face) {
-      var body = { kind: kind };
-      Object.keys(extra).forEach(function (key) { body[key] = extra[key]; });
-      /* Omitted rather than sent null when the engine is the one rolling: null
-         is a value the dispatcher reads, and "you roll it" is the absence of a
-         face rather than an empty one. */
-      if (face !== undefined) { body.natural = face; }
-      ctx.request("POST", encounterPath() + ACTIONS + seatQuery(), body, versionHeaders())
-        .then(function (response) { settled(response, kind + " refused"); });
-    });
+    var body = { kind: kind };
+    Object.keys(extra).forEach(function (key) { body[key] = extra[key]; });
+    ctx.request("POST", encounterPath() + ACTIONS + seatQuery(), body, versionHeaders())
+      .then(function (response) { settled(response, kind + " refused"); });
   }
 
   function endTurn() {
     if (encounterId === null) { return; }
-    withFace(function (face) {
-      var body = {};
-      if (face !== undefined) { body.natural = face; }
-      ctx.request("POST", encounterPath() + ADVANCE + seatQuery(), body, versionHeaders())
-        .then(function (response) { settled(response, "the turn could not be ended"); });
-    });
+    ctx.request("POST", encounterPath() + ADVANCE + seatQuery(), {}, versionHeaders())
+      .then(function (response) { settled(response, "the turn could not be ended"); });
   }
 
   /* The answer to a write, which named this chair in `as=` and so arrives
@@ -1085,6 +954,12 @@ var FiveePlay = (function () {
     }
     remember(response);
     var events = (response.json && response.json.events) || [];
+    events.forEach(function (each) {
+      if (each && each.data && each.data.natural !== undefined) {
+        showFace(each.data.natural);
+        el.die.classList.add("is-settled");
+      }
+    });
     say(events.length
       ? events.length + " event" + (events.length === 1 ? "" : "s")
         + " · " + events.map(function (each) { return each.kind; }).join(", ")
@@ -1115,7 +990,6 @@ var FiveePlay = (function () {
   }
 
   function stop() {
-    tumbling += 1;
     if (ctx) {
       if (onCanvasClick) { ctx.canvas.removeEventListener("click", onCanvasClick); }
       ctx.setTokens(null);

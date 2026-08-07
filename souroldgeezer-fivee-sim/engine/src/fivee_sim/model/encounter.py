@@ -42,7 +42,7 @@ from ..kernel.conditions import (
     is_incapacitated,
     speed_is_zero,
 )
-from ..kernel.dice import Advantage, check_faces, roll_d20, roll_dice
+from ..kernel.dice import Advantage, roll_d20, roll_dice
 from ..kernel.grid import (
     FEET_PER_SQUARE,
     TERRAIN,
@@ -202,16 +202,6 @@ class Action:
     #: Named ``facing`` rather than ``direction`` because ``direction`` is taken
     #: on this same dataclass — it aims a cone, and the two are different facts.
     facing: str | None = None
-    #: The d20 faces the actor rolled on their own dice, for a person at the
-    #: table who would rather roll than be rolled for. Empty means the engine
-    #: rolls, which is every other caller and every auto-played batch.
-    #:
-    #: It covers **the actor's own d20 for this action** — a weapon or spell
-    #: attack, and an ability check a fixture asks for. A saving throw somebody
-    #: *else* is forced to make lands inside this same call, so there is nowhere
-    #: for its owner to report a face; those stay the engine's. Death saves are
-    #: rolled by ``advance`` and carry their own.
-    natural: tuple[int, ...] = ()
 
 
 #: What a combatant may learn about somebody on the *other* side, and what it
@@ -924,19 +914,6 @@ def _drop_path(payload: MutableMapping[str, Any], path: Sequence[str]) -> None:
                 entry.pop(path[2], None)
 
 
-#: The action kinds that can put the *actor's* own d20 on the table, and so the
-#: only ones a reported face means anything for. Two of the three are
-#: conditional — a cast rolls one only when the spell attacks rather than
-#: forcing a save, and an interaction only when the fixture asks for a check —
-#: so each handler refuses its own remaining cases. This set is the cheap part
-#: of that check: the kinds where the answer is never.
-_KINDS_THAT_MAY_ROLL: frozenset[ActionKind] = frozenset({
-    ActionKind.ATTACK,
-    ActionKind.CAST,
-    ActionKind.INTERACT,
-})
-
-
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
 #: rather than an enum — this is the checklist a log consumer can rely on, pinned
 #: by test, not a constraint the model enforces.
@@ -1025,11 +1002,6 @@ class ActionRecord:
                 action["targets"] = list(self.action.targets)
             if self.action.path:
                 action["path"] = [list(point) for point in self.action.path]
-            # With the other tuples rather than the scalars above: an empty one
-            # means the engine rolled, and writing `[]` for that would put a
-            # caller-supplied-nothing into every record of every ordinary fight.
-            if self.action.natural:
-                action["natural"] = list(self.action.natural)
         return {
             "index": self.index,
             "round": self.round,
@@ -2885,7 +2857,7 @@ class Encounter:
         return state
 
     # --- turn lifecycle ---------------------------------------------------
-    def _begin_turn(self, rng: Random, natural: tuple[int, ...] = ()) -> None:
+    def _begin_turn(self, rng: Random) -> None:
         creature = self.current
         self._dodging[creature.name] = False
         self._disengaged[creature.name] = False
@@ -2895,14 +2867,7 @@ class Encounter:
             return
         self._resolve_attached_damage(creature, rng)
         if creature.dying:
-            self._death_save(creature, rng, natural)
-        elif natural:
-            # Refused rather than dropped, as everywhere else a face is
-            # reported for a roll that is not going to happen.
-            raise EncounterError(
-                f"{creature.name} makes no death save this turn, so there is "
-                "no face to report"
-            )
+            self._death_save(creature, rng)
         # The budget is derived *after* the death save: a natural 20 regains
         # 1 hit point (SRD 5.2.1, "Death Saving Throws", Rolling 20), and the
         # revived creature is conscious for the rest of this turn — nothing in
@@ -3060,9 +3025,7 @@ class Encounter:
         self._attachments.remove(link)
         self._emit("detach", link.source, link.target, detail=detail)
 
-    def _death_save(
-        self, creature: Creature, rng: Random, natural: tuple[int, ...] = ()
-    ) -> None:
+    def _death_save(self, creature: Creature, rng: Random) -> None:
         # SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the
         # game: ability checks, attack rolls, and saving throws. If something
         # in the game affects D20 Tests, it affects all three." p.17, *Death
@@ -3071,7 +3034,7 @@ class Encounter:
         # same penalty. But it is not tied to an ability score, so it does not
         # route through ``Creature.save_modifier``; the penalty is applied
         # explicitly, as a plain total, here.
-        roll = roll_d20(rng, supplied=natural or None)
+        roll = roll_d20(rng)
         total = roll.natural - d20_test_penalty(creature.conditions, self.condition_effects)
         # The natural 20 and natural 1 rulings read the die's face, not the
         # total — SRD 5.2.1 p.17 states both as consequences of the face
@@ -3138,18 +3101,12 @@ class Encounter:
                 level=creature.level,
             )
 
-    def advance(self, rng: Random, natural: tuple[int, ...] = ()) -> list[Event]:
+    def advance(self, rng: Random) -> list[Event]:
         """End the current turn and begin the next, wrapping the round.
 
-        ``natural`` is the face the creature whose turn is *starting* rolled for
-        its own death save, for a player who would rather roll their own. At
-        most one death save happens per advance — it is taken at the start of a
-        dying creature's turn — so one reported face is never ambiguous.
-
-        An interlude refuses it outright. There is no round to wrap and no death
-        save to roll, and the two things this would still do — end a turn nobody
-        holds and move an order nothing sorted — would be noise in the journal a
-        replay then has to reproduce.
+        An interlude has no round to wrap. Ending a turn nobody holds and moving
+        an order nothing sorted would be noise in the journal a replay then has
+        to reproduce, so the operation is refused there.
         """
         if self.mode is EncounterMode.EXPLORATION:
             raise EncounterError(
@@ -3183,7 +3140,7 @@ class Encounter:
                 self._expire_timed("end", self.current_name)
             self._emit("turn_start", self.current_name)
             self._expire_timed("start", self.current_name)
-            self._begin_turn(rng, natural)
+            self._begin_turn(rng)
         # Recorded even when the fight is over: the call still emitted its
         # turn_end, and a replay that skipped it would miss that event.
         self.actions.append(ActionRecord(
@@ -3229,13 +3186,6 @@ class Encounter:
         if not acting.active:
             held = ", ".join(sorted(acting.conditions))
             raise EncounterError(f"{acting.name} is incapacitated ({held}) and cannot act")
-        if action.natural and action.kind not in _KINDS_THAT_MAY_ROLL:
-            # Refused rather than quietly dropped. Somebody rolled a die and
-            # said what it read; an engine that ignored it would be telling them
-            # their roll counted when it did not.
-            raise EncounterError(
-                f"a {action.kind.value} rolls no d20, so there is no face to report"
-            )
         if self.mode is EncounterMode.EXPLORATION:
             # Last, so that everything above refuses without spending anything:
             # this is the line that takes the floor and restores the budget.
@@ -3529,12 +3479,9 @@ class Encounter:
                        attack=option.name, total_cover=True)
             return
 
-        # Both computed before the attack is charged for. ``check_faces`` refuses
-        # a reported face that this roll cannot use, and a refusal that had
-        # already decremented ``attacks_left`` would cost the swing as well —
-        # leaving a caller who mistyped their die unable to retry it.
+        # Computed before the attack is charged so resolution below reads one
+        # stable advantage state for the swing.
         advantage = self.attack_advantage(actor, target, option)
-        check_faces(action.natural or None, advantage)
 
         self._turn.attacks_left -= 1
         if self._turn.attacks_left == actor.attacks_per_action - 1:
@@ -3554,7 +3501,6 @@ class Encounter:
             resisted=self._resisted_by_target(target, option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
-            supplied=action.natural or None,
             **self._rider_damage_arguments(actor, option, target),
         )
         cover_note = ""
@@ -4145,28 +4091,6 @@ class Encounter:
                 modifier += cover_ac_bonus(grade)
             return modifier
 
-        # Everything about a reported face is settled here, before the action,
-        # the slot, and any held concentration are spent. ``resolve_spell``
-        # refuses the same two cases, but only once all three are already gone —
-        # and a caster who mistyped a die would have paid for a spell that never
-        # resolved.
-        if action.natural:
-            if not spell.requires_attack_roll:
-                raise EncounterError(
-                    f"{spell.name} makes no attack roll, so there is no face to "
-                    "report; its targets roll their own saves and the engine "
-                    "rolls those"
-                )
-            if len(chosen) > 1:
-                raise EncounterError(
-                    f"{spell.name} rolls a separate attack against each of "
-                    f"{len(chosen)} targets, so one reported face cannot say "
-                    "which roll it is; cast at one target, or let the engine roll"
-                )
-            check_faces(
-                action.natural, self.spell_attack_advantage(actor, chosen[0], spell)
-            )
-
         if spell.action_cost is ActionCost.BONUS_ACTION:
             self._turn.bonus_action_used = True
         else:
@@ -4224,7 +4148,6 @@ class Encounter:
                 )
                 for c in chosen
             ),
-            supplied=action.natural or None,
         )
         detail = f"{spell.name} (slot {slot_level})"
         if resolution.damage_roll is not None:
@@ -5073,16 +4996,6 @@ class Encounter:
             conditions=actor.conditions,
             condition_effects=self.condition_effects,
         )
-        # Before the action or the free interaction is spent, for the reason
-        # ``_do_attack`` checks before decrementing: a failed check already
-        # costs the turn, and a *refused* one must not.
-        if feature.check is not None:
-            check_faces(action.natural or None, check_advantage)
-        elif action.natural:
-            raise EncounterError(
-                f"{feature.id} asks for no check, so there is no face to report"
-            )
-
         if feature.costs_action:
             self._turn.action_used = True
         else:
@@ -5101,7 +5014,6 @@ class Encounter:
                 modifier=actor.check_modifier(feature.check.ability, feature.check.skill),
                 dc=feature.check.dc,
                 advantage=check_advantage,
-                supplied=action.natural or None,
             )
             extras.update({"success": test.success, "check": test.describe()})
             if not test.success:

@@ -387,11 +387,10 @@ class TestTheBoundsThatAreDeliberatelyAbsent:
 
         ``int(True)`` is 1, so ``{"hp": true}`` silently set one hit point —
         a caller who sent the wrong type got a fight changed rather than a
-        refusal. The repository already has the idiom in two places:
-        ``parse_carried_flag`` refuses ``stable: 1`` and ``parse_natural``
-        excludes ``bool`` from a reported d20 face. This closes the
-        inconsistency in the direction the other two already point, so that
-        ``stable: 1`` and ``hp: true`` are both mistakes and both say so.
+        refusal. The repository already has the idiom in
+        ``parse_carried_flag``, which refuses ``stable: 1``. This closes the
+        inconsistency in the same direction, so that ``stable: 1`` and
+        ``hp: true`` are both mistakes and both say so.
         """
         encounter_id = mapless_fight(seed=959)
 

@@ -8,7 +8,6 @@ rests on, and an ambient generator would quietly destroy it.
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from random import Random
@@ -17,12 +16,7 @@ _DICE_RE = re.compile(r"^\s*(\d*)\s*d\s*(\d+)\s*(?:([+-])\s*(\d+))?\s*$", re.IGN
 
 
 class DiceError(ValueError):
-    """This module was handed something it will not roll.
-
-    An unparseable expression, or a supplied d20 face that is not a face this
-    roll can take. Both are the caller's input rather than a rules outcome, and
-    both are refused rather than coerced.
-    """
+    """This module was handed a dice expression it cannot roll."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,54 +123,13 @@ def faces_wanted(advantage: Advantage) -> int:
     return 1 if advantage is Advantage.NONE else 2
 
 
-def check_faces(supplied: Sequence[int] | None, advantage: Advantage) -> None:
-    """Refuse unusable reported faces *before* the caller has spent anything.
-
-    :func:`roll_d20` refuses the same faces, but by the time it is reached a
-    turn has usually already been charged for the action — so a caller who
-    mistyped their die would be told no *and* lose the attack, with no way to
-    retry. Callers that spend something before rolling ask this first.
-    """
-    if supplied is not None:
-        _checked_faces(supplied, faces_wanted(advantage))
-
-
-def _checked_faces(supplied: Sequence[int], wanted: int) -> tuple[int, ...]:
-    """The faces a caller reported, or a refusal naming what this roll takes."""
-    if len(supplied) != wanted:
-        needed = "one face" if wanted == 1 else "two faces"
-        raise DiceError(
-            f"this roll takes {needed}, not {len(supplied)}; "
-            "advantage and disadvantage are rolled with two dice and a flat roll with one"
-        )
-    for face in supplied:
-        if not 1 <= face <= 20:
-            raise DiceError(f"a d20 face is between 1 and 20, not {face}")
-    return tuple(supplied)
-
-
 def roll_d20(
     rng: Random,
     advantage: Advantage = Advantage.NONE,
-    supplied: Sequence[int] | None = None,
 ) -> D20Roll:
-    """Roll a d20, or accept the faces a caller rolled on their own dice.
-
-    ``supplied`` is for a person at the table who rolled physically and reported
-    the number. It replaces the faces and nothing else: the modifier, the DC, the
-    critical, and advantage itself all stay the engine's. ``None`` means *you
-    roll it*; an empty sequence is a caller who meant to supply and supplied
-    nothing, and is refused rather than read as absent.
-
-    **The draw happens either way.** Overriding the faces afterwards rather than
-    skipping the draw keeps the stream where it would have been, which is the
-    same reasoning ``make_d20_test`` gives for rolling an auto-failed test. It
-    buys something a table can feel: one player rolling their own die changes
-    their own result and nobody else's.
-    """
+    """Roll the d20s this advantage state requires and keep the applicable face."""
     wanted = faces_wanted(advantage)
-    drawn = tuple(rng.randint(1, 20) for _ in range(wanted))
-    rolls = drawn if supplied is None else _checked_faces(supplied, wanted)
+    rolls = tuple(rng.randint(1, 20) for _ in range(wanted))
     natural = (
         rolls[0]
         if advantage is Advantage.NONE

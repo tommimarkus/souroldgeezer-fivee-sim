@@ -1334,6 +1334,18 @@ class TestEditorModes:
 
 
 class TestPlayDriver:
+    def test_the_browser_only_displays_the_d20_face_the_engine_returns(self) -> None:
+        source = play_driver_source()
+        for removed in (
+            "body.natural",
+            "play-roll-own",
+            "play-face",
+            "Math.random",
+            "requestAnimationFrame",
+        ):
+            assert removed not in source, removed
+        assert "each.data.natural" in source
+
     """``static/play.js``: the live loop, extracted, and what it may know.
 
     Decision 3 put the fight's driver beside ``FiveeRenderer`` rather than
@@ -1344,7 +1356,7 @@ class TestPlayDriver:
     where the driver's facts come from.
 
     Whether the loop actually runs a fight — the chair switch, the click
-    targeting, the die whose face is the face that was sent — is behaviour, and
+    targeting, the die whose face is the engine's result — is behaviour, and
     ``scripts/check-editor-behaviour.mjs`` owns every word of it.
     """
 
