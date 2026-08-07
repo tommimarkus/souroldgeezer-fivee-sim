@@ -460,6 +460,12 @@ def test_human_seats_receive_a_fresh_unrecorded_live_adventure_view() -> None:
             human,
             flags=re.IGNORECASE | re.DOTALL,
         ), artifact
+        assert re.search(
+            rf"(?:never|do not).{{0,240}}live URL.{{0,240}}{artifact}"
+            rf"|(?:never|do not).{{0,240}}{artifact}.{{0,240}}live URL",
+            human,
+            flags=re.IGNORECASE | re.DOTALL,
+        ), artifact
     assert re.search(r"(?:loopback|same.machine)", human, flags=re.IGNORECASE)
     assert re.search(
         r"player.safe.{0,80}projection",
@@ -473,12 +479,27 @@ def test_human_seats_receive_a_fresh_unrecorded_live_adventure_view() -> None:
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert re.search(
+        r"launch token.{0,240}(?:whole|full).{0,80}(?:local )?API.{0,240}writes",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:never|do not).{0,160}hand.{0,160}(?:untrusted|separate-trust)",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
         r"fivee serve.{0,200}fresh.{0,200}viewer_url",
         resume,
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert re.search(
         r"server replacement.{0,200}launch tokens change",
+        resume,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"never restore.{0,120}live URL.{0,120}saved artifact",
         resume,
         flags=re.IGNORECASE | re.DOTALL,
     )

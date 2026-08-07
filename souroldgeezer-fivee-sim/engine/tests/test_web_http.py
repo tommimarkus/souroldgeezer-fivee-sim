@@ -725,12 +725,17 @@ class TestStaticPages:
         assert f'version: "{__version__}"' in response.text
 
     def test_the_viewer_page_is_configured_and_keeps_its_data_slot(self, editor: Editor) -> None:
-        response = editor.request("GET", "/viewer", token=False)
-        assert response.status == 200
-        assert len(CONFIG_RE.findall(response.text)) == 1
-        assert '<script type="application/json" id="embedded-data">null</script>' in (
-            response.text
-        )
+        for path in (
+            "/viewer",
+            "/viewer?replay=finished-fight",
+            "/viewer?adventure=adv-1&as=Thora",
+        ):
+            response = editor.request("GET", path, token=False)
+            assert response.status == 200, path
+            assert len(CONFIG_RE.findall(response.text)) == 1
+            assert '<script type="application/json" id="embedded-data">null</script>' in (
+                response.text
+            )
 
     def test_the_renderer_is_served_untouched(self, editor: Editor) -> None:
         response = editor.request("GET", "/assets/renderer.js", token=False)
@@ -3993,6 +3998,19 @@ class TestAdventuresOverHttp:
             json_body={"text": "The water rises."},
         )
         assert noted.status == 201, noted.body
+        hidden_activity = editor.request(
+            "GET",
+            "/api/v1/adventures/adv-1/brief?as=Thora",
+            headers={"If-None-Match": etag},
+        )
+        assert hidden_activity.status == 304
+        assert hidden_activity.body == b""
+        assert hidden_activity.headers["ETag"] == etag
+
+        advanced = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/advance"
+        )
+        assert advanced.status == 200, advanced.body
         changed_fight = editor.request(
             "GET",
             "/api/v1/adventures/adv-1/brief?as=Thora",

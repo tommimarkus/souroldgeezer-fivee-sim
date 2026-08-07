@@ -2626,6 +2626,12 @@ await suite("viewer.html: a human seat follows a live adventure",
     live.runTimer();
     await flush();
     const secondBackoff = live.nextTimerDelay();
+    check("a transient failure keeps the board and names reconnecting",
+      live.renders.length === lastGoodRender
+        && live.element("live-status").textContent.indexOf("Reconnecting") !== -1
+        && live.element("live-status").textContent.indexOf("temporarily unavailable") !== -1,
+      show([live.renders.length, lastGoodRender,
+        live.element("live-status").textContent]));
     check("retries back off without growing beyond the live viewer's bound",
       secondBackoff > firstBackoff && secondBackoff <= 8000,
       show([firstBackoff, secondBackoff]));
@@ -2633,12 +2639,13 @@ await suite("viewer.html: a human seat follows a live adventure",
     live.runTimer();
     await flush();
     check("a finalized chapter remains visible and says it is waiting for its successor",
-      live.renders.length >= lastGoodRender
+      live.renders.length > lastGoodRender
         && live.element("live-status").textContent.indexOf("finalized") !== -1
         && live.element("live-status").textContent.indexOf("waiting") !== -1
-        && live.timerCount() === 1,
+        && live.timerCount() === 1
+        && live.nextTimerDelay() === 1000,
       show([live.renders.length, live.element("live-status").textContent,
-        live.timerCount()]));
+        live.timerCount(), live.nextTimerDelay()]));
     check("live mode never asks for a replay, event log or full encounter state",
       live.requests.every((request) => (
         request.url === "/api/adventures/adv-1/brief?as=Thora"

@@ -1253,6 +1253,20 @@ ROUTES: tuple[Route, ...] = (
     ),
     Route(
         "GET", "/viewer", "page.viewer", "The replay viewer page.",
+        params=(
+            Param(
+                "replay", "query", {"type": "string"},
+                description="the served replay to open",
+            ),
+            Param(
+                "adventure", "query", {"type": "string"},
+                description="the live adventure to follow",
+            ),
+            Param(
+                "as", "query", {"type": "string"},
+                description="the live adventure's player seat",
+            ),
+        ),
         handler="page", contract=False,
     ),
     Route(

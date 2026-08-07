@@ -99,6 +99,7 @@ footer {
   border-top: 1px solid var(--edge); background: var(--panel);
   padding: 6px 10px; display: flex; flex-direction: column; gap: 4px;
 }
+#playback-controls[hidden] { display: none; }
 #controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #readout { font-family: ui-monospace, monospace; color: var(--muted); }
 #scrub-wrap { position: relative; width: 100%; }
@@ -2115,7 +2116,7 @@ if (typeof FiveeRenderer === "undefined") {
      does not synthesize one: the seat endpoint already owns the safe current
      projection, and asking for an event log or full state would hand this page
      secrets it must remember not to draw. The URL owns both coordinates, so a
-     refresh reconnects to the same adventure and chair. */
+     fresh handoff reconnects to the same adventure and chair. */
   var LIVE_POLL_MS = 1000;
   var LIVE_MAX_BACKOFF_MS = 8000;
   var liveTarget = null;

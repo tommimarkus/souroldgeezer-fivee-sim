@@ -22,6 +22,11 @@ projection for that chair. It is for a cooperating table, not per-seat
 authentication: any client holding the launch token can ask the local engine for
 a different view.
 
+The launch token authorizes the whole local API, including reads, writes, and
+server shutdown; `as` selects a projection but grants no security boundary.
+Give the URL only to a human who shares the engine operator's trust. Never hand
+it to an untrusted or separate-trust participant.
+
 The server listens on loopback, so the URL works in a browser on the same machine
 as `fivee`; it is not a phone or other table-device link unless the engine gains a
 separately designed network and authentication boundary.

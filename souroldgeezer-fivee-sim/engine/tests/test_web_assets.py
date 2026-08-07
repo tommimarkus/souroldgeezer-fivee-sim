@@ -291,17 +291,12 @@ class TestViewerLiveSeat:
             in source
         )
         assert '<footer id="playback-controls">' in source
+        assert "#playback-controls[hidden] { display: none; }" in source
 
     def test_live_mode_names_one_seat_brief_route(self) -> None:
         source = read("viewer.html")
         assert source.count('"/brief?as="') == 1
         assert source.count('"/adventures/"') == 1
-
-    def test_live_mode_uses_conditional_reads(self) -> None:
-        source = read("viewer.html")
-        assert source.count('headers["If-None-Match"] = liveEtag;') == 1
-        assert source.count("answer.status === 304") == 1
-
 
 class TestViewerAdventureChapters:
     """An adventure's replay nests whole fights, and the viewer picks between them.

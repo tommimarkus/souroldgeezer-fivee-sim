@@ -70,7 +70,7 @@ from ..paths import adventures_root
 from . import durable, encounters, sessions
 from . import encounter_journal as journal_service
 from . import replay as replay_service
-from .common import sha256_of, slugify
+from .common import canonical_json, sha256_of, slugify
 from .errors import NotFoundError, ReplayError, RequestError
 from .sessions import EngineState
 
@@ -489,11 +489,11 @@ def brief_for(
     never reconstructs player visibility or inherits a new adventure field by
     accident.
 
-    The returned version joins the adventure document version to the current
-    encounter's journal head.  A polling client therefore wakes for either a
-    chapter transition or a move inside the current chapter.
+    The returned version hashes this allowlisted payload itself.  A polling
+    client therefore wakes for a visible chapter or encounter change without
+    gaining a timing oracle for hidden journal activity.
     """
-    document, adventure_version = _load(adventure_id)
+    document, _adventure_version = _load(adventure_id)
     members = document["members"]
     if not members:
         raise NoCurrentChapterError(
@@ -509,9 +509,6 @@ def brief_for(
         "mode": str(member["mode"]),
         "finalized": session.finalized,
     }
-    recovery_note = member.get("recovery_note")
-    if isinstance(recovery_note, str):
-        chapter["recovery_note"] = recovery_note
     payload = {
         "adventure": {
             "id": str(document["id"]),
@@ -522,7 +519,7 @@ def brief_for(
         "chapter": chapter,
         "state": player_state,
     }
-    version = sha256_of(f"{adventure_version}:{session.journal_head}")
+    version = sha256_of(canonical_json(payload))
     return payload, version
 
 

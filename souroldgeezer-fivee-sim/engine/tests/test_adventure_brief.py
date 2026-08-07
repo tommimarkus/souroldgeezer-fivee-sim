@@ -78,7 +78,7 @@ class TestAdventureBrief:
         )
         encounter_id = str(latest["encounter_id"])
 
-        brief = api.adventure_brief(adventure_id, "Thora")
+        brief, _version = api.adventure_brief(adventure_id, "Thora")
 
         assert brief == {
             "adventure": {
@@ -92,10 +92,10 @@ class TestAdventureBrief:
                 "encounter_id": encounter_id,
                 "mode": "combat",
                 "finalized": False,
-                "recovery_note": "A quiet hour beside the sluice",
             },
             "state": api.encounter_brief(encounter_id, "Thora"),
         }
+        assert "recovery_note" not in brief["chapter"]
         assert _forbidden_keys(brief) == set()
 
     def test_an_empty_adventure_is_a_named_refusal(self) -> None:
