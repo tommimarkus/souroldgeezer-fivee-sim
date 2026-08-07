@@ -50,6 +50,35 @@ def _ammunition_named_by(sheet: dict[str, Any]) -> set[str]:
 
 PARTY_NAMES = sorted(_parties())
 
+BACKGROUND_RULES: dict[str, dict[str, Any]] = {
+    "Thora": {
+        "background": "Soldier",
+        "skills": {"Athletics": "strength", "Intimidation": "charisma"},
+        "tools": ["Gaming Set"],
+        "feat": "Savage Attacker",
+    },
+    "Kesh": {
+        "background": "Criminal",
+        "skills": {"Sleight of Hand": "dexterity", "Stealth": "dexterity"},
+        "tools": ["Thieves' Tools"],
+        "feat": "Alert",
+    },
+    "Ilma": {
+        "background": "Acolyte",
+        "skills": {"Insight": "wisdom", "Religion": "intelligence"},
+        "tools": ["Calligrapher's Supplies"],
+        "feat": "Magic Initiate (Cleric)",
+    },
+    "Doran": {
+        "background": "Sage",
+        "skills": {"Arcana": "intelligence", "History": "intelligence"},
+        "tools": ["Calligrapher's Supplies"],
+        "feat": "Magic Initiate (Wizard)",
+    },
+}
+
+PROFICIENCY_BONUS = {"level-1": 2, "level-3": 2, "level-5": 3}
+
 
 @pytest.mark.parametrize("party_name", PARTY_NAMES)
 class TestEveryPartyRuns:
@@ -122,6 +151,84 @@ class TestEveryPartyRuns:
             "Ilma": {"class": "Cleric", "species": "Dwarf", "background": "Acolyte"},
             "Doran": {"class": "Wizard", "species": "Elf", "background": "Sage"},
         }
+
+    def test_background_rules_are_explicit_and_skills_reach_the_engine(
+        self, party_name: str
+    ) -> None:
+        proficiency = PROFICIENCY_BONUS[party_name]
+        for member in _parties()[party_name]["members"]:
+            sheet = member["sheet"]
+            expected = BACKGROUND_RULES[str(sheet["name"])]
+            background = member["rules"]["background"]
+
+            assert member["background"] == expected["background"]
+            assert background["skill_proficiencies"] == list(expected["skills"])
+            assert background["tool_proficiencies"] == expected["tools"]
+            assert background["feat"]["name"] == expected["feat"]
+            assert background["feat"]["engine_support"] in {
+                "encoded", "partial", "unsupported"
+            }
+
+            ability_scores = sheet["abilities"]
+            for skill, ability in expected["skills"].items():
+                ability_mod = (ability_scores[ability] - 10) // 2
+                expertise = skill in member["rules"].get("expertise", [])
+                expected_bonus = ability_mod + proficiency * (2 if expertise else 1)
+                assert sheet["skill_bonuses"][skill] == expected_bonus
+
+    def test_background_spell_choices_are_named_and_executable_when_supported(
+        self, party_name: str
+    ) -> None:
+        known = spellbook()
+        casters = {
+            member["sheet"]["name"]: member
+            for member in _parties()[party_name]["members"]
+            if member["rules"]["background"]["feat"]["name"].startswith("Magic Initiate")
+        }
+
+        assert set(casters) == {"Ilma", "Doran"}
+        for member in casters.values():
+            feat = member["rules"]["background"]["feat"]
+            choices = feat["spell_choices"]
+            assert len(choices["cantrips"]) == 2
+            assert choices["level_1_spell"]
+            assert feat["free_cast_engine_support"] == "unsupported"
+            for spell in choices["engine_executable"]:
+                assert spell in known
+                assert spell in member["sheet"]["spells"]
+
+    def test_every_positive_slot_level_has_a_native_executable_spell(
+        self, party_name: str
+    ) -> None:
+        known = spellbook()
+        stranded = {
+            str(sheet["name"]): [
+                level
+                for level, slots in sheet.get("spell_slots", {}).items()
+                if slots > 0
+                and not any(known[name].level == int(level) for name in sheet.get("spells", ()))
+            ]
+            for sheet in _members(_parties()[party_name])
+            if sheet.get("spell_slots")
+        }
+
+        assert {name: levels for name, levels in stranded.items() if levels} == {}
+
+    def test_supported_signature_features_are_encoded(self, party_name: str) -> None:
+        sheets = {str(sheet["name"]): sheet for sheet in _members(_parties()[party_name])}
+        level = int(party_name.removeprefix("level-"))
+        sneak_attack = {1: "1d6", 3: "2d6", 5: "3d6"}[level]
+
+        for attack in sheets["Kesh"]["attacks"]:
+            assert attack["advantage_bonus_damage"] == sneak_attack
+            assert attack["advantage_bonus_with_adjacent_ally"] is True
+        assert set(sheets["Kesh"].get("bonus_actions", ())) == (
+            {"dash", "disengage"} if level >= 3 else set()
+        )
+        assert sheets["Kesh"]["initiative_bonus"] == (
+            sheets["Kesh"]["abilities"]["dexterity"] - 10
+        ) // 2 + PROFICIENCY_BONUS[party_name]
+        assert sheets["Thora"].get("attacks_per_action", 1) == (2 if level >= 5 else 1)
 
     def test_every_item_carried_is_one_the_bundled_content_defines(
         self, party_name: str

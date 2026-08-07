@@ -171,6 +171,25 @@
       ]
     },
     {
+      "name": "Burning Hands",
+      "level": 1,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "3d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "cone",
+      "length": 15,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_object_effect",
+          "feature": "Ignites flammable objects that are not worn or carried"
+        }
+      ]
+    },
+    {
       "name": "Fireball",
       "level": 3,
       "school": "Evocation",
@@ -3258,7 +3277,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Burning Hands"
+      }
     },
     {
       "id": "817-10-14-27-call-lightning",

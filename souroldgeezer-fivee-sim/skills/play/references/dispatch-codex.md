@@ -24,11 +24,12 @@ with `fork_turns="none"` and let model and reasoning effort inherit. Spawn each
 The prep prompt may add only the adventure path, source digest and format,
 active mode, and bounded frame contract. It receives no player or seat private
 memory. The game-master prompt may add the source path and digest, module-index
-pointer and digest, current entries and locators, party summary, active mode,
-and bounded checkpoint. A player prompt may add **only** its character sheet,
-temperament, voice, and permitted private rehydration state. Never include the
-adventure's path, module text, run sheet, other roster entries, or full
-transcript. A play-mechanics prompt may add only the compact mechanical brief:
+pointer and digest, current entries and locators, party summary including each
+seat's rules brief, active mode, and bounded checkpoint. A player prompt may add
+**only** its identity, character sheet, gear, rules brief, temperament, voice,
+and permitted private rehydration state. Never include the adventure's path,
+module text, run sheet, other roster entries, or full transcript. A
+play-mechanics prompt may add only the compact mechanical brief:
 encounter id, exact adjudicated request, participant labels, baseline/delta
 needs, and recovery note when applicable. It receives no adventure or module
 material and no player or seat private memory.

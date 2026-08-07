@@ -95,6 +95,7 @@ def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> 
         "Regenerate",
         "Fire Bolt",
         "Sacred Flame",
+        "Burning Hands",
     }
     assert {item["name"] for item in packs[13]["items"]} == {"Potion of Healing"}
     assert {creature["name"] for creature in packs[15]["creatures"]} == {
@@ -127,6 +128,7 @@ def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> 
         "Regenerate": {"section": "spells", "name": "Regenerate"},
         "Fire Bolt": {"section": "spells", "name": "Fire Bolt"},
         "Sacred Flame": {"section": "spells", "name": "Sacred Flame"},
+        "Burning Hands": {"section": "spells", "name": "Burning Hands"},
         "Goblin Warrior": {"section": "creatures", "name": "Goblin Warrior"},
         "Goblin Boss": {"section": "creatures", "name": "Goblin Boss"},
         "Ogre": {"section": "creatures", "name": "Ogre"},

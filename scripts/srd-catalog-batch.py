@@ -45,7 +45,8 @@ CHAPTER_ORDER = (*range(4, 10), 10, 11, 12, 13, 14, 15, 16, 1, 2, 3)
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
 EXECUTABLE_SPELLS = frozenset(
     {
-        "Cure Wounds", "Fireball", "Guiding Bolt", "Hold Person", "Shatter",
+        "Burning Hands", "Cure Wounds", "Fireball", "Guiding Bolt", "Hold Person",
+        "Shatter",
         "Healing Word", "Mass Healing Word", "Mass Cure Wounds", "Heal",
         "Prayer of Healing", "Regenerate", "Fire Bolt", "Sacred Flame",
     }

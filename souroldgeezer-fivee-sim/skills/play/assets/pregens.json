@@ -1,9 +1,9 @@
 {
   "about": [
     "Pregenerated parties for play or playtest, so a table with no characters to hand can still run an adventure.",
-    "Each member names a class, species, background, `gear` list, and persona for the harness to brief to the seat. The member also has a `sheet` — an engine combatant spec accepted as-is by encounter.create and adventure.encounter. Only `sheet` reaches the engine: it refuses unknown spec keys, so the identity, `temperament`, `voice`, and `gear` may never be folded into it.",
-    "The engine models no character building: class, species, and background are roleplaying identity, not rules inputs, and there are no feats or character levels in a sheet. Combat numbers are hand-picked to be ordinary for their tier rather than derived from a class table.",
-    "The bundled spell slice includes the combat spells used here. Ilma's Sacred Flame and Doran's Fire Bolt are at-will cantrips; the engine has no character level, so their executable records use the printed base damage at every tier and the level-5 sheets do not gain the printed damage upgrade. Cure Wounds adds the caster's spellcasting ability modifier, which is why a healer's sheet names `spellcasting_ability`; a sheet that omits it heals the flat dice. Positions are a loose marching order; the game master places the party for the scene.",
+    "Each member names a class, species, background, `gear` list, persona, and `rules` brief for the harness to give that seat and the game master. The member also has a `sheet` — an engine combatant spec accepted as-is by encounter.create and adventure.encounter. Only `sheet` reaches the engine: it refuses unknown spec keys, so identity, briefing, temperament, voice, and gear may never be folded into it.",
+    "The engine models no character building: labels never derive mechanics. Final abilities, saves, background skill totals, spell resources, attacks, and supported features are written directly in `sheet`; `rules` names their source and names features the engine only partly supports or cannot represent.",
+    "The spell lists are streamlined executable combat loadouts, not full class prepared-spell lists. Every positive slot level has a native spell, while each Magic Initiate background names both chosen cantrips and its level-1 spell; non-executable utility magic and the feat's independent free cast stay explicit in `rules`. Ilma's Sacred Flame and Doran's Fire Bolt remain at-will cantrips, and the engine's lack of character levels means their level-5 damage does not scale.",
     "Healing is deliberately scarce: one Cure Wounds caster and a potion or two, because a party that cannot be worn down measures nothing about an adventuring day. Potions are a Bonus Action, so carrying one costs a character nothing until it is drunk.",
     "A ranged attack declares `normal_range` and `long_range` in feet, and those two keys are the only ones the engine reads — an attack that names neither is built with a maximum range of 0 feet and refused at every distance. The bow, crossbow and javelin also name the `ammunition` they spend, and the sheet stocks it: an empty quiver refuses the shot before it is rolled, and the crossbow's `loading` allows one shot per turn.",
     "`gear` is fiction, not inventory. The engine's `items` map holds only what it can resolve — a potion it defines, or ammunition an attack spends — so rope, torches and a healer's kit live outside the sheet, where the game master adjudicates them. A player who asks to use one gets a ruling, never a roll.",
@@ -18,6 +18,18 @@
           "class": "Fighter",
           "species": "Human",
           "background": "Soldier",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Athletics", "Intimidation"],
+              "tool_proficiencies": ["Gaming Set"],
+              "feat": {"name": "Savage Attacker", "engine_support": "unsupported"}
+            },
+            "class_features": [
+              {"name": "Second Wind", "engine_support": "unsupported"},
+              {"name": "Weapon Mastery", "engine_support": "unsupported"}
+            ]
+          },
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
           "gear": [
             "Backpack",
@@ -39,6 +51,7 @@
             "items": {"Potion of Healing": 1, "Javelin": 3},
             "abilities": {"strength": 16, "dexterity": 12, "constitution": 14, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 4, "constitution": 3},
+            "skill_bonuses": {"Athletics": 5, "Intimidation": 2},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
               {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "reach": 5, "normal_range": 30, "long_range": 120, "thrown": true, "ammunition": "Javelin"}
@@ -50,6 +63,20 @@
           "class": "Rogue",
           "species": "Halfling",
           "background": "Criminal",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Sleight of Hand", "Stealth"],
+              "tool_proficiencies": ["Thieves' Tools"],
+              "feat": {"name": "Alert", "engine_support": "partial"}
+            },
+            "expertise": ["Stealth", "Thieves' Tools"],
+            "class_features": [
+              {"name": "Sneak Attack", "engine_support": "encoded"},
+              {"name": "Expertise", "engine_support": "partial"},
+              {"name": "Weapon Mastery", "engine_support": "unsupported"}
+            ]
+          },
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
           "gear": [
             "Backpack",
@@ -71,9 +98,11 @@
             "items": {"Potion of Healing": 1, "Arrow": 20},
             "abilities": {"strength": 10, "dexterity": 16, "constitution": 12, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 5},
+            "skill_bonuses": {"Sleight of Hand": 5, "Stealth": 7},
+            "initiative_bonus": 5,
             "attacks": [
-              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "ammunition": "Arrow"},
-              {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee"}
+              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "advantage_bonus_damage": "1d6", "advantage_bonus_with_adjacent_ally": true, "ammunition": "Arrow"},
+              {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee", "advantage_bonus_damage": "1d6", "advantage_bonus_with_adjacent_ally": true}
             ]
           }
         },
@@ -82,6 +111,24 @@
           "class": "Cleric",
           "species": "Dwarf",
           "background": "Acolyte",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Insight", "Religion"],
+              "tool_proficiencies": ["Calligrapher's Supplies"],
+              "feat": {
+                "name": "Magic Initiate (Cleric)",
+                "engine_support": "partial",
+                "spell_choices": {"cantrips": ["Sacred Flame", "Thaumaturgy"], "level_1_spell": "Healing Word", "engine_executable": ["Sacred Flame", "Healing Word"]},
+                "free_cast_engine_support": "unsupported"
+              }
+            },
+            "class_features": [
+              {"name": "Spellcasting", "engine_support": "encoded"},
+              {"name": "Divine Order", "engine_support": "unsupported"}
+            ],
+            "spell_loadout": "streamlined executable combat selection"
+          },
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
           "gear": [
             "Backpack",
@@ -102,7 +149,8 @@
             "position": [0, 5],
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 13, "intelligence": 10, "wisdom": 16, "charisma": 14},
             "save_bonuses": {"wisdom": 5, "charisma": 4},
-            "spells": ["Sacred Flame", "Guiding Bolt", "Cure Wounds"],
+            "skill_bonuses": {"Insight": 5, "Religion": 2},
+            "spells": ["Sacred Flame", "Healing Word", "Guiding Bolt", "Cure Wounds"],
             "spell_slots": {"1": 2},
             "spellcasting_ability": "wisdom",
             "spell_save_dc": 13,
@@ -117,6 +165,25 @@
           "class": "Wizard",
           "species": "Elf",
           "background": "Sage",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Arcana", "History"],
+              "tool_proficiencies": ["Calligrapher's Supplies"],
+              "feat": {
+                "name": "Magic Initiate (Wizard)",
+                "engine_support": "partial",
+                "spell_choices": {"cantrips": ["Fire Bolt", "Mage Hand"], "level_1_spell": "Burning Hands", "engine_executable": ["Fire Bolt", "Burning Hands"]},
+                "free_cast_engine_support": "unsupported"
+              }
+            },
+            "class_features": [
+              {"name": "Spellcasting", "engine_support": "encoded"},
+              {"name": "Ritual Adept", "engine_support": "unsupported"},
+              {"name": "Arcane Recovery", "engine_support": "unsupported"}
+            ],
+            "spell_loadout": "streamlined executable combat selection"
+          },
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
           "gear": [
             "Backpack",
@@ -138,7 +205,9 @@
             "position": [5, 5],
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 12, "intelligence": 16, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
-            "spells": ["Fire Bolt"],
+            "skill_bonuses": {"Arcana": 5, "History": 5},
+            "spells": ["Fire Bolt", "Burning Hands"],
+            "spell_slots": {"1": 2},
             "spellcasting_ability": "intelligence",
             "spell_save_dc": 13,
             "spell_attack_bonus": 5,
@@ -159,6 +228,19 @@
           "class": "Fighter",
           "species": "Human",
           "background": "Soldier",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Athletics", "Intimidation"],
+              "tool_proficiencies": ["Gaming Set"],
+              "feat": {"name": "Savage Attacker", "engine_support": "unsupported"}
+            },
+            "class_features": [
+              {"name": "Second Wind", "engine_support": "unsupported"},
+              {"name": "Action Surge", "engine_support": "unsupported"},
+              {"name": "Weapon Mastery", "engine_support": "unsupported"}
+            ]
+          },
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
           "gear": [
             "Backpack",
@@ -180,6 +262,7 @@
             "items": {"Potion of Healing": 1, "Javelin": 3},
             "abilities": {"strength": 17, "dexterity": 12, "constitution": 15, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 5, "constitution": 4},
+            "skill_bonuses": {"Athletics": 5, "Intimidation": 2},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
               {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "reach": 5, "normal_range": 30, "long_range": 120, "thrown": true, "ammunition": "Javelin"}
@@ -191,6 +274,21 @@
           "class": "Rogue",
           "species": "Halfling",
           "background": "Criminal",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Sleight of Hand", "Stealth"],
+              "tool_proficiencies": ["Thieves' Tools"],
+              "feat": {"name": "Alert", "engine_support": "partial"}
+            },
+            "expertise": ["Stealth", "Thieves' Tools"],
+            "class_features": [
+              {"name": "Sneak Attack", "engine_support": "encoded"},
+              {"name": "Expertise", "engine_support": "partial"},
+              {"name": "Cunning Action", "engine_support": "partial"},
+              {"name": "Steady Aim", "engine_support": "unsupported"}
+            ]
+          },
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
           "gear": [
             "Backpack",
@@ -212,9 +310,12 @@
             "items": {"Potion of Healing": 1, "Arrow": 20},
             "abilities": {"strength": 10, "dexterity": 17, "constitution": 13, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 5},
+            "skill_bonuses": {"Sleight of Hand": 5, "Stealth": 7},
+            "initiative_bonus": 5,
+            "bonus_actions": ["dash", "disengage"],
             "attacks": [
-              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "ammunition": "Arrow"},
-              {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee"}
+              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "advantage_bonus_damage": "2d6", "advantage_bonus_with_adjacent_ally": true, "ammunition": "Arrow"},
+              {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee", "advantage_bonus_damage": "2d6", "advantage_bonus_with_adjacent_ally": true}
             ]
           }
         },
@@ -223,6 +324,24 @@
           "class": "Cleric",
           "species": "Dwarf",
           "background": "Acolyte",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Insight", "Religion"],
+              "tool_proficiencies": ["Calligrapher's Supplies"],
+              "feat": {
+                "name": "Magic Initiate (Cleric)",
+                "engine_support": "partial",
+                "spell_choices": {"cantrips": ["Sacred Flame", "Thaumaturgy"], "level_1_spell": "Healing Word", "engine_executable": ["Sacred Flame", "Healing Word"]},
+                "free_cast_engine_support": "unsupported"
+              }
+            },
+            "class_features": [
+              {"name": "Spellcasting", "engine_support": "encoded"},
+              {"name": "Channel Divinity", "engine_support": "unsupported"}
+            ],
+            "spell_loadout": "streamlined executable combat selection"
+          },
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
           "gear": [
             "Backpack",
@@ -243,7 +362,8 @@
             "position": [0, 5],
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 16, "charisma": 14},
             "save_bonuses": {"wisdom": 5, "charisma": 4},
-            "spells": ["Sacred Flame", "Guiding Bolt", "Hold Person", "Cure Wounds"],
+            "skill_bonuses": {"Insight": 5, "Religion": 2},
+            "spells": ["Sacred Flame", "Healing Word", "Guiding Bolt", "Hold Person", "Prayer of Healing", "Cure Wounds"],
             "spell_slots": {"1": 4, "2": 2},
             "spellcasting_ability": "wisdom",
             "spell_save_dc": 13,
@@ -258,6 +378,24 @@
           "class": "Wizard",
           "species": "Elf",
           "background": "Sage",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Arcana", "History"],
+              "tool_proficiencies": ["Calligrapher's Supplies"],
+              "feat": {
+                "name": "Magic Initiate (Wizard)",
+                "engine_support": "partial",
+                "spell_choices": {"cantrips": ["Fire Bolt", "Mage Hand"], "level_1_spell": "Burning Hands", "engine_executable": ["Fire Bolt", "Burning Hands"]},
+                "free_cast_engine_support": "unsupported"
+              }
+            },
+            "class_features": [
+              {"name": "Spellcasting", "engine_support": "encoded"},
+              {"name": "Arcane Recovery", "engine_support": "unsupported"}
+            ],
+            "spell_loadout": "streamlined executable combat selection"
+          },
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
           "gear": [
             "Backpack",
@@ -280,7 +418,8 @@
             "items": {"Potion of Healing": 1, "Bolt": 20},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 13, "intelligence": 17, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
-            "spells": ["Fire Bolt", "Shatter"],
+            "skill_bonuses": {"Arcana": 5, "History": 5},
+            "spells": ["Fire Bolt", "Burning Hands", "Shatter"],
             "spellcasting_ability": "intelligence",
             "spell_slots": {"1": 4, "2": 2},
             "spell_save_dc": 14,
@@ -301,6 +440,19 @@
           "class": "Fighter",
           "species": "Human",
           "background": "Soldier",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Athletics", "Intimidation"],
+              "tool_proficiencies": ["Gaming Set"],
+              "feat": {"name": "Savage Attacker", "engine_support": "unsupported"}
+            },
+            "class_features": [
+              {"name": "Second Wind", "engine_support": "unsupported"},
+              {"name": "Action Surge", "engine_support": "unsupported"},
+              {"name": "Extra Attack", "engine_support": "encoded"}
+            ]
+          },
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
           "gear": [
             "Backpack",
@@ -323,6 +475,7 @@
             "attacks_per_action": 2,
             "abilities": {"strength": 18, "dexterity": 12, "constitution": 16, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 7, "constitution": 6},
+            "skill_bonuses": {"Athletics": 7, "Intimidation": 3},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 7, "damage": "1d8+4", "damage_type": "slashing", "kind": "melee"},
               {"name": "Javelin", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "reach": 5, "normal_range": 30, "long_range": 120, "thrown": true, "ammunition": "Javelin"}
@@ -334,6 +487,22 @@
           "class": "Rogue",
           "species": "Halfling",
           "background": "Criminal",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Sleight of Hand", "Stealth"],
+              "tool_proficiencies": ["Thieves' Tools"],
+              "feat": {"name": "Alert", "engine_support": "partial"}
+            },
+            "expertise": ["Stealth", "Thieves' Tools"],
+            "class_features": [
+              {"name": "Sneak Attack", "engine_support": "encoded"},
+              {"name": "Expertise", "engine_support": "partial"},
+              {"name": "Cunning Action", "engine_support": "partial"},
+              {"name": "Cunning Strike", "engine_support": "unsupported"},
+              {"name": "Uncanny Dodge", "engine_support": "unsupported"}
+            ]
+          },
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
           "gear": [
             "Backpack",
@@ -355,9 +524,12 @@
             "items": {"Potion of Healing": 1, "Arrow": 20},
             "abilities": {"strength": 10, "dexterity": 18, "constitution": 14, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 7},
+            "skill_bonuses": {"Sleight of Hand": 7, "Stealth": 10},
+            "initiative_bonus": 7,
+            "bonus_actions": ["dash", "disengage"],
             "attacks": [
-              {"name": "Shortbow", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "ammunition": "Arrow"},
-              {"name": "Dagger", "attack_bonus": 7, "damage": "1d4+4", "damage_type": "piercing", "kind": "melee"}
+              {"name": "Shortbow", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "advantage_bonus_damage": "3d6", "advantage_bonus_with_adjacent_ally": true, "ammunition": "Arrow"},
+              {"name": "Dagger", "attack_bonus": 7, "damage": "1d4+4", "damage_type": "piercing", "kind": "melee", "advantage_bonus_damage": "3d6", "advantage_bonus_with_adjacent_ally": true}
             ]
           }
         },
@@ -366,6 +538,25 @@
           "class": "Cleric",
           "species": "Dwarf",
           "background": "Acolyte",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Insight", "Religion"],
+              "tool_proficiencies": ["Calligrapher's Supplies"],
+              "feat": {
+                "name": "Magic Initiate (Cleric)",
+                "engine_support": "partial",
+                "spell_choices": {"cantrips": ["Sacred Flame", "Thaumaturgy"], "level_1_spell": "Healing Word", "engine_executable": ["Sacred Flame", "Healing Word"]},
+                "free_cast_engine_support": "unsupported"
+              }
+            },
+            "class_features": [
+              {"name": "Spellcasting", "engine_support": "encoded"},
+              {"name": "Channel Divinity", "engine_support": "unsupported"},
+              {"name": "Sear Undead", "engine_support": "unsupported"}
+            ],
+            "spell_loadout": "streamlined executable combat selection"
+          },
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
           "gear": [
             "Backpack",
@@ -387,7 +578,8 @@
             "items": {"Potion of Healing": 2},
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 18, "charisma": 14},
             "save_bonuses": {"wisdom": 7, "charisma": 5},
-            "spells": ["Sacred Flame", "Guiding Bolt", "Hold Person", "Cure Wounds"],
+            "skill_bonuses": {"Insight": 7, "Religion": 3},
+            "spells": ["Sacred Flame", "Healing Word", "Guiding Bolt", "Hold Person", "Prayer of Healing", "Mass Healing Word", "Cure Wounds"],
             "spell_slots": {"1": 4, "2": 3, "3": 2},
             "spellcasting_ability": "wisdom",
             "spell_save_dc": 15,
@@ -402,6 +594,25 @@
           "class": "Wizard",
           "species": "Elf",
           "background": "Sage",
+          "rules": {
+            "provenance": "SRD 5.2.1",
+            "background": {
+              "skill_proficiencies": ["Arcana", "History"],
+              "tool_proficiencies": ["Calligrapher's Supplies"],
+              "feat": {
+                "name": "Magic Initiate (Wizard)",
+                "engine_support": "partial",
+                "spell_choices": {"cantrips": ["Fire Bolt", "Mage Hand"], "level_1_spell": "Burning Hands", "engine_executable": ["Fire Bolt", "Burning Hands"]},
+                "free_cast_engine_support": "unsupported"
+              }
+            },
+            "class_features": [
+              {"name": "Spellcasting", "engine_support": "encoded"},
+              {"name": "Arcane Recovery", "engine_support": "unsupported"},
+              {"name": "Memorize Spell", "engine_support": "unsupported"}
+            ],
+            "spell_loadout": "streamlined executable combat selection"
+          },
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
           "gear": [
             "Backpack",
@@ -424,7 +635,8 @@
             "items": {"Potion of Healing": 1, "Bolt": 20},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 14, "intelligence": 18, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 7, "wisdom": 4},
-            "spells": ["Fire Bolt", "Shatter", "Fireball"],
+            "skill_bonuses": {"Arcana": 7, "History": 7},
+            "spells": ["Fire Bolt", "Burning Hands", "Shatter", "Fireball"],
             "spellcasting_ability": "intelligence",
             "spell_slots": {"1": 4, "2": 3, "3": 2},
             "spell_save_dc": 15,

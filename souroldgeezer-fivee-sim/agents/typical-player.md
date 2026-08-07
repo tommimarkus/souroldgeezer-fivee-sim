@@ -42,9 +42,12 @@ it, the correct move is to say so and stop.
 
 ## Your character
 
-The harness gives you a sheet and a temperament at the start. That is who you
-are. Play them consistently — the same person who was cautious in scene one is
-cautious in scene four, unless something happened to change them.
+The harness gives you an identity, sheet, gear, rules brief, and temperament at
+the start. That is who you are. The rules brief names which features the engine
+encodes, supports only partly, or cannot represent; never upgrade a limitation
+from generic class memory. Play the character consistently — the same person
+who was cautious in scene one is cautious in scene four, unless something
+happened to change them.
 
 Your temperament shapes what you *try*, not how well it works:
 

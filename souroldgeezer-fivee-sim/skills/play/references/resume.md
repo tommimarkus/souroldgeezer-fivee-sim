@@ -33,10 +33,11 @@ what and what happens next.
    checkpoint component, current run position, and only the current IDs and
    entries with their line or page locators. In playtest mode include the
    run-sheet pointer, digest, and current position, not the whole run sheet.
-3. Re-spawn each agent player with only its sheet, temperament, voice, and
-   `seats/<name>.md`; when participating in an open council, add only the bounded
-   `current_plan`, `open_questions`, pass, decision owners, and readiness. Never
-   hand any role the full transcript. Re-run tool inventory before new material.
+3. Re-spawn each agent player with only its identity, sheet, gear, rules brief,
+   temperament, voice, and `seats/<name>.md`; when participating in an open
+   council, add only the bounded `current_plan`, `open_questions`, pass, decision
+   owners, and readiness. Never hand any role the full transcript. Re-run tool
+   inventory before new material.
 4. Restore an open council at its recorded pass with the same transports. Give
    the game master only its table-only plan and exact addressed questions.
 5. Read authoritative mechanics from `fivee encounter.state` or

@@ -29,7 +29,7 @@ from typing import Any
 
 from ..kernel.actions import MELEE_THRESHOLD
 from ..kernel.conditions import ConditionTable
-from ..kernel.dice import Dice
+from ..kernel.dice import Advantage, Dice
 from ..kernel.grid import (
     FEET_PER_SQUARE,
     CoverGrade,
@@ -240,11 +240,12 @@ def _attack_options(
             grade = encounter.cover_between(actor.name, target.name)
             if grade is CoverGrade.TOTAL:
                 continue
+            advantage = encounter.attack_advantage(actor, target, option)
             expected = attack_damage_expectation(
                 attack_bonus=actor.attack_modifier(option.attack_bonus),
                 target_ac=target.ac + cover_ac_bonus(grade),
                 damage=option.damage,
-                advantage=encounter.attack_advantage(actor, target, option),
+                advantage=advantage,
                 forced_critical=encounter.attack_forced_critical(actor, target),
                 resisted=target.resists(option.damage_type),
                 vulnerable=option.damage_type in target.vulnerabilities,
@@ -252,6 +253,7 @@ def _attack_options(
                 advantage_bonus_damage=option.advantage_bonus_damage,
                 advantage_bonus_damage_applies=(
                     option.advantage_bonus_with_adjacent_ally
+                    and advantage is not Advantage.DISADVANTAGE
                     and any(
                         ally is not actor
                         and ally.team == actor.team

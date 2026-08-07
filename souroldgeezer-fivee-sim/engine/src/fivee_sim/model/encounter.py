@@ -3501,7 +3501,7 @@ class Encounter:
             resisted=self._resisted_by_target(target, option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
-            **self._rider_damage_arguments(actor, option, target),
+            **self._rider_damage_arguments(actor, option, target, advantage),
         )
         cover_note = ""
         if grade is not CoverGrade.NONE:
@@ -3552,19 +3552,26 @@ class Encounter:
         return (option.damage_type, option.bonus_damage_type)
 
     def _rider_damage_arguments(
-        self, actor: Creature, option: AttackOption, target: Creature
+        self,
+        actor: Creature,
+        option: AttackOption,
+        target: Creature,
+        advantage: Advantage,
     ) -> dict[str, Any]:
         """The damage-rider keywords one attack passes to ``resolve_attack``.
 
         Shared by the attack action and the opportunity attack, because the
         riders belong to the attack option itself: a centipede's bite is the
         same bite as a reaction. The bonus pool's defenses are read against its
-        **own** type, which is the point of it having one.
+        **own** type, which is the point of it having one. An adjacent ally can
+        qualify an attack for its advantage-gated rider, but Disadvantage still
+        withdraws that rider.
         """
         return {
             "advantage_bonus_damage": option.advantage_bonus_damage,
             "advantage_bonus_damage_applies": (
                 option.advantage_bonus_with_adjacent_ally
+                and advantage is not Advantage.DISADVANTAGE
                 and self._capable_ally_adjacent(actor=actor, target=target)
             ),
             "bonus_damage": option.bonus_damage,
@@ -5242,7 +5249,7 @@ class Encounter:
             resisted=mover.resists(melee.damage_type),
             vulnerable=melee.damage_type in mover.vulnerabilities,
             immune=melee.damage_type in mover.immunities,
-            **self._rider_damage_arguments(attacker, melee, mover),
+            **self._rider_damage_arguments(attacker, melee, mover, advantage),
         )
         self._emit("opportunity_attack", attacker.name, mover.name,
                    f"{melee.name}: {resolution.describe()}",

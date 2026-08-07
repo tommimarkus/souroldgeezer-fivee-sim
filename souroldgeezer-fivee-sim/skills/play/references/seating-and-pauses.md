@@ -15,10 +15,14 @@ are separate conditional references linked directly from `SKILL.md`.
   "game_master": {"kind": "agent"},
   "council": {"communication": "fictional"},
   "seats": [
-    {"name": "Thora", "kind": "agent", "temperament": "bold",
-     "voice": "blunt, soldierly, jokes when frightened", "sheet": {...}},
-    {"name": "Kesh", "kind": "agent", "temperament": "cautious",
-     "voice": "quiet, asks one question too many", "sheet": {...}}
+    {"name": "Thora", "kind": "agent", "class": "Fighter",
+     "species": "Human", "background": "Soldier", "temperament": "bold",
+     "voice": "blunt, soldierly, jokes when frightened", "gear": [...],
+     "rules": {...}, "sheet": {...}},
+    {"name": "Kesh", "kind": "agent", "class": "Rogue",
+     "species": "Halfling", "background": "Criminal", "temperament": "cautious",
+     "voice": "quiet, asks one question too many", "gear": [...],
+     "rules": {...}, "sheet": {...}}
   ],
   "tool_check": {"Thora": "none", "Kesh": "none"}
 }
@@ -31,8 +35,10 @@ explicitly activated `playtest`.
 
 `council.communication` defaults to `fictional`. Set it to `table-wide` only
 when the table explicitly opts into out-of-character discussion across fictional
-separation. A `sheet` is a combatant spec accepted by the engine; bundled parties
-in `../assets/pregens.json` already have that shape.
+separation. A `sheet` is the combatant spec accepted by the engine. Identity,
+`gear`, and the `rules` brief are seat and game-master context only; never post
+them to an engine operation. Bundled parties in `../assets/pregens.json` already
+separate those shapes.
 
 ## Player tool inventory
 

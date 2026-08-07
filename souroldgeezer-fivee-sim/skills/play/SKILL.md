@@ -76,6 +76,12 @@ Keep player children alive so their private experience persists. Keep the game
 master alive only within one checkpoint interval; reset it at encounter or
 chapter boundaries from the bounded live checkpoint. A human seat has no child.
 
+For a bundled pregen, preserve the member boundary from `assets/pregens.json`:
+give that player its identity, `gear`, `rules` brief, persona, and `sheet`; give
+the game master the party's corresponding rules briefs. Post only `sheet` to the
+engine. An `engine_support` value of `partial` or `unsupported` is a limitation
+to surface and adjudicate, never permission to infer a missing implementation.
+
 Give no player the module path, filename, directory, text, game-master prep,
 other roster entries, or full transcript. Record each agent player's actual tool
 inventory before the first player-facing material and after every re-spawn.

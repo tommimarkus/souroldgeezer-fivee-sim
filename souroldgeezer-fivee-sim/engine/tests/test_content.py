@@ -2146,7 +2146,7 @@ class TestHalfDamageOnSaveIsOptedInto:
         halving = {
             name for name, spell in registry.spells.items() if spell.half_on_save
         }
-        assert halving == {"Fireball", "Shatter"}
+        assert halving == {"Burning Hands", "Fireball", "Shatter"}
 
 
 class TestDeterminism:

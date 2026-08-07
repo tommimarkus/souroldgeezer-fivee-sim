@@ -6,12 +6,13 @@ Spawn the named agent `adventure-prep` with only the adventure path, source
 digest and format, active mode, and bounded frame contract; it receives no
 player or seat private memory. End it after its complete manifest. Spawn the
 named agent `game-master` with the source path and digest, module-index pointer
-and digest, only current entries and locators, party summary, active mode, and
-current bounded checkpoint when present. Spawn the named agent
-`typical-player` once per agent seat with only its character sheet, temperament,
-voice, and permitted rehydration state. Claude Code discovers the packaged named
-agents and applies their frontmatter, including tools, model, and effort; do not
-reproduce or override it.
+and digest, only current entries and locators, a party summary including each
+seat's rules brief, active mode, and current bounded checkpoint when present.
+Spawn the named agent `typical-player` once per agent seat with only its
+identity, character sheet, gear, rules brief, temperament, voice, and permitted
+rehydration state. Claude Code discovers the packaged named agents and applies
+their frontmatter, including tools, model, and effort; do not reproduce or
+override it.
 
 For each decision beat, spawn the named `play-mechanics` agent with only the
 compact mechanical brief: encounter id, exact adjudicated request, participant

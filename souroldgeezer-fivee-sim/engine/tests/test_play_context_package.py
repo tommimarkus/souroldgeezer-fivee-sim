@@ -143,6 +143,37 @@ def test_each_host_dispatches_canonical_roles_without_copying_role_bodies() -> N
     )
 
 
+def test_every_host_gives_seats_their_identity_gear_and_rules_brief() -> None:
+    for relative_path in (
+        "skills/play/references/dispatch-claude-code.md",
+        "skills/play/references/dispatch-codex.md",
+    ):
+        dispatch = _text(relative_path)
+        assert re.search(
+            r"player.{0,300}identity.{0,120}sheet.{0,120}gear.{0,120}rules brief",
+            dispatch,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        assert re.search(
+            r"game-master.{0,500}party.{0,180}rules brief",
+            dispatch,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
+    resume = _text("skills/play/references/resume.md")
+    player = _text("agents/typical-player.md")
+    assert re.search(
+        r"re-spawn each agent player.{0,300}identity.{0,120}gear.{0,120}rules brief",
+        resume,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"harness gives you.{0,200}identity.{0,120}gear.{0,120}rules brief",
+        player,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 def test_preparation_and_mechanical_children_receive_no_player_private_memory() -> None:
     dispatch = (
         _text("skills/play/references/dispatch-codex.md")

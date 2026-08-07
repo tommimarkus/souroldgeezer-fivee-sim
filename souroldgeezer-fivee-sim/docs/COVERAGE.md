@@ -31,8 +31,8 @@ Generated totals for the bundled SRD 5.2.1 structured catalog and the smaller ex
 
 | State | Catalog records |
 | --- | ---: |
-| reference_only | 2042 |
-| partial | 17 |
+| reference_only | 2041 |
+| partial | 18 |
 | executable | 3 |
 
 ## Loaded executable records
@@ -40,7 +40,7 @@ Generated totals for the bundled SRD 5.2.1 structured catalog and the smaller ex
 | Section | Count |
 | --- | ---: |
 | creatures | 6 |
-| spells | 13 |
+| spells | 14 |
 | conditions | 15 |
 | terrain | 13 |
 | items | 1 |

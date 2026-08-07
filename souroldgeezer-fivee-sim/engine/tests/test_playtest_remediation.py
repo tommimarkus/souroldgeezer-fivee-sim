@@ -667,6 +667,37 @@ class TestHealingAndActionEconomy:
         assert attack.data["damage"] == 11
         assert attack.data["advantage_bonus_damage"] == 4
 
+    def test_adjacent_ally_does_not_enable_sneak_attack_with_disadvantage(self) -> None:
+        rogue = fighter("Tansy")
+        rogue.attacks = (
+            AttackOption(
+                name="Shortbow",
+                attack_bonus=20,
+                damage=Dice(1, 6, 3),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.RANGED,
+                normal_range=80,
+                advantage_bonus_damage=Dice(1, 6),
+                advantage_bonus_with_adjacent_ally=True,
+                provenance=FIXTURE,
+            ),
+        )
+        target = fighter("Goblin", team="monsters", position=5)
+        ally = fighter("Harrow", position=10)
+        rng = FixedRandom(4)
+        encounter = Encounter([rogue, target, ally], rng)
+        advance_to(encounter, "Tansy", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin", attack="Shortbow"),
+            rng,
+        )
+
+        attack = next(event for event in events if event.kind == "attack")
+        assert attack.data["advantage"] == "disadvantage"
+        assert attack.data["damage"] == 7
+        assert "advantage_bonus_damage" not in attack.data
+
     def test_a_healing_spell_restores_hit_points_and_spends_its_slot(self) -> None:
         cleric = fighter("Wren")
         cleric.spells = ("Cure Wounds",)
