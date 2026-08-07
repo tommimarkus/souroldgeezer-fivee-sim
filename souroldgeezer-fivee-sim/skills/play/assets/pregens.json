@@ -1,9 +1,9 @@
 {
   "about": [
     "Pregenerated parties for play or playtest, so a table with no characters to hand can still run an adventure.",
-    "Each member has a `sheet` — an engine combatant spec, accepted as-is by encounter.create and adventure.encounter — a `gear` list, and a persona the harness uses when briefing the seat. Only `sheet` reaches the engine: it refuses unknown spec keys, so `temperament`, `voice` and `gear` may never be folded into it.",
-    "The engine models no character building: there are no classes, species, backgrounds, feats, or levels here, and none of these numbers were derived from a class table. They are hand-picked to be ordinary for their tier, and the class-flavoured names are description only.",
-    "Five spells are executable in the bundled slice — Guiding Bolt, Shatter, Hold Person, Fireball, Cure Wounds — so the casters use those and nothing else. Cure Wounds adds the caster's spellcasting ability modifier, which is why a healer's sheet names `spellcasting_ability`; a sheet that omits it heals the flat dice. Positions are a loose marching order; the game master places the party for the scene.",
+    "Each member names a class, species, background, `gear` list, and persona for the harness to brief to the seat. The member also has a `sheet` — an engine combatant spec accepted as-is by encounter.create and adventure.encounter. Only `sheet` reaches the engine: it refuses unknown spec keys, so the identity, `temperament`, `voice`, and `gear` may never be folded into it.",
+    "The engine models no character building: class, species, and background are roleplaying identity, not rules inputs, and there are no feats or character levels in a sheet. Combat numbers are hand-picked to be ordinary for their tier rather than derived from a class table.",
+    "The bundled spell slice includes the combat spells used here. Ilma's Sacred Flame and Doran's Fire Bolt are at-will cantrips; the engine has no character level, so their executable records use the printed base damage at every tier and the level-5 sheets do not gain the printed damage upgrade. Cure Wounds adds the caster's spellcasting ability modifier, which is why a healer's sheet names `spellcasting_ability`; a sheet that omits it heals the flat dice. Positions are a loose marching order; the game master places the party for the scene.",
     "Healing is deliberately scarce: one Cure Wounds caster and a potion or two, because a party that cannot be worn down measures nothing about an adventuring day. Potions are a Bonus Action, so carrying one costs a character nothing until it is drunk.",
     "A ranged attack declares `normal_range` and `long_range` in feet, and those two keys are the only ones the engine reads — an attack that names neither is built with a maximum range of 0 feet and refused at every distance. The bow, crossbow and javelin also name the `ammunition` they spend, and the sheet stocks it: an empty quiver refuses the shot before it is rolled, and the crossbow's `loading` allows one shot per turn.",
     "`gear` is fiction, not inventory. The engine's `items` map holds only what it can resolve — a potion it defines, or ammunition an attack spends — so rope, torches and a healer's kit live outside the sheet, where the game master adjudicates them. A player who asks to use one gets a ruling, never a roll.",
@@ -15,6 +15,9 @@
       "members": [
         {
           "temperament": "bold",
+          "class": "Fighter",
+          "species": "Human",
+          "background": "Soldier",
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
           "gear": [
             "Backpack",
@@ -44,6 +47,9 @@
         },
         {
           "temperament": "cautious",
+          "class": "Rogue",
+          "species": "Halfling",
+          "background": "Criminal",
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
           "gear": [
             "Backpack",
@@ -73,6 +79,9 @@
         },
         {
           "temperament": "social",
+          "class": "Cleric",
+          "species": "Dwarf",
+          "background": "Acolyte",
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
           "gear": [
             "Backpack",
@@ -93,7 +102,7 @@
             "position": [0, 5],
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 13, "intelligence": 10, "wisdom": 16, "charisma": 14},
             "save_bonuses": {"wisdom": 5, "charisma": 4},
-            "spells": ["Guiding Bolt", "Cure Wounds"],
+            "spells": ["Sacred Flame", "Guiding Bolt", "Cure Wounds"],
             "spell_slots": {"1": 2},
             "spellcasting_ability": "wisdom",
             "spell_save_dc": 13,
@@ -105,6 +114,9 @@
         },
         {
           "temperament": "thorough",
+          "class": "Wizard",
+          "species": "Elf",
+          "background": "Sage",
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
           "gear": [
             "Backpack",
@@ -126,6 +138,10 @@
             "position": [5, 5],
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 12, "intelligence": 16, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
+            "spells": ["Fire Bolt"],
+            "spellcasting_ability": "intelligence",
+            "spell_save_dc": 13,
+            "spell_attack_bonus": 5,
             "attacks": [
               {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
               {"name": "Light Crossbow", "attack_bonus": 4, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "loading": true, "ammunition": "Bolt"}
@@ -140,6 +156,9 @@
       "members": [
         {
           "temperament": "bold",
+          "class": "Fighter",
+          "species": "Human",
+          "background": "Soldier",
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
           "gear": [
             "Backpack",
@@ -169,6 +188,9 @@
         },
         {
           "temperament": "cautious",
+          "class": "Rogue",
+          "species": "Halfling",
+          "background": "Criminal",
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
           "gear": [
             "Backpack",
@@ -198,6 +220,9 @@
         },
         {
           "temperament": "social",
+          "class": "Cleric",
+          "species": "Dwarf",
+          "background": "Acolyte",
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
           "gear": [
             "Backpack",
@@ -218,7 +243,7 @@
             "position": [0, 5],
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 16, "charisma": 14},
             "save_bonuses": {"wisdom": 5, "charisma": 4},
-            "spells": ["Guiding Bolt", "Hold Person", "Cure Wounds"],
+            "spells": ["Sacred Flame", "Guiding Bolt", "Hold Person", "Cure Wounds"],
             "spell_slots": {"1": 4, "2": 2},
             "spellcasting_ability": "wisdom",
             "spell_save_dc": 13,
@@ -230,6 +255,9 @@
         },
         {
           "temperament": "thorough",
+          "class": "Wizard",
+          "species": "Elf",
+          "background": "Sage",
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
           "gear": [
             "Backpack",
@@ -252,7 +280,7 @@
             "items": {"Potion of Healing": 1, "Bolt": 20},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 13, "intelligence": 17, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
-            "spells": ["Shatter"],
+            "spells": ["Fire Bolt", "Shatter"],
             "spellcasting_ability": "intelligence",
             "spell_slots": {"1": 4, "2": 2},
             "spell_save_dc": 14,
@@ -270,6 +298,9 @@
       "members": [
         {
           "temperament": "bold",
+          "class": "Fighter",
+          "species": "Human",
+          "background": "Soldier",
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
           "gear": [
             "Backpack",
@@ -300,6 +331,9 @@
         },
         {
           "temperament": "cautious",
+          "class": "Rogue",
+          "species": "Halfling",
+          "background": "Criminal",
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
           "gear": [
             "Backpack",
@@ -329,6 +363,9 @@
         },
         {
           "temperament": "social",
+          "class": "Cleric",
+          "species": "Dwarf",
+          "background": "Acolyte",
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
           "gear": [
             "Backpack",
@@ -350,7 +387,7 @@
             "items": {"Potion of Healing": 2},
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 18, "charisma": 14},
             "save_bonuses": {"wisdom": 7, "charisma": 5},
-            "spells": ["Guiding Bolt", "Hold Person", "Cure Wounds"],
+            "spells": ["Sacred Flame", "Guiding Bolt", "Hold Person", "Cure Wounds"],
             "spell_slots": {"1": 4, "2": 3, "3": 2},
             "spellcasting_ability": "wisdom",
             "spell_save_dc": 15,
@@ -362,6 +399,9 @@
         },
         {
           "temperament": "thorough",
+          "class": "Wizard",
+          "species": "Elf",
+          "background": "Sage",
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
           "gear": [
             "Backpack",
@@ -384,7 +424,7 @@
             "items": {"Potion of Healing": 1, "Bolt": 20},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 14, "intelligence": 18, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 7, "wisdom": 4},
-            "spells": ["Shatter", "Fireball"],
+            "spells": ["Fire Bolt", "Shatter", "Fireball"],
             "spellcasting_ability": "intelligence",
             "spell_slots": {"1": 4, "2": 3, "3": 2},
             "spell_save_dc": 15,

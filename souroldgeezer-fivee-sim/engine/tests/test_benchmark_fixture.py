@@ -144,8 +144,8 @@ def test_the_fights_that_skip_the_band_assertion_are_the_ones_named() -> None:
 @pytest.fixture(scope="module")
 def registry() -> ContentRegistry:
     # The bundled slice supplies Goblin Warrior, Goblin Boss, Skeleton, Wolf,
-    # Zombie, Ogre, and Guiding Bolt; the fixture pack supplies only what it
-    # lacks (the pregens, the two remaining monsters, the wizard's spells).
+    # Zombie, Ogre, Guiding Bolt, and Fire Bolt; the fixture pack supplies only
+    # what it lacks (the pregens, the two remaining monsters, Magic Missile).
     return load_packs([FIXTURE], include_environment=False)
 
 

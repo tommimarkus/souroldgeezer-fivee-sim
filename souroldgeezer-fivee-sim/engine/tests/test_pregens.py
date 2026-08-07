@@ -87,6 +87,42 @@ class TestEveryPartyRuns:
 
         assert named <= set(known), f"not executable: {sorted(named - set(known))}"
 
+    def test_cantrips_belong_to_the_spellcasting_pregens(self, party_name: str) -> None:
+        known = spellbook()
+        cantrips = {
+            str(sheet["name"]): {
+                spell
+                for spell in sheet.get("spells", ())
+                if spell in known and known[spell].level == 0
+            }
+            for sheet in _members(_parties()[party_name])
+        }
+
+        assert cantrips == {
+            "Thora": set(),
+            "Kesh": set(),
+            "Ilma": {"Sacred Flame"},
+            "Doran": {"Fire Bolt"},
+        }
+
+    def test_character_identities_stay_consistent_between_tiers(
+        self, party_name: str
+    ) -> None:
+        identities = {
+            str(member["sheet"]["name"]): {
+                key: member.get(key)
+                for key in ("class", "species", "background")
+            }
+            for member in _parties()[party_name]["members"]
+        }
+
+        assert identities == {
+            "Thora": {"class": "Fighter", "species": "Human", "background": "Soldier"},
+            "Kesh": {"class": "Rogue", "species": "Halfling", "background": "Criminal"},
+            "Ilma": {"class": "Cleric", "species": "Dwarf", "background": "Acolyte"},
+            "Doran": {"class": "Wizard", "species": "Elf", "background": "Sage"},
+        }
+
     def test_every_item_carried_is_one_the_bundled_content_defines(
         self, party_name: str
     ) -> None:

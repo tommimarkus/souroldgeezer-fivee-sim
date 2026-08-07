@@ -47,7 +47,7 @@ EXECUTABLE_SPELLS = frozenset(
     {
         "Cure Wounds", "Fireball", "Guiding Bolt", "Hold Person", "Shatter",
         "Healing Word", "Mass Healing Word", "Mass Cure Wounds", "Heal",
-        "Prayer of Healing", "Regenerate",
+        "Prayer of Healing", "Regenerate", "Fire Bolt", "Sacred Flame",
     }
 )
 EXECUTABLE_CREATURES = {
