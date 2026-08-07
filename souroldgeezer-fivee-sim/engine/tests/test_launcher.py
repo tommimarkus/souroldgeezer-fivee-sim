@@ -303,6 +303,12 @@ requires_host_python = pytest.mark.skipif(
 )
 
 
+def _host_env() -> dict[str, str]:
+    environment = dict(os.environ)
+    environment.pop("PYTHONPATH", None)
+    return environment
+
+
 @requires_host_python
 def test_the_host_interpreter_does_not_already_have_the_engine() -> None:
     """The guard for every subprocess test below.
@@ -316,6 +322,7 @@ def test_the_host_interpreter_does_not_already_have_the_engine() -> None:
         capture_output=True,
         text=True,
         timeout=60,
+        env=_host_env(),
     )
     assert probe.returncode != 0, (
         "the host interpreter already imports fivee_sim, so the subprocess tests "
@@ -331,6 +338,7 @@ def _run(*arguments: str, cwd: Path | None = None) -> subprocess.CompletedProces
         text=True,
         timeout=60,
         cwd=str(cwd) if cwd is not None else None,
+        env=_host_env(),
     )
 
 
@@ -358,7 +366,7 @@ def _isolated_env(tmp_path: Path) -> dict[str, str]:
     subprocess case that can reach an operation takes this and stops what it
     started.
     """
-    environment = dict(os.environ)
+    environment = _host_env()
     environment["FIVEE_SIM_MAPS"] = str(tmp_path / "maps")
     environment["FIVEE_SIM_REPLAYS"] = str(tmp_path / "replays")
     environment["FIVEE_SIM_ENCOUNTERS"] = str(tmp_path / "encounters")
@@ -398,7 +406,11 @@ def test_a_plugin_root_with_no_engine_refuses_on_stderr(tmp_path: Path) -> None:
     copy.write_bytes(LAUNCHER_PATH.read_bytes())
 
     result = subprocess.run(
-        [str(HOST_PYTHON), str(copy)], capture_output=True, text=True, timeout=60
+        [str(HOST_PYTHON), str(copy)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=_host_env(),
     )
 
     assert result.returncode == 1, result.stderr

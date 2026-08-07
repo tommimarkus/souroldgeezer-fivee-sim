@@ -645,6 +645,7 @@ def render_index(contract: Contract) -> str:
         "  --compact                     one-line JSON on stdout",
         "  --json-errors                 the raw problem object on stderr, not a line",
         "  --config PATH                 select a project config; otherwise discover it",
+        "  --run ID|legacy               select an adventure run or legacy read-only data",
         "",
         "Results are JSON on stdout; everything else is stderr. Exit codes: "
         f"{EXIT_USAGE} bad command, {EXIT_REFUSED} refused, {EXIT_FAULT} server fault, "

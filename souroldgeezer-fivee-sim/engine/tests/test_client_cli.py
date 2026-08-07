@@ -35,7 +35,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.client import cli, discovery
+from fivee_sim.client import cli, discovery, http
 from fivee_sim.configuration import load_config
 from fivee_sim.model.encounter import ActionKind
 from fivee_sim.web.http_server import SOURCE_ID_ENV
@@ -69,7 +69,11 @@ ENGINE_SRC = Path(__file__).resolve().parent.parent / "src"
 ROOT_VARIABLES = (
     "FIVEE_SIM_MAPS",
     "FIVEE_SIM_REPLAYS",
+    "FIVEE_SIM_SCENES",
     "FIVEE_SIM_ENCOUNTERS",
+    "FIVEE_SIM_ADVENTURES",
+    "FIVEE_SIM_BLOBS",
+    "FIVEE_SIM_RUNS",
     "CLAUDE_PROJECT_DIR",
 )
 
@@ -102,6 +106,7 @@ GOBLIN: dict[str, Any] = {
 #: strings and not about their contents.
 SOURCE_A = "a" * 64
 SOURCE_B = "b" * 64
+_SHARED_RUN_ID = ""
 
 
 def _isolate(patch: pytest.MonkeyPatch, root: Path) -> None:
@@ -207,17 +212,33 @@ def shared(module_root: Path) -> Iterator[discovery.Server]:
     lifecycle claims — that a command starts one, that a second command finds
     it — are pinned by :class:`TestLifecycle` against servers of their own.
     """
+    global _SHARED_RUN_ID
     with pytest.MonkeyPatch.context() as patch:
         _isolate(patch, module_root)
-        server = discovery.ensure_server()
+        control = discovery.ensure_server()
+        created = http.request(
+            control,
+            "POST",
+            "/api/v1/adventures",
+            body={"name": "CLI contract"},
+        )
+        _SHARED_RUN_ID = str(created.body["id"])
+        discovery.stop(discovery.state_path_for())
+        server = discovery.ensure_server(run_id=_SHARED_RUN_ID)
         try:
             yield server
         finally:
-            _teardown()
+            discovery.stop(discovery.state_path_for(run_id=_SHARED_RUN_ID))
+            _SHARED_RUN_ID = ""
 
 
 def run(*tokens: str) -> int:
-    return cli.main(list(tokens))
+    selected = (
+        ["--run", _SHARED_RUN_ID]
+        if _SHARED_RUN_ID and tokens and tokens[0].startswith("encounter.")
+        else []
+    )
+    return cli.main([*selected, *tokens])
 
 
 def out(capsys: pytest.CaptureFixture[str]) -> Any:
@@ -677,6 +698,13 @@ class TestSourceReload:
 
 class TestHelp:
     """The command list comes from the server, so it cannot go stale."""
+
+    def test_help_documents_the_global_run_selector(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run("help") == cli.EXIT_OK
+        rendered = capsys.readouterr().out
+        assert "--run ID|legacy" in rendered
 
     def test_help_lists_exactly_the_operations_the_server_serves(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]

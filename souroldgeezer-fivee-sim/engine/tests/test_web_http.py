@@ -32,7 +32,7 @@ from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
 from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
-from fivee_sim.paths import encounters_root
+from fivee_sim.paths import storage_layout
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import encounter_journal as journal_service
 from fivee_sim.service import encounters as encounters_service
@@ -40,6 +40,7 @@ from fivee_sim.service import maps as map_service
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service import views as views_service
 from fivee_sim.service.common import sha256_of
+from fivee_sim.service.sessions import EngineState
 from fivee_sim.web import openapi, routes
 from fivee_sim.web.http_server import (
     _HANDLERS,
@@ -246,17 +247,49 @@ class Editor:
         target.write_text(json.dumps(bundle), encoding="utf-8")
         return target
 
+    def control_request(
+        self, method: str, path: str, *, json_body: Any = None
+    ) -> Response:
+        """Make one request through this project's unselected control server."""
+        control = EngineServer(
+            maps_dir=self.server.storage.shared_map_paths[0],
+            replays_dir=self.server.storage.shared_replay_paths[0],
+            log=self.log,
+        )
+        thread = threading.Thread(
+            target=lambda: control.serve_forever(poll_interval=0.01), daemon=True
+        )
+        thread.start()
+        try:
+            return Editor(
+                server=control,
+                thread=thread,
+                maps_dir=control.maps_dir,
+                replays_dir=control.replays_dir,
+                log=self.log,
+            ).request(method, path, json_body=json_body)
+        finally:
+            control.shutdown()
+            control.close()
+            thread.join(timeout=5)
+
 
 @pytest.fixture()
 def editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Editor]:
     log = io.StringIO()
     runs = tmp_path / "runs"
-    (runs / "adv-test").mkdir(parents=True)
     monkeypatch.setenv("FIVEE_SIM_RUNS", str(runs))
+    maps_dir = tmp_path / "maps"
+    replays_dir = tmp_path / "replays"
+    control = EngineState(storage=storage_layout(
+        maps_dir=maps_dir,
+        replays_dir=replays_dir,
+    ))
+    run_id = str(adventure_service.create("The Sunless Citadel", state=control)["id"])
     server = EngineServer(
-        maps_dir=tmp_path / "maps",
-        replays_dir=tmp_path / "replays",
-        run_id="adv-test",
+        maps_dir=maps_dir,
+        replays_dir=replays_dir,
+        run_id=run_id,
         log=log,
     )
     # A short poll interval, because shutdown() blocks until the serve loop next
@@ -1595,17 +1628,12 @@ class TestDeclaredExamples:
         # A map for `map.edit` to edit, put there directly so the cases below
         # do not depend on each other's order.
         editor.put_map("saved-map", payload())
-        # An empty adventure for `adventure.encounter` to start its first fight
-        # in: the example carries a whole roster, which is exactly what a run
-        # with nothing to carry forward from needs.
-        adventure = editor.request(
-            "POST", "/api/v1/adventures", json_body={"name": "Declared Examples"}
-        )
-        assert adventure.status == 201, adventure.body
+        # The fixture's selected run is empty, so `adventure.encounter` can
+        # start its first fight from the example's complete roster.
         subjects = {
             "encounter.act": created.json()["encounter_id"],
             "encounter.correct": created.json()["encounter_id"],
-            "adventure.encounter": adventure.json()["id"],
+            "adventure.encounter": "adv-1",
             "map.put": "example-map",
             "map.edit": "saved-map",
             "scene.put": "example-scene",
@@ -2565,20 +2593,21 @@ class TestEncountersOverHttp:
         what leaves a claim behind is a failed blob write or a dead process.
         """
         kept = self.create(editor).json()["encounter_id"]
-        assert journal_service.claim("enc-9001") is True
+        assert journal_service.claim("enc-9001", editor.server.storage.encounters_dir) is True
 
         listed = editor.request("POST", "/api/v1/encounters/prune")
         assert listed.status == 200
         assert listed.json() == {"applied": False, "encounters": ["enc-9001"]}
-        assert (encounters_root() / "enc-9001").is_dir()
+        root = editor.server.storage.encounters_dir
+        assert (root / "enc-9001").is_dir()
 
         applied = editor.request(
             "POST", "/api/v1/encounters/prune", json_body={"apply": True}
         )
         assert applied.status == 200
         assert applied.json() == {"applied": True, "encounters": ["enc-9001"]}
-        assert not (encounters_root() / "enc-9001").exists()
-        assert (encounters_root() / kept).is_dir()
+        assert not (root / "enc-9001").exists()
+        assert (root / kept).is_dir()
 
     def test_a_prune_that_cannot_finish_is_a_refusal_rather_than_a_bug_report(
         self, editor: Editor
@@ -2592,9 +2621,10 @@ class TestEncountersOverHttp:
         stranded ids was told the engine had a defect. A lock that will not open
         is a refusal about a file, and it is answered as one.
         """
-        assert journal_service.claim("enc-9001") is True
-        guard = encounters_root() / "enc-9001" / "journal.jsonl.lock"
-        guard.symlink_to(encounters_root() / "elsewhere")
+        root = editor.server.storage.encounters_dir
+        assert journal_service.claim("enc-9001", root) is True
+        guard = root / "enc-9001" / "journal.jsonl.lock"
+        guard.symlink_to(root / "elsewhere")
 
         refused = editor.request(
             "POST", "/api/v1/encounters/prune", json_body={"apply": True}
@@ -3946,17 +3976,20 @@ class TestAdventuresOverHttp:
     """
 
     def start(self, editor: Editor, name: str = "The Sunless Citadel") -> Response:
-        return editor.request("POST", "/api/v1/adventures", json_body={"name": name})
+        del name
+        return editor.request("GET", "/api/v1/adventures/adv-1")
 
     def test_starting_one_answers_201_with_where_to_find_it(self, editor: Editor) -> None:
-        response = self.start(editor)
+        response = editor.control_request(
+            "POST", "/api/v1/adventures", json_body={"name": "A Second Run"}
+        )
 
         assert response.status == 201, response.body
         body = response.json()
-        assert body["id"] == "adv-1"
+        assert body["id"] == "adv-2"
         assert body["status"] == "active"
         assert body["members"] == []
-        assert response.headers["Location"] == "/api/v1/adventures/adv-1"
+        assert response.headers["Location"] == "/api/v1/adventures/adv-2"
         assert response.headers["ETag"] == f'"{body["version"]}"'
 
     def test_reading_one_carries_its_version_as_an_etag(self, editor: Editor) -> None:
@@ -3988,7 +4021,7 @@ class TestAdventuresOverHttp:
         assert set(body) == {"adventure", "chapter", "state"}
         assert body["adventure"] == {
             "id": "adv-1",
-            "name": "The Drowned Mill",
+            "name": "The Sunless Citadel",
             "status": "active",
             "chapter_count": 1,
         }
@@ -4115,7 +4148,7 @@ class TestAdventuresOverHttp:
         assert_problem(
             editor.request("GET", "/api/v1/adventures/adv-9"),
             404,
-            "no adventure 'adv-9'; adventures here: adv-1",
+            "no adventure 'adv-9' in run 'adv-1'",
         )
 
     def test_linking_an_encounter_without_if_match_is_428(self, editor: Editor) -> None:
@@ -4207,11 +4240,9 @@ class TestAdventuresOverHttp:
     def test_the_listing_shows_the_run_and_its_status_filter_is_the_encounters_one(
         self, editor: Editor
     ) -> None:
-        self.start(editor)
-        self.start(editor, "Tomb of Horrors")
         finalized = editor.request(
             "POST",
-            "/api/v1/adventures/adv-2/finalize",
+            "/api/v1/adventures/adv-1/finalize",
             json_body={},
             headers={"If-Match": "*"},
         )
@@ -4220,8 +4251,8 @@ class TestAdventuresOverHttp:
         active = editor.request("GET", "/api/v1/adventures").json()
         closed = editor.request("GET", "/api/v1/adventures?status=finalized").json()
 
-        assert [entry["adventure_id"] for entry in active["adventures"]] == ["adv-1"]
-        assert [entry["adventure_id"] for entry in closed["adventures"]] == ["adv-2"]
+        assert active["adventures"] == []
+        assert [entry["adventure_id"] for entry in closed["adventures"]] == ["adv-1"]
 
     def test_an_unknown_status_filter_names_the_three_that_work(
         self, editor: Editor
@@ -4726,10 +4757,6 @@ class TestReplayValidation:
         version check, so the answer would be a wall of diagnostics about fields
         an adventure replay has never had.
         """
-        started = editor.request(
-            "POST", "/api/v1/adventures", json_body={"name": "Composed Run"}
-        )
-        assert started.status == 201, started.body
         linked = editor.request(
             "POST",
             "/api/v1/adventures/adv-1/encounters",

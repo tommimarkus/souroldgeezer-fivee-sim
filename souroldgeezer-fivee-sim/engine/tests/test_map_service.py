@@ -240,7 +240,7 @@ class TestRunOverlay:
             overwrite=True,
         )
 
-        with pytest.raises(StaleWriteError):
+        with pytest.raises(StaleWriteError, match="advanced since you read"):
             map_ops.edit(
                 state,
                 "keep",

@@ -503,15 +503,22 @@ def _create_new(
                 ):
                     (run_root / name_part).mkdir()
                 path = run_root / "adventures" / f"{adventure_id}.json"
-                text = _render(document)
+                rendered = _render(document)
+
+                def render_run_document(value: str = rendered) -> str:
+                    return value
+
+                def current_run_version(target: Path = path) -> str:
+                    return _current_version(target)
+
                 durable.guarded_write(
                     path,
-                    lambda text=text: text,
+                    render_run_document,
                     expected=_ABSENT,
-                    current=lambda path=path: _current_version(path),
+                    current=current_run_version,
                     subject=f"the adventure {adventure_id!r}",
                 )
-                version = sha256_of(text)
+                version = sha256_of(rendered)
         except durable.StaleWriteError:
             continue
         except OSError as error:
