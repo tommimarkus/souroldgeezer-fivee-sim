@@ -438,7 +438,7 @@ var FiveeRenderer = (function () {
 
      One path, committed twice. The rim is not a second shape struck in the same
      ink — it is the fill's own outline, restated at an alpha that bounds the
-     wedge where a tenth of an opacity barely registers against the ground.
+     wedge where the low-opacity wash barely registers against the ground.
 
      Straight segments and absolute coordinates, for the reason set out above
      drawChevron: no ctx.arc, no rotate, no translate. */
@@ -450,17 +450,15 @@ var FiveeRenderer = (function () {
      is also few enough that the whole wedge stays eighteen points — a path a
      reader can count, and the vertex window the behaviour harness names. */
   var CONE_ARC_SEGMENTS = 8;
-  /* [light, dark]. A tenth is about as faint as a wash can be drawn over the
-     map's own colours and still be seen; the dark theme takes a little more,
-     because its facing ink is the lighter of the two and lies on darker
-     ground. Either way this stays a tint the map reads through, not a fill that
-     hides the terrain a fight is being decided on. */
-  var CONE_FILL_ALPHA = [0.10, 0.14];
-  /* The rim, at better than four times the wash. Firm enough to bound the
-     wedge at a glance — without it a cone this faint reads as a smudge rather
-     than as a shape — and short of the opaque line that would look like a wall
-     drawn across the floor. */
-  var CONE_EDGE_ALPHA = 0.45;
+  /* [light, dark]. A light wash keeps overlapping facings subordinate to the
+     map's own colours; the dark theme takes a little more because its facing
+     ink is the lighter of the two and lies on darker ground. Either way this
+     stays an orientation hint, not a fill that hides the terrain a fight is
+     being decided on. */
+  var CONE_FILL_ALPHA = [0.05, 0.07];
+  /* The rim is firm enough to keep the faint wash reading as a shape, while
+     remaining well behind walls, fixtures, and the token furniture. */
+  var CONE_EDGE_ALPHA = 0.18;
 
   function drawSightCone(ctx, cx, cy, inner, reach, facing, ink, dark) {
     var unit = facingUnit(facing);
@@ -486,7 +484,7 @@ var FiveeRenderer = (function () {
     ctx.fill();
     /* The same path, not a new one: no beginPath between the two commits. */
     ctx.strokeStyle = ink;
-    /* `reach` is six squares, so this is 0.06 of a square — the width rule the
+    /* `reach` is three squares, so this is 0.03 of a square — the width rule the
        chevron carries, restated in the one length this function is handed. */
     ctx.lineWidth = Math.max(1, reach * 0.01);
     ctx.globalAlpha = CONE_EDGE_ALPHA;
@@ -845,16 +843,15 @@ var FiveeRenderer = (function () {
            further out again, and the wash begins outside it at every scale and
            every fraction of health.
 
-           Six squares of reach, because that is a distance a reader measures in
-           squares rather than in pixels: far enough to say where the creature
-           is looking across a room, short enough that a crowded map does not
-           vanish under the wedges. It is not a sight range and does not claim
-           to be one — see drawSightCone. */
+           Three squares of reach: enough to read the bearing beside its token,
+           short enough that several creatures do not lay a mesh across the
+           room. It is not a sight range and does not claim to be one — see
+           drawSightCone. */
         var ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
         drawSightCone(
           ctx, (seer.at[0] - view.x) * s + s / 2,
           (seer.at[1] - view.y) * s + s / 2,
-          ringEdge + Math.max(2, s * 0.06), s * 6,
+          ringEdge + Math.max(2, s * 0.06), s * 3,
           seer.facing, facingInk(dark), dark
         );
       }

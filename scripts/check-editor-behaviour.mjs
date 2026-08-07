@@ -1141,7 +1141,7 @@ await suite("renderer.js: a token's sight cone", "the renderer sandbox", async (
    * edge is half a width further out. "Outside the ring" is measured against
    * that, not against the token's own radius. */
   const ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
-  const reach = s * 6;   /* how far the cone is drawn from the token's centre */
+  const reach = s * 3;   /* how far the cone is drawn from the token's centre */
   const away = (point) => Math.sqrt(
     (point[1] - cx) * (point[1] - cx) + (point[2] - cy) * (point[2] - cy));
   /* Each token carries its own `at`, so a frame can hold two of them, and the
@@ -1199,10 +1199,10 @@ await suite("renderer.js: a token's sight cone", "the renderer sandbox", async (
     north.length === 1 && verticesOf(north[0]).every((op) => away(op) <= reach + 0.01),
     show([north.map((cone) => verticesOf(cone).map(away)), reach]));
   /* And bounded below too, for the same reason the clearance is: the upper
-   * bound alone is met by any cone shorter than it claims, and a two-square
-   * reach passed every case in this suite. The outer arc is struck at the reach
-   * exactly, so this is an equality and not a range, and the six squares it
-   * pins are the distance drawSightCone's own comment argues for. Retuning that
+   * bound alone is met by any cone shorter than it claims. The outer arc is
+   * struck at the reach exactly, so this is an equality and not a range, and
+   * the three squares it pins are the distance render()'s own comment argues
+   * for. Retuning that
    * distance turns this red on purpose — recalibrate deliberately, the way the
    * fight constants in scripts/check-api-smoke.py are. */
   check("and it is drawn out to that reach rather than a stub of it",
@@ -1297,6 +1297,14 @@ await suite("renderer.js: a token's sight cone", "the renderer sandbox", async (
   check("the cone is painted as a wash rather than a solid",
     cone.length === 1 && cone[0].alpha > 0 && cone[0].alpha < 0.5,
     show(cone.map((path) => path.alpha)));
+  /* A replay can carry a facing creature on nearly every occupied square, so
+   * merely being translucent is not enough: overlapping wedges at the old
+   * tenth-opacity calibration dominated the terrain they were meant to leave
+   * readable. This is a visual golden, like the three-square reach above. A
+   * deliberate retune changes the bound; letting it drift upward does not. */
+  check("and the wash stays subordinate to the map beneath it",
+    cone.length === 1 && cone[0].alpha <= 0.05,
+    show(cone.map((path) => path.alpha)));
   check("and it hands the context back: the token drawn over it is at full alpha",
     discs.length === 1 && discs.every((disc) => disc.alpha === 1),
     show(discs.map((disc) => disc.alpha)));
@@ -1321,6 +1329,9 @@ await suite("renderer.js: a token's sight cone", "the renderer sandbox", async (
     edge.length === 1 && cone.length === 1
       && edge[0].alpha >= cone[0].alpha * 2 && edge[0].alpha < 1,
     show([cone.map((path) => path.alpha), edge.map((path) => path.alpha)]));
+  check("and that edge remains an aid rather than a foreground boundary",
+    edge.length === 1 && edge[0].alpha <= 0.18,
+    show(edge.map((path) => path.alpha)));
 });
 
 await suite("renderer.js: the document's compass", "the renderer sandbox", async () => {
