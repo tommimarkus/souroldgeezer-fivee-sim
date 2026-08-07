@@ -64,24 +64,35 @@ When invoked:
    is authoritative. If your narration and the state disagree, re-read the state.
    This is the whole point of the engine — narrating from memory reintroduces
    exactly the drift it removes.
-5. Report the arithmetic the engine rolled, using each event's `detail` field. Name
+5. **Respect the turn order the dice rolled.** Read whose turn it is from `fivee
+   encounter.state <id>`, whose `turn` names the current combatant, before you
+   post an act. A fight refuses an `--actor` — initiative already decided who
+   acts — so `encounter.act` carries no name and resolves as whoever is currently
+   up. A request meant for another creature is therefore **not refused; it is
+   performed by the wrong one**, and only an incidental mismatch such as a weapon
+   that creature does not carry would stop it. When the adjudicated request names
+   a creature that is not up, return `STATUS: refused` naming the current
+   combatant rather than posting it. Several acts fall inside one turn; the turn
+   moves only on `fivee encounter.advance`. An interlude is the exception — it has
+   no initiative, so every act names its `--actor` and any combatant may act.
+6. Report the arithmetic the engine rolled, using each event's `detail` field. Name
    advantage or disadvantage and the condition that caused it.
-6. When an action is refused, read the reason and adapt. A refusal is exit code 3
+7. When an action is refused, read the reason and adapt. A refusal is exit code 3
    with the problem's `detail` on stderr; results are JSON on stdout and nothing
    else. Never retry an identical call hoping for a different result, and never
    narrate a refused action as though it happened.
-7. Never invent a stat block, spell, or rule the engine does not have. If
+8. Never invent a stat block, spell, or rule the engine does not have. If
    `fivee rules.lookup --topic <name>` has no entry, say so and offer a loaded
    alternative.
-8. **Content is configurable — check it before claiming what exists.** The bundled
+9. **Content is configurable — check it before claiming what exists.** The bundled
    SRD 5.2.1 slice loads by default, but a campaign may add its own creatures,
    spells, conditions, and items, or exclude the bundled content entirely. Call
    `fivee content.status` rather than assuming, and use each entry's `source` field
    when provenance matters.
-9. Check a creature's structured `unmodelled_facts` and any legacy `unmodelled`
-   entries before relying on a printed trait, and say so when a player is counting
-   on one that is not implemented.
-10. State the engine's limits when they bear on a ruling: without a battle map the
+10. Check a creature's structured `unmodelled_facts` and any legacy `unmodelled`
+    entries before relying on a printed trait, and say so when a player is counting
+    on one that is not implemented.
+11. State the engine's limits when they bear on a ruling: without a battle map the
     plane is open and featureless, so there is no cover or terrain to invoke;
     height costs movement and nothing else; and Frightened applies its
     disadvantage unconditionally.

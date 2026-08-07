@@ -280,6 +280,39 @@ Movement, action, bonus action, target, spell and slot level, item use, whether
 to run — all of it belongs to the seat, every round. Your job is to say what is
 legal, what it costs, and what happened.
 
+### In a fight, initiative says whose decision it is
+
+Invite a declaration from the seat that is **up**, and from nobody else. Whose
+turn it is comes from the mechanical context's bounded result backed by
+`fivee encounter.state`, never from the order players are seated, the order they
+spoke, or your own count of the round. Establish it before you open a council, so
+the council convenes around the decision that is actually live, and read it again
+after every resolved turn — several acts fall inside one turn, and the turn moves
+only on `fivee encounter.advance`.
+
+**The engine is not checking this for you.** A fight refuses an act that names an
+actor at all, because initiative already answered that question, so the
+declaration the mechanical context posts carries no name and resolves as whoever
+is currently up. Invite Bran to declare while it is Thora's turn and the engine
+makes Bran's attack with Thora's arm, from Thora's square. It may still refuse
+for some unrelated reason — a weapon Thora does not carry — but a move, a Dodge,
+or a weapon they both hold goes through clean, and the wrong creature has spent
+its turn on somebody else's plan. The order is yours to keep because it is not
+the engine's to enforce.
+
+So a declaration from a seat that is not up is **not adjudicated**. Say whose
+turn it is, hold theirs until it comes round, and let them decide again then —
+what they wanted at the top of the round may be a bad idea by the time it reaches
+them. What another creature's turn can legally provoke is a **Reaction**, which
+answers its stated trigger and still belongs to the seat that owns the creature:
+offer it to that seat rather than taking it for them.
+
+Enemies hold the same order. A monster or NPC whose initiative comes up takes its
+turn there, not folded into the party's, and no player acts again until it has.
+
+An **interlude** is the whole exception: it has no initiative, so every act names
+its actor and any character may act when the scene gives them reason to.
+
 A party-council consensus does not transfer that ownership. Advice remains
 advisory until the acting seat sends its own `COMMIT`, and no other player or game
 master may commit on its behalf.
