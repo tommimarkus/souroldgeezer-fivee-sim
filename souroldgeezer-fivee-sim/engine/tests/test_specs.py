@@ -22,7 +22,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.content import ContentRegistry, builtin
+from fivee_sim.content import ContentRegistry, builtin, make_creature
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.map_document import (
     DOOR_ORIENTATIONS,
@@ -32,8 +32,10 @@ from fivee_sim.map_document import (
     parse_document,
 )
 from fivee_sim.map_types import TerrainPair
-from fivee_sim.service import specs
+from fivee_sim.service import adventures, specs
+from fivee_sim.service.adventures import CARRIED_STATE_KEYS
 from fivee_sim.service.errors import RequestError
+from fivee_sim.service.replay import normalized_combatant_payload
 from fivee_sim.service.specs import ATTACK_SPEC_KEYS, creature_from_spec
 
 from . import api
@@ -490,6 +492,72 @@ def _combatant(created: dict[str, Any], name: str) -> dict[str, Any]:
     return dict(rows[name])
 
 
+def _live(encounter_id: str, name: str) -> dict[str, Any]:
+    """One combatant's slice of a fight's *current* state."""
+    state = api.encounter_state(encounter_id)
+    return next(row for row in state["combatants"] if row["name"] == name)
+
+
+def _live_shape_of_a_fresh_stat_block(registry: ContentRegistry) -> dict[str, Any]:
+    """What the same stat block reports having carried nothing out of anywhere.
+
+    The baseline the fixture guard measures against, taken from a real fight
+    rather than written down, so "default" means whatever the engine currently
+    reports rather than whatever this file last believed.
+    """
+    created = api.encounter_create(
+        [dict(HERO), {"monster": "Goblin Warrior", "label": "Goblin A",
+                      "team": "monsters"}],
+        seed=7,
+    )
+    return _combatant(created, "Goblin A")
+
+
+#: What ``_fight_leaving_rich_carried_state`` moves off its defaults, so the
+#: equivalence below is graded on state that is actually *there*. Named rather
+#: than assumed: with every carried key at its default both sides of that
+#: comparison agree for free, and the case would pass against a branch that
+#: reads none of them.
+_EXERCISED_BY_THE_FIXTURE = frozenset({
+    "hp", "temp_hp", "conditions", "condition_levels", "death_saves",
+    "items", "spell_slots",
+})
+
+
+def _fight_leaving_rich_carried_state(registry: ContentRegistry) -> str:
+    """A fight whose goblin ends holding something in every key that matters.
+
+    Set up through the **described** spec — the producer that already accepted
+    all thirteen — so the state being graded never entered through the branch
+    being graded. Building the fixture with the new lookup keys would make the
+    equivalence circular: a key the branch silently dropped would simply never
+    reach the fight, and both sides would then agree on its default.
+
+    The stat block comes from ``normalized_combatant_payload`` rather than being
+    typed out, so this is the catalog's Goblin Warrior with carried state laid
+    over it and not a hand-written creature that merely resembles one.
+    """
+    stat_block = normalized_combatant_payload(
+        make_creature(
+            "Goblin Warrior", registry=registry, label="Goblin A", team="monsters"
+        )
+    )
+    created = api.encounter_create(
+        [dict(HERO), {
+            **stat_block,
+            "hp": 4,
+            "temp_hp": 5,
+            "conditions": ["poisoned"],
+            "condition_levels": {"poisoned": 2},
+            "death_saves": {"successes": 1, "failures": 2},
+            "items": {"Potion of Healing": 1},
+            "spell_slots": {1: 1},
+        }],
+        seed=7,
+    )
+    return str(created["encounter_id"])
+
+
 class TestCarriedOverCombatantState:
     """The state a fight ends in, written back into the spec that starts the next.
 
@@ -706,12 +774,154 @@ class TestTheLookupSpecStaysNarrow:
         ):
             creature_from_spec({"monster": "Goblin Warrior", "hp": sentinel}, registry)
 
-    def test_a_looked_up_combatant_still_refuses_a_carried_flag(
+    def test_a_looked_up_combatant_still_refuses_a_stat_block_field(
         self, registry: ContentRegistry
     ) -> None:
-        # The same guard aimed at the four names this change added.
-        with pytest.raises(RequestError, match="unknown combatant key 'stable'"):
-            creature_from_spec({"monster": "Goblin Warrior", "stable": True}, registry)
+        # The half of the described set that stays out, and the reason the two
+        # sets still exist. A stat block's own numbers belong to the catalog
+        # record: a lookup spec that could override ``ac`` would hand back a
+        # creature still claiming the record's provenance while no longer being
+        # the record's creature.
+        with pytest.raises(RequestError, match="unknown combatant key 'ac'"):
+            creature_from_spec({"monster": "Goblin Warrior", "ac": 22}, registry)
+
+
+class TestALookupSpecCanSayHowTheLastFightLeftThem:
+    """The thirteen carried keys, on the shape that names a stat block.
+
+    ``CARRIED_STATE_KEYS`` is what a *fight* changes about a combatant, and
+    ``carry_forward`` already writes every one of them into the spec that starts
+    the next chapter — as a **described** payload, because it is built from
+    ``normalized_combatant_payload``. So the engine could always hold a
+    looked-up creature in these states; a caller writing a spec by hand simply
+    had no way to ask for one.
+
+    That makes ``carry_forward`` the grader rather than a list written here: a
+    lookup spec stating a creature's carried state must build the same
+    ``Creature`` as the described payload the adventure path produces for it.
+    An equivalence between two producers, not a restatement of either.
+    """
+
+    def test_every_carried_key_is_sayable_on_a_lookup_spec(self) -> None:
+        # The structural half, derived from both declarations. A key the fight
+        # can change but the lookup shape cannot state is a creature you can
+        # carry across a chapter boundary and not place by hand.
+        assert CARRIED_STATE_KEYS <= specs.LOOKUP_SPEC_KEYS
+
+    def test_a_lookup_spec_builds_what_carry_forward_would_have(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The behavioural half, and the one that proves the keys are *read*.
+        # Both sides come out of a real fight: nothing here writes a state
+        # payload by hand, so the case cannot pass by agreeing with a fixture.
+        encounter_id = _fight_leaving_rich_carried_state(registry)
+        session = api.STATE.sessions[encounter_id]
+        normalized = next(
+            entry for entry in session.normalized_combatants
+            if entry["name"] == "Goblin A"
+        )
+        live = _live(encounter_id, "Goblin A")
+
+        # The guard against a comparison of two default creatures. A fixture
+        # that stopped exercising a key would otherwise quietly narrow this case
+        # to the keys it still moved, and nothing would say so.
+        pristine = _live_shape_of_a_fresh_stat_block(registry)
+        assert {
+            key for key in _EXERCISED_BY_THE_FIXTURE if live[key] != pristine[key]
+        } == _EXERCISED_BY_THE_FIXTURE
+
+        # The bundled slice both sides: no test here configures content, so this
+        # is the registry the fight above was actually built from.
+        from_adventure = creature_from_spec(
+            adventures.carry_forward(normalized, live), registry
+        )
+        from_lookup = creature_from_spec(
+            {
+                "creature": "Goblin Warrior", "label": "Goblin A", "team": "monsters",
+                **{key: live[key] for key in CARRIED_STATE_KEYS if key in live},
+            },
+            registry,
+        )
+
+        assert from_lookup == from_adventure
+
+    def test_each_carried_key_reaches_the_creature(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The equivalence above is strongest when the state is *interesting*, so
+        # this states one deliberately and reads each value back off the built
+        # creature. A key merely accepted would leave its default standing here.
+        built = creature_from_spec(
+            {
+                "creature": "Goblin Warrior", "team": "monsters", "hp": 0,
+                "temp_hp": 4,
+                "conditions": ["poisoned"], "condition_levels": {"poisoned": 2},
+                "death_saves": {"successes": 2, "failures": 1},
+                "stable": True,
+                "items": {"Potion of Healing": 1},
+                "spell_slots": {1: 2},
+            },
+            registry,
+        )
+
+        assert built.temp_hp == 4
+        assert built.conditions == {"poisoned": 2}
+        assert built.death_save_successes == 2 and built.death_save_failures == 1
+        assert built.stable is True
+        assert built.items == {"Potion of Healing": 1}
+        assert built.spell_slots == {1: 2}
+        # Stated together because ``dying`` is derived from three of them, and
+        # the derivation is what a rules reader actually cares about: stabilised
+        # at 0 hit points is exactly *not* bleeding out.
+        assert built.conscious is False and built.dying is False
+
+    def test_dead_and_surrendered_reach_the_creature(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The two flags the case above cannot hold at once with ``stable``.
+        built = creature_from_spec(
+            {"creature": "Goblin Warrior", "team": "monsters", "hp": 0,
+             "dead": True, "surrendered": True},
+            registry,
+        )
+
+        assert built.dead is True and built.surrendered is True
+
+
+class TestTheStatBlocksOwnStateIsOverlaidNotMerged:
+    """Three of the carried keys can already be printed on a record.
+
+    ``conditions``, ``items`` and ``spell_slots`` are read by
+    ``Creature.from_record``, so a looked-up creature can arrive holding them —
+    which makes *absent* and *empty* two different requests. ``carry_forward``
+    settles which way it goes: it overlays the state's value wholly, so an empty
+    dict there means the fight emptied it. Stating the key replaces; omitting it
+    leaves the record's.
+    """
+
+    def test_an_omitted_key_leaves_the_stat_blocks_own(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The Ogre is the bundled creature that prints ``items``.
+        printed = dict(registry.creatures["Ogre"]["items"])
+        assert printed, "fixture assumes the Ogre still carries something"
+
+        built = creature_from_spec({"creature": "Ogre", "team": "monsters"}, registry)
+
+        assert built.items == printed
+
+    def test_an_empty_value_clears_the_stat_blocks_own(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The case an "only overlay truthy values" shortcut gets wrong, and the
+        # reason ``carry_forward`` overlays by presence rather than by truth: an
+        # ogre that threw all three javelins has none, and that is a fact about
+        # the fight rather than a missing field.
+        built = creature_from_spec(
+            {"creature": "Ogre", "team": "monsters", "items": {}}, registry
+        )
+
+        assert built.items == {}
 
 
 class TestAWoundedLookupReachesTheWire:

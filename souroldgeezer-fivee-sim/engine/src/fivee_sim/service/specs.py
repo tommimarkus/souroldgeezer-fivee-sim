@@ -205,13 +205,28 @@ def attack_from_spec(spec: dict[str, Any]) -> AttackOption:
 #: silently ignore the AC, which is the very failure this guard exists to stop.
 #:
 #: So the rule this set is held to is not "it never grows" but **a name here is
-#: a name the branch reads**. ``hp`` is the worked example: the branch applies
-#: it after :func:`~fivee_sim.content.make_creature` returns, exactly as it
-#: applies ``facing``, and a key added here without a line down there is the
-#: silent drop above by another route.
+#: a name the branch reads**. Every one is applied after
+#: :func:`~fivee_sim.content.make_creature` returns, and a key added here
+#: without a line down there is the silent drop above by another route.
+#:
+#: What it holds is the stat block's *placement and state* — where this instance
+#: stands, which side it is on, and how the last fight left it — never the
+#: record's own numbers. That line is load-bearing rather than tidy: a looked-up
+#: creature carries the record's provenance, so a spec that could override ``ac``
+#: would hand back something still claiming to be SRD content while no longer
+#: being the SRD creature, and an ``attacks`` override would need a
+#: merge-or-replace rule that "the catalog's creature, placed" does not.
+#:
+#: The state half is exactly :data:`~fivee_sim.service.adventures.CARRIED_STATE_KEYS`
+#: — what a fight changes — and it is a *subset* by test rather than by
+#: coincidence. ``carry_forward`` already writes all thirteen into the spec that
+#: starts an adventure's next chapter, so the engine could always hold a
+#: looked-up creature in these states; until they were named here a caller
+#: writing a spec by hand simply could not ask for one.
 LOOKUP_SPEC_KEYS = frozenset({
     "creature", "monster", "label", "team", "position", "level", "arrival_round",
-    "facing", "hp",
+    "facing", "hp", "temp_hp", "conditions", "condition_levels", "death_saves",
+    "stable", "dead", "surrendered", "items", "spell_slots",
 })
 DESCRIBED_SPEC_KEYS = frozenset({
     "name", "team", "ac", "max_hp", "hp", "temp_hp", "speed", "climb_speed", "swim_speed",
@@ -443,6 +458,45 @@ def _hp_from_spec(spec: Mapping[str, Any], name: str, max_hp: int) -> int:
     return stated
 
 
+def _apply_carried_state(spec: Mapping[str, Any], creature: Creature) -> None:
+    """Overlay how the last fight left this creature onto a looked-up one.
+
+    Every value goes through the helper the description branch already uses, so
+    a malformed ``death_saves`` or a ``stable`` of ``"false"`` is refused in the
+    same words on either shape rather than by a second parser drifting from the
+    first.
+
+    **By presence, never by truth**, which is the rule
+    :func:`~fivee_sim.service.adventures.carry_forward` overlays a state payload
+    by and the one that matters here: ``conditions``, ``items`` and
+    ``spell_slots`` can be *printed on the record*, so an empty dict is a
+    caller saying the fight emptied it and an absent key is a caller saying
+    nothing at all. Reading emptiness as absence would leave an ogre still
+    holding the three javelins it threw.
+
+    ``conditions`` and ``condition_levels`` are read as one pair, because a
+    level names a condition in the same spec: stating either replaces the
+    record's set wholly. Mixing the two sources — a spec level for a condition
+    only the stat block printed — would need a rule about whose conditions win,
+    and the pair has no such question.
+    """
+    if "temp_hp" in spec:
+        creature.temp_hp = int(spec["temp_hp"])
+    if "conditions" in spec or "condition_levels" in spec:
+        creature.conditions = _conditions_from_spec(dict(spec))
+    if "death_saves" in spec:
+        creature.death_save_successes, creature.death_save_failures = parse_death_saves(
+            spec["death_saves"]
+        )
+    for key in ("stable", "dead", "surrendered"):
+        if key in spec:
+            setattr(creature, key, parse_carried_flag(spec[key], key))
+    if "items" in spec:
+        creature.items = {str(k): int(v) for k, v in spec["items"].items()}
+    if "spell_slots" in spec:
+        creature.spell_slots = {int(k): int(v) for k, v in spec["spell_slots"].items()}
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -479,6 +533,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
         stated_hp = _hp_from_spec(spec, looked_up.name, looked_up.max_hp)
         if stated_hp != _HP_UNSET:
             looked_up.hp = stated_hp
+        _apply_carried_state(spec, looked_up)
         return looked_up
     bonus_actions = frozenset(str(value) for value in spec.get("bonus_actions", []))
     unsupported_bonus_actions = sorted(bonus_actions - {"dash", "disengage"})
