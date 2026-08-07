@@ -1655,6 +1655,7 @@ def test_the_replayed_set_is_the_one_recovery_actually_replays() -> None:
         "encounter_act",
         "encounter_condition",
         "encounter_advance",
+        "encounter_correct",
     }
 
 
@@ -1900,6 +1901,7 @@ def test_every_journalled_operation_obeys_the_rule_it_is_classified_by(
     api.save(2, 11, encounter_id=encounter_id, request_id="the-save")
     api.encounter_note(encounter_id, "a line somebody spoke")
     api.encounter_condition(encounter_id, "Goblin", "prone")
+    api.encounter_correct(encounter_id, {"Goblin": {"ac": 14}}, "the stat block was mistyped")
     api.encounter_act(encounter_id, "dodge")
     api.encounter_advance(encounter_id, request_id="the-turn")
 

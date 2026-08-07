@@ -15,14 +15,14 @@ afterwards — and ``map_source`` reports that divergence rather than hiding it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Mapping
 from copy import deepcopy
 from pathlib import Path
 from random import Random
 from typing import Any
 
 from .. import __version__
-from ..kernel.conditions import UnknownCondition
+from ..kernel.conditions import UnknownCondition, effect_of
 from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
@@ -30,6 +30,7 @@ from ..model.encounter import (
     EVENT_LISTS,
     Action,
     ActionKind,
+    Encounter,
     EncounterError,
     EncounterMode,
 )
@@ -44,6 +45,8 @@ __all__ = [
     "act",
     "advance",
     "brief_for",
+    "condition",
+    "correct",
     "create",
     "event_log",
     "finalize",
@@ -565,6 +568,186 @@ def condition(
             "applied": applied,
             "levels": levels,
         },
+        execute=execute,
+    )
+
+
+#: How long a correction's ``reason`` may be. The rule for any caller, mirrored
+#: in the route schema for :func:`MAX_NOTE_TEXT`'s own reason: the dispatcher
+#: journals an attempt's arguments before this function runs, so only the
+#: schema copy can refuse an oversized reason before it reaches the disk.
+#: ``TestDeclaredBounds`` pins the two equal.
+MAX_REASON_TEXT = 4000
+
+
+def _checked_correction(
+    encounter: Encounter, target: str, changes: Mapping[str, Any]
+) -> dict[str, Any]:
+    """One combatant's changes, typed and bounded — never applied here.
+
+    :meth:`Encounter.correct` writes what it is given and refuses only the
+    structural mistakes: an uncorrectable key and initiative's own guard. Every
+    other check a caller-typed payload needs is this function's job, so a
+    caller who mistyped a number is refused before anything durable happens
+    rather than out of a bare ``ValueError`` a journal replay would raise past.
+
+    Reused parsers — :func:`~fivee_sim.service.specs.parse_point`,
+    ``parse_facing``, ``parse_death_saves`` and ``parse_carried_flag`` — keep
+    the sentence a caller reads identical to the one ``encounter.create``
+    already gives for the same mistake.
+    """
+    # The structural refusals belong to the model and are asked for here only
+    # so they arrive *before* the write: this request is applied whole or not
+    # at all, and discovering an uncorrectable field while writing the second
+    # combatant would leave the first one corrected. Restating the sentences
+    # would be a second owner for them, silently driftable in both directions.
+    try:
+        encounter.check_correctable(changes)
+    except EncounterError as error:
+        raise RequestError(str(error)) from error
+    creature = encounter.creatures[target]
+    checked: dict[str, Any] = dict(changes)
+    for numeric_key in ("hp", "max_hp", "temp_hp", "ac", "level", "initiative"):
+        if numeric_key in changes:
+            try:
+                checked[numeric_key] = int(changes[numeric_key])
+            except (TypeError, ValueError) as error:
+                raise RequestError(
+                    f"{numeric_key} must be a whole number, got {changes[numeric_key]!r}"
+                ) from error
+    if "max_hp" in checked and checked["max_hp"] < 1:
+        raise RequestError(f"max_hp must be at least 1, got {checked['max_hp']}")
+    if "hp" in checked:
+        ceiling = checked.get("max_hp", creature.max_hp)
+        if checked["hp"] > ceiling:
+            raise RequestError(
+                f"combatant {target}: hp {checked['hp']} cannot exceed max_hp {ceiling}"
+            )
+    if "position" in changes:
+        checked["position"] = specs.parse_point(changes["position"], "position")
+    if "facing" in changes:
+        checked["facing"] = specs.parse_facing(changes["facing"])
+    if "death_saves" in changes:
+        successes, failures = specs.parse_death_saves(changes["death_saves"])
+        checked["death_saves"] = {"successes": successes, "failures": failures}
+    for flag_key in ("stable", "dead", "surrendered", "present"):
+        if flag_key in changes:
+            checked[flag_key] = specs.parse_carried_flag(changes[flag_key], flag_key)
+    if "spell_slots" in changes and not isinstance(changes["spell_slots"], Mapping):
+        raise RequestError(
+            f"spell_slots must be an object of level to count, got {changes['spell_slots']!r}"
+        )
+    if "items" in changes and not isinstance(changes["items"], Mapping):
+        raise RequestError(
+            f"items must be an object of item name to count, got {changes['items']!r}"
+        )
+    if "condition_levels" in changes:
+        if not isinstance(changes["condition_levels"], Mapping):
+            raise RequestError(
+                f"condition_levels must be an object of condition name to level, "
+                f"got {changes['condition_levels']!r}"
+            )
+        parsed_levels: dict[str, int] = {}
+        for name, level in changes["condition_levels"].items():
+            try:
+                parsed_level = int(level)
+            except (TypeError, ValueError) as error:
+                raise RequestError(
+                    f"condition_levels[{str(name)!r}] must be a whole number, got {level!r}"
+                ) from error
+            # Checked here rather than left to ``Creature.add_condition``'s own
+            # floor, for the same reason ``condition`` above checks ``levels``.
+            if parsed_level < 1:
+                raise RequestError(
+                    f"condition_levels[{str(name)!r}] is {parsed_level}, and a level "
+                    f"must be at least 1 — a numeric condition effect scales by the "
+                    f"level, so one below it inverts the effect rather than "
+                    f"weakening it"
+                )
+            parsed_levels[str(name)] = parsed_level
+        checked["condition_levels"] = parsed_levels
+    if "conditions" in changes or "condition_levels" in changes:
+        named = {str(name) for name in changes.get("conditions", [])}
+        named |= set(checked.get("condition_levels", {}))
+        for name in sorted(named):
+            try:
+                effect_of(name, creature.condition_effects)
+            except UnknownCondition as error:
+                raise RequestError(str(error)) from error
+    return checked
+
+
+def correct(
+    state: EngineState,
+    encounter_id: str,
+    state_changes: Mapping[str, Mapping[str, Any]],
+    reason: str,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    """Overwrite what the simulation got wrong, with the table's own reason attached.
+
+    ``state`` is keyed by combatant name, exactly as ``adventure.encounter``'s
+    own ``recovery`` overlay is — the two are siblings, not strangers, and
+    :func:`~fivee_sim.service.adventures._checked_recovery` is the sibling's own
+    refusal in the same shape.
+
+    **Validated whole, then applied whole.** Every combatant named in the
+    request is checked before any of them is written, the same discipline
+    ``_checked_recovery`` uses — so a refusal for the second combatant leaves
+    the first untouched rather than half a correction landing.
+
+    ``require_seat`` runs before anything durable, and in its own sentence
+    rather than the model's: the model's refusal for an unknown combatant
+    lists the cast, which a seat refusal deliberately does not.
+
+    Journalled and *stamped and checkpointed* like ``condition`` above and for
+    the same reason: a correction changes the fight, so a bundle exported after
+    one has to carry a stamped event and a checkpoint past it or
+    ``replay.validate_replay`` refuses it.
+    """
+    session = sessions.session_for(state, encounter_id)
+    written_reason = reason.strip()
+    if not written_reason:
+        raise RequestError("reason must not be blank")
+    if len(written_reason) > MAX_REASON_TEXT:
+        raise RequestError(f"reason must be at most {MAX_REASON_TEXT} characters")
+    if not isinstance(state_changes, Mapping):
+        raise RequestError(
+            f"state must be an object of combatant names to changes, got {state_changes!r}"
+        )
+    if not state_changes:
+        raise RequestError("state must name at least one combatant to correct")
+    checked: dict[str, dict[str, Any]] = {}
+    for target in sorted(state_changes):
+        require_seat(session.encounter.creatures, target)
+        changes = state_changes[target]
+        if not isinstance(changes, Mapping):
+            raise RequestError(f"correction for {target!r} must be an object, got {changes!r}")
+        if not changes:
+            raise RequestError(f"correction for {target!r} names no fields to change")
+        checked[target] = _checked_correction(session.encounter, target, changes)
+
+    def execute() -> dict[str, Any]:
+        before = len(session.encounter.log)
+        try:
+            for target, fields in checked.items():
+                session.encounter.correct(target, fields, reason=written_reason)
+        except (EncounterError, UnknownCondition) as error:
+            raise RequestError(str(error)) from error
+        completed_at = sessions.utc_now()
+        session.event_timestamps.extend(
+            [completed_at] * (len(session.encounter.log) - before)
+        )
+        sessions.capture_checkpoint(session, completed_at)
+        return {"encounter_id": encounter_id}
+
+    return primitives.audited_primitive(
+        state,
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="encounter_correct",
+        arguments={"state": {name: dict(fields) for name, fields in state_changes.items()},
+                   "reason": written_reason},
         execute=execute,
     )
 

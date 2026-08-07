@@ -169,6 +169,15 @@ def encounter_note(
     return _encounters.note(STATE, encounter_id, text, category, request_id, speaker)
 
 
+def encounter_correct(
+    encounter_id: str,
+    state: dict[str, dict[str, Any]],
+    reason: str,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    return _encounters.correct(STATE, encounter_id, state, reason, request_id)
+
+
 def encounter_log(
     encounter_id: str,
     since: int = 0,

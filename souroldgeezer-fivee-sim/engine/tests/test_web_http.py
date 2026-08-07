@@ -1576,6 +1576,7 @@ class TestDeclaredExamples:
         assert adventure.status == 201, adventure.body
         subjects = {
             "encounter.act": created.json()["encounter_id"],
+            "encounter.correct": created.json()["encounter_id"],
             "adventure.encounter": adventure.json()["id"],
             "map.put": "example-map",
             "map.edit": "saved-map",
@@ -1677,6 +1678,13 @@ class TestDeclaredBounds:
         schema = route[0].body_schema or {}
         declared = schema["properties"]["text"]["maxLength"]
         assert declared == encounters_service.MAX_NOTE_TEXT
+
+    def test_the_reason_bound_is_the_same_number_on_both_sides(self) -> None:
+        route = routes.find("POST", f"{routes.API_PREFIX}/encounters/enc-1/corrections")
+        assert route is not None
+        schema = route[0].body_schema or {}
+        declared = schema["properties"]["reason"]["maxLength"]
+        assert declared == encounters_service.MAX_REASON_TEXT
 
     def test_every_journalled_string_argument_is_bounded(self) -> None:
         # Derived from the table rather than listed: an audited operation added
@@ -2429,6 +2437,19 @@ class TestEncountersOverHttp:
             ),
             400,
             "'text' must be at most",
+        )
+
+    def test_an_oversized_correction_reason_is_refused_by_the_schema(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/corrections",
+                json_body={"state": {"Thora": {"ac": 11}}, "reason": "x" * 5000},
+            ),
+            400,
+            "'reason' must be at most",
         )
 
     def test_an_unknown_encounter_is_404_and_names_the_active_ones(
@@ -3726,6 +3747,21 @@ class TestEncounterPreconditions:
             editor.request(
                 "POST", f"/api/v1/encounters/{encounter_id}/notes",
                 json_body={"text": "written from a stale read"},
+                headers={"If-Match": stale},
+            ),
+            409,
+            "has advanced since you read it",
+        )
+
+    def test_the_precondition_covers_a_correction(self, editor: Editor) -> None:
+        created = self.create(editor)
+        encounter_id = created.json()["encounter_id"]
+        stale = created.headers["ETag"]
+        editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/corrections",
+                json_body={"state": {"Thora": {"ac": 11}}, "reason": "mistyped stat block"},
                 headers={"If-Match": stale},
             ),
             409,

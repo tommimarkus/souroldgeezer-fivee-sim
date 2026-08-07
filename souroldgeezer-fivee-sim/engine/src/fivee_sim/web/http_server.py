@@ -1121,6 +1121,14 @@ class _Handler(BaseHTTPRequestHandler):
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
+    def _h_encounter_correct(self, request: _Request) -> None:
+        body = request.body
+        self._check_encounter_version(request.id)
+        result = encounter_service.correct(
+            self.state, request.id, body["state"], body["reason"], self._idempotency_key(),
+        )
+        self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
+
     def _h_encounter_resume(self, request: _Request) -> None:
         result = encounter_service.resume(
             self.state, request.id, request.query["as"], view=request.query["view"]
@@ -1461,6 +1469,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "encounter_advance": _Handler._h_encounter_advance,
     "encounter_note": _Handler._h_encounter_note,
     "encounter_condition": _Handler._h_encounter_condition,
+    "encounter_correct": _Handler._h_encounter_correct,
     "encounter_resume": _Handler._h_encounter_resume,
     "encounter_finalize": _Handler._h_encounter_finalize,
     "encounter_replay": _Handler._h_encounter_replay,

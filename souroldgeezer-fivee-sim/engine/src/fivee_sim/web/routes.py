@@ -344,6 +344,9 @@ _INLINE_MAP: Mapping[str, Any] = {
 #: set the map service keeps private.
 MAX_NAME_TEXT = 100
 MAX_NOTE_TEXT = 4000
+#: The correction rule the service already owns, mirrored the same way
+#: ``MAX_NOTE_TEXT`` is: ``TestDeclaredBounds`` holds the two equal.
+MAX_REASON_TEXT = 4000
 #: A filesystem path the caller names. Not journalled, so not part of the rule
 #: above — bounded because an unbounded one reaches path handling regardless,
 #: and no real path is longer than the kernel's own limit.
@@ -877,6 +880,24 @@ ROUTES: tuple[Route, ...] = (
             "required": ["target", "condition"],
         },
         handler="encounter_condition", errors=(409,),
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/encounters/{{id}}/corrections", "encounter.correct",
+        "Overwrite a live combatant's state when the simulation got it wrong.",
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY),
+        body_schema={
+            "type": "object",
+            "properties": {
+                "state": {"type": "object"},
+                "reason": {"type": "string", "maxLength": MAX_REASON_TEXT},
+            },
+            "required": ["state", "reason"],
+        },
+        # "Thora" is the hand-built combatant on ``encounter.create``'s own
+        # example roster, so the example that proves this route also proves it
+        # against a fight the create example actually starts.
+        example={"state": {"Thora": {"ac": 17}}, "reason": "the stat block was mistyped"},
+        handler="encounter_correct", errors=(409,),
     ),
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/resume", "encounter.resume",

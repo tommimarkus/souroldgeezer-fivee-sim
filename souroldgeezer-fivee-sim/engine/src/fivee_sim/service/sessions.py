@@ -502,6 +502,24 @@ def _replay_advance(
     encounter.advance(rng, tuple(int(f) for f in arguments.get("natural") or ()))
 
 
+def _replay_correct(
+    encounter: Encounter, rng: Random, arguments: Mapping[str, Any]
+) -> None:
+    """Overwrite the same state again, with the reason the table gave.
+
+    A correction changes the fight, so recovery has to replay it like an
+    action or a ruling. It consumes no randomness, which is why ``rng`` goes
+    unread here and is taken anyway: the table's four entries answer to one
+    signature. The journalled arguments were already validated at write time,
+    so this calls straight into the model — the same trust
+    :func:`_replay_condition` places in its own arguments.
+    """
+    reason = str(arguments["reason"])
+    state_changes = arguments["state"]
+    for target in sorted(state_changes):
+        encounter.correct(str(target), dict(state_changes[target]), reason=reason)
+
+
 #: Which journalled operations a recovery re-runs, and what re-running each one
 #: means. Everything absent from this table is resolved once and never again:
 #: ``roll``, ``check``, ``save`` and ``encounter_note`` change no state, so a
@@ -510,6 +528,7 @@ REPLAY_BY_OPERATION: Mapping[str, Callable[[Encounter, Random, Mapping[str, Any]
     "encounter_act": _replay_act,
     "encounter_condition": _replay_condition,
     "encounter_advance": _replay_advance,
+    "encounter_correct": _replay_correct,
 }
 
 #: The same fact as a set, for the writer that only needs membership. Derived
