@@ -21,37 +21,32 @@ follows from it.
      "voice": "quiet, asks one question too many", "sheet": {...}},
     {"name": "Ilma",   "kind": "human", "sheet": {...}}
   ],
-  "tool_policy": "require-none",
   "tool_check": {"Thora": "none", "Kesh": "none"}
 }
 ```
 
-## Player tool policy
+## Player tool inventory
 
-`tool_policy` defaults to `require-none`. Every agent player's first response
-must list every tool and scope it has or say `none`; record that response under
-`tool_check`. For Claude Code, the expected profile exposes only
-`Read (player-visible/** only)`; accept that exact inventory. For Codex, accept
-only `none`. Under `require-none`, stop the run before the first player-facing
-scene or brief on any other tool, or on a broader Read scope. Do not silently
-downgrade and continue.
+Every agent player's first response must list every tool and scope it has or say
+`none`; record that response under `tool_check`. For Claude Code, the expected
+profile exposes only `Read (player-visible/** only)`; that exact inventory is a
+confined profile. Codex does not apply that profile, so a Codex seat with
+reported tools is in **honour-system mode**. Treat a Claude Code seat with any
+other tool or broader Read scope the same way.
 
-Continue only when the user explicitly approves the weaker boundary. Change
-`tool_policy` in `roster.json` to `allow-reported` and append the approval, seat,
-and reported tools to `transcript.md`. In playtest mode, also append it to
-`findings.jsonl` and call the run **honour-system mode** in `report.md`. The
-player still must not use its tools or seek the adventure, but that instruction
-is cooperation rather than structural isolation. An unattended run with
-reported tools stops for this approval; having no human seats does not waive the
-gate.
+Append each honour-system classification, seat, and reported tools to
+`transcript.md`. In playtest mode, also append it to `findings.jsonl` and call
+the run honour-system mode in `report.md`. Continue without asking for approval
+solely because tools are present. The player still must not use its tools or
+seek the adventure, but that instruction is cooperation rather than structural
+isolation. An unattended run continues under the same rule.
 
 Re-ask every agent player after a re-spawn or resume, update `tool_check`, and
-apply the gate again before sending new player-facing material. A new child may
-have different tools from the one whose answer is on disk. `allow-reported`
-remains explicit for the run, but every new non-`none` tool list still belongs
-in the transcript and, in playtest mode, `findings.jsonl` and the report unless
-it is the exact expected Claude Code inventory above. A conforming answer belongs
-only in `tool_check`.
+record any new honour-system inventory before sending new player-facing
+material. A new child may have different tools from the one whose answer is on
+disk. A `none` answer or the exact expected Claude Code inventory above belongs
+only in `tool_check`; every other inventory also belongs in the transcript and,
+in playtest mode, `findings.jsonl` and the report.
 
 `kind` is `agent` or `human`, and it is the only thing that changes how a seat is
 asked for a decision. `game_master.kind` may be `human`, in which case there is
@@ -77,8 +72,8 @@ independent agent seats together; do not walk them one at a time.
 
 A resumed run has no live children. Re-spawn each one through the host-specific
 dispatch in the main skill and brief it from `seats/<name>.md`, its sheet,
-temperament, and voice **and nothing else**. Re-run the player tool gate before
-sending the next scene or brief.
+temperament, and voice **and nothing else**. Re-run the player tool inventory
+before sending the next scene or brief.
 
 ### A human seat
 
@@ -151,7 +146,8 @@ in its adventure document. What you are saving is the *table*: who knows what.
    position.
 3. Re-spawn each agent seat through the host-specific dispatch; hand it **only**
    `seats/<name>.md`, its sheet, its temperament and its voice. Re-run the tool
-   check and apply `tool_policy` before sending player-facing material.
+   inventory and record its classification before sending player-facing
+   material.
 4. Read the fight back from `fivee encounter.state` or `fivee adventure.state`.
    Never reconstruct mechanical state from the transcript.
 5. Say where play stands, and continue.

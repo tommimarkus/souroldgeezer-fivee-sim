@@ -266,54 +266,54 @@ def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
         assert withheld in codex
     assert re.search(r"\bfull\s+transcript\b", codex)
     assert re.search(
-        r"tool gate.{0,300}\bbefore\b.{0,200}\b(?:scene|brief)\b",
+        r"tool\s+inventory.{0,300}\bbefore\b.{0,200}\b(?:scene|brief)\b",
         codex,
         flags=re.IGNORECASE | re.DOTALL,
     )
 
 
-def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> None:
+def test_player_tool_inventory_reports_weaker_boundaries_without_pausing() -> None:
     seating = _text("skills/play/references/seating-and-pauses.md")
     roster_example = re.search(r"```json\s+(?P<body>.*?)```", seating, flags=re.DOTALL)
     assert roster_example is not None
-    assert '"tool_policy": "require-none"' in roster_example.group("body")
+    assert '"tool_policy"' not in roster_example.group("body")
+    assert '"tool_check"' in roster_example.group("body")
 
-    policy = _markdown_section(seating, "## Player tool policy")
-    assert "`require-none`" in policy
-    assert re.search(r"`require-none`.{0,500}\b(?:pause|stop)\b", policy, flags=re.DOTALL)
+    policy = _markdown_section(seating, "## Player tool inventory")
     assert "Read (player-visible/** only)" in policy
     assert re.search(
-        r"Claude Code.{0,300}Read \(player-visible/\*\* only\).{0,300}\baccept",
+        r"Claude Code.{0,300}Read \(player-visible/\*\* only\).{0,300}\bconfined",
         policy,
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert re.search(
-        r"Codex.{0,200}\bnone\b",
+        r"Codex.{0,300}\breported tools\b.{0,300}\bhonour-system mode\b",
         policy,
         flags=re.IGNORECASE | re.DOTALL,
     )
-    assert "`allow-reported`" in policy
-    assert "explicit" in policy.lower()
-    assert "record" in policy.lower()
-    assert "roster.json" in policy
+    assert "`require-none`" not in policy
+    assert "`allow-reported`" not in policy
+    assert not re.search(r"\b(?:pause|stop) the run\b", policy, flags=re.IGNORECASE)
+    assert re.search(
+        r"continue.{0,100}\bwithout asking for approval\b",
+        policy,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert "transcript.md" in policy
     assert "findings.jsonl" in policy
     assert re.search(
-        r"re-ask.{0,200}\bre-spawn\b.{0,100}\bresume\b"
-        r".{0,300}\bapply the gate again\b.{0,200}\bbefore\b",
+        r"re-ask.{0,200}\bre-spawn\b.{0,100}\bresume\b.{0,300}\brecord\b",
         policy,
         flags=re.IGNORECASE | re.DOTALL,
     )
 
 
-def test_require_none_is_a_gate_not_a_capability_claim() -> None:
+def test_player_tool_inventory_makes_no_capability_claim() -> None:
     skill = _text("skills/play/SKILL.md")
 
-    assert re.search(
-        r"`require-none`.{0,100}\bdoes not\b.{0,100}\b(?:remove|disable)\b"
-        r".{0,100}\btools\b",
-        skill,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
+    assert "`require-none`" not in skill
+    assert "`allow-reported`" not in skill
+    assert re.search(r"reported tools.{0,200}honour-system", skill, flags=re.I | re.S)
     assert "Under `require-none`, agent seats hold no engine access" not in skill
     assert "tools: []" not in skill
     assert "Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)" in skill

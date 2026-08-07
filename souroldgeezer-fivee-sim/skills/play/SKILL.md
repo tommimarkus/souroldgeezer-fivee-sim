@@ -66,7 +66,7 @@ that seat's decisions and support resuming later.
 Create `.fivee-sim/plays/<id>/roster.json`, choose a master seed, and quote it.
 The seed makes engine outcomes reproducible. Read
 [`references/seating-and-pauses.md`](references/seating-and-pauses.md) for the
-roster, human-seat prompts, tool gate, pause, and resume protocol.
+roster, human-seat prompts, tool inventory, pause, and resume protocol.
 
 ## 2. Brief the seats
 
@@ -104,9 +104,9 @@ adventure's path, name, directory, module text, or run sheet in a player prompt;
 keep other roster entries and the full transcript out too.
 
 Fresh context and allowlisted prompts minimise what Codex hands a player; they
-do not restrict the child's filesystem or tools. Run the player tool gate before
-sending the first player-facing scene or brief, and never describe a Codex run
-with reported tools as structurally isolated.
+do not restrict the child's filesystem or tools. Record the player's tool
+inventory before sending the first player-facing scene or brief, and never
+describe a Codex run with reported tools as structurally isolated.
 
 ### The player-information gate
 
@@ -117,17 +117,17 @@ other current built-in and `mcp__*`, and ships no adventure or rules content in
 that directory. Claude Code applies that frontmatter; Codex does not.
 
 Each agent player's first response must list every tool and scope it received or
-say `none`. Record the answer in `roster.json` as `tool_check`. Under the default
-`require-none` policy, accept only `Read (player-visible/** only)` from a Claude
-Code seat or `none` from a Codex seat. Any other tool, or a broader Read scope,
-pauses the run before the first player-facing scene or brief. Continue only after
-the user explicitly accepts `allow-reported`; record that approval and label the
-run honour-system.
+say `none`. Record the answer in `roster.json` as `tool_check`. A Claude Code
+seat with exactly `Read (player-visible/** only)` has the confined profile the
+plugin intends. A Codex seat with reported tools, or a Claude Code seat with any
+other tool or broader Read scope, makes the run honour-system rather than
+structurally isolated. Record that classification, but do not pause or ask for
+approval solely because tools are present; the player still must not use them
+or seek the adventure.
 
-`require-none` does not remove or disable tools. It is a fail-closed gate on
-what a fresh seat reports. Read
-[`references/seating-and-pauses.md`](references/seating-and-pauses.md#player-tool-policy)
-for the exact gate, including resume and re-spawn.
+Read
+[`references/seating-and-pauses.md`](references/seating-and-pauses.md#player-tool-inventory)
+for the exact recording rules, including resume and re-spawn.
 
 Spread agent temperaments — cautious, bold, thorough, social. A human seat gets
 no agent; print the same player-facing narration and ask the person directly.
@@ -316,7 +316,7 @@ run could not establish:
   about fun, tone, or whether a twist lands.
 - Player briefs and fresh contexts minimise disclosure but are not access
   control. Report each seat's actual `tool_check` and whether the run was
-  structural no-tools or honour-system.
+  confined-profile or honour-system.
 - One run is one path. Offer multiple seeded runs when branching matters.
 - State any engine limit that bore on a ruling; encounter-sim owns the full list.
 
