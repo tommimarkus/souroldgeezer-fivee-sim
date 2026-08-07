@@ -273,6 +273,7 @@ previous fight's cast forward:
 fivee adventure.encounter adv-1 --if-match <version> --seed 20260806 --json '{
   "carry": ["Thora"],
   "recovery": {"Thora": {"hp": 30, "conditions": []}},
+  "recovery_note": "Long rest at the abbey",
   "combatants": [{"monster": "Goblin Warrior", "label": "Goblin B",
                   "team": "monsters", "position": [10, 0]}]
 }'
@@ -307,7 +308,12 @@ delta over the same keys the carry-over uses — `hp`, `conditions`, `death_save
 you granted ("a long rest, so: back to 30 and slots restored") rather than
 implying the engine worked it out. A key outside that set is refused and lists the
 valid ones; a name that is not being carried is refused rather than quietly doing
-nothing.
+nothing. When a recovery marks a real boundary in the story, add a concise
+**`recovery_note`** such as `"Long rest at the abbey"`. The note is recorded
+with the following chapter and shown before that chapter in the adventure replay;
+it is display prose only, never input to rest mechanics. A note without a
+`recovery` delta is refused. An explicit empty `"recovery": {}` is allowed when
+the boundary happened but changed none of the carried fields.
 
 **`fivee adventure.replay <adv-id>`** composes the run's finalized encounters into
 one bundle on disk. Every member must have been through `encounter.finalize`

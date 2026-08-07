@@ -971,6 +971,16 @@ ROUTES: tuple[Route, ...] = (
                 "carry": {"type": ["array", "null"], "items": {"type": "string"},
                           "default": None},
                 "recovery": {"type": ["object", "null"], "default": None},
+                "recovery_note": {
+                    "type": ["string", "null"],
+                    "default": None,
+                    "maxLength": MAX_NOTE_TEXT,
+                    "description": (
+                        "caller-stated label for the recovery boundary, such as "
+                        "'Long rest at the abbey'; requires recovery and is not "
+                        "interpreted as a rules input"
+                    ),
+                },
                 "seed": _SEED,
                 "movement_rule": _MOVEMENT_RULE,
                 # The same declaration ``encounter.create`` takes, because this

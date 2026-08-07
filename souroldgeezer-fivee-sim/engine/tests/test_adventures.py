@@ -526,6 +526,7 @@ class TestLinkingEncounters:
             "adv-1",
             carry=["Thora"],
             recovery={"Thora": {"hp": 30, "position": [20, 20]}},
+            recovery_note="Short rest beneath the gatehouse",
             combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
             seed=64,
         )
@@ -534,6 +535,81 @@ class TestLinkingEncounters:
         assert ending_hp < 30
         assert arrived["hp"] == 30
         assert arrived["position"] == [20, 20]
+        member = api.adventure_state("adv-1")["members"][1]
+        assert member["recovery"] == {
+            "Thora": {"hp": 30, "position": [20, 20]}
+        }
+        assert member["recovery_note"] == "Short rest beneath the gatehouse"
+
+    def test_an_empty_recovery_is_still_a_recorded_boundary(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=64)
+
+        api.adventure_encounter(
+            "adv-1",
+            recovery={},
+            recovery_note="A quiet long rest",
+            seed=65,
+        )
+
+        member = api.adventure_state("adv-1")["members"][1]
+        assert member["recovery"] == {}
+        assert member["recovery_note"] == "A quiet long rest"
+
+    def test_an_ordinary_link_does_not_invent_recovery_metadata(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=66)
+
+        api.adventure_encounter("adv-1", seed=67)
+
+        member = api.adventure_state("adv-1")["members"][1]
+        assert "recovery" not in member
+        assert "recovery_note" not in member
+
+    @pytest.mark.parametrize("note", ["", "   "])
+    def test_a_blank_recovery_note_is_refused_before_an_encounter_is_created(
+        self, note: str
+    ) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=68)
+
+        with pytest.raises(RequestError, match="recovery_note must not be blank"):
+            api.adventure_encounter("adv-1", recovery={}, recovery_note=note, seed=69)
+
+        assert len(api.adventure_state("adv-1")["members"]) == 1
+
+    def test_a_recovery_note_without_a_recovery_is_refused(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=70)
+
+        with pytest.raises(RequestError, match="recovery_note requires recovery"):
+            api.adventure_encounter("adv-1", recovery_note="Long rest", seed=71)
+
+        assert len(api.adventure_state("adv-1")["members"]) == 1
+
+    def test_an_oversized_recovery_note_is_refused_by_the_service(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=71)
+
+        with pytest.raises(RequestError, match="recovery_note must be at most"):
+            api.adventure_encounter(
+                "adv-1",
+                recovery={},
+                recovery_note="x" * (adventures.RECOVERY_NOTE_MAX + 1),
+                seed=72,
+            )
+
+        assert len(api.adventure_state("adv-1")["members"]) == 1
+
+    def test_even_an_empty_recovery_is_refused_on_the_first_chapter(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+
+        with pytest.raises(RequestError, match="has no encounter to recover from yet"):
+            api.adventure_encounter(
+                "adv-1", combatants=[BRAWLER, RUFFIAN], recovery={}, seed=72
+            )
+
+        assert api.adventure_state("adv-1")["members"] == []
 
     def test_a_recovery_hp_exceeding_max_hp_is_refused(self) -> None:
         # SRD 5.2.1 Rules Glossary: "You can't have more Hit Points than your Hit

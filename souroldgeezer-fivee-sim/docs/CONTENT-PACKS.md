@@ -613,7 +613,10 @@ own and is out of scope.
 
 **Post-fight recovery is arithmetic you do, not something the engine
 simulates**, and `adventure.link`'s `recovery` has two sharp edges worth
-knowing before the first use empties somebody's quiver by accident. First,
+knowing before the first use empties somebody's quiver by accident. Give a
+story-significant boundary a concise `recovery_note`; the adventure replay shows
+the caller's label and exact delta before the following chapter, but does not
+interpret the prose as rest mechanics. First,
 `recovery`'s `items` key **replaces** a carried combatant's whole `items` map
 — the merge is shallow, so recovering three arrows by naming only `"Arrow"`
 silently drops every other item that combatant was carrying. Pass the complete

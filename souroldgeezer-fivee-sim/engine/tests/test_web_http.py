@@ -1686,6 +1686,13 @@ class TestDeclaredBounds:
         declared = schema["properties"]["reason"]["maxLength"]
         assert declared == encounters_service.MAX_REASON_TEXT
 
+    def test_the_recovery_note_bound_is_the_same_number_on_both_sides(self) -> None:
+        route = routes.find("POST", f"{routes.API_PREFIX}/adventures/adv-1/encounters")
+        assert route is not None
+        schema = route[0].body_schema or {}
+        declared = schema["properties"]["recovery_note"]["maxLength"]
+        assert declared == adventure_service.RECOVERY_NOTE_MAX
+
     def test_every_journalled_string_argument_is_bounded(self) -> None:
         # Derived from the table rather than listed: an audited operation added
         # tomorrow with an unbounded string is caught without editing this test.
@@ -3977,6 +3984,34 @@ class TestAdventuresOverHttp:
             f"/api/v1/encounters/{body['encounter_id']}"
         )
         assert linked.headers["ETag"] == f'"{body["version"]}"'
+
+    def test_a_caller_stated_recovery_boundary_round_trips_over_http(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        first = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            headers={"If-Match": "*"},
+        )
+        assert first.status == 201, first.body
+
+        second = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={
+                "recovery": {"Thora": {"hp": 30}},
+                "recovery_note": "Long rest at the abbey",
+                "seed": 6,
+            },
+            headers={"If-Match": "*"},
+        )
+
+        assert second.status == 201, second.body
+        member = editor.request("GET", "/api/v1/adventures/adv-1").json()["members"][1]
+        assert member["recovery"] == {"Thora": {"hp": 30}}
+        assert member["recovery_note"] == "Long rest at the abbey"
 
     def test_linking_from_a_version_the_run_has_moved_past_is_409(
         self, editor: Editor

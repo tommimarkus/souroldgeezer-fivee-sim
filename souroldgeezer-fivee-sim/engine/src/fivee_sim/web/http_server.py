@@ -1214,6 +1214,7 @@ class _Handler(BaseHTTPRequestHandler):
             expected,
             mode=body["mode"],
             carry_map=body["carry_map"],
+            recovery_note=body["recovery_note"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(

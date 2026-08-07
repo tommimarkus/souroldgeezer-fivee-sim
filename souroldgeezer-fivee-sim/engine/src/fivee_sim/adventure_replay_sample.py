@@ -261,9 +261,10 @@ def _arrival_bundle(combat: dict[str, Any]) -> dict[str, Any]:
 
 def _aftermath_bundle(combat: dict[str, Any]) -> dict[str, Any]:
     initial = _exploration_state(combat["latest_state"])
+    _combatant(initial, "Arin")["hp"] = 12
     latest = deepcopy(initial)
     arin = _combatant(latest, "Arin")
-    arin.update({"hp": 12, "position": [30, 20], "facing": "east"})
+    arin.update({"hp": 16, "position": [30, 20], "facing": "east"})
     arin["items"]["Potion"] = 0
     mira = _combatant(latest, "Mira")
     mira.update({"position": [30, 25], "level": 0, "facing": "east"})
@@ -282,8 +283,8 @@ def _aftermath_bundle(combat: dict[str, Any]) -> dict[str, Any]:
             1,
             "heal",
             target="Arin",
-            detail="4 hit points restored, 12/20.",
-            data={"amount": 4, "hp": 12, "max_hp": 20},
+            detail="4 hit points restored, 16/20.",
+            data={"amount": 4, "hp": 16, "max_hp": 20},
         ),
         _event(
             2,
@@ -433,6 +434,8 @@ def sample_bundle() -> dict[str, Any]:
             "linked_at": "2026-08-01T12:01:59Z",
             "carried": list(_PARTY),
             "mode": EncounterMode.EXPLORATION.value,
+            "recovery": {"Arin": {"hp": 12}},
+            "recovery_note": "Short rest after the gatehouse battle",
             "replay": aftermath,
         },
     ]

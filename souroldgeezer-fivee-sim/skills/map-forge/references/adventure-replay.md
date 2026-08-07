@@ -17,6 +17,15 @@ run whose non-combat scenes were never linked as chapters composes to its fights
 alone and quietly loses the rest of the day, which is why the encounter-sim and
 play skills both say to link them.
 
+**Recovery belongs to the boundary before the following chapter.** When an
+adventure link records `recovery`, the composed chapter preserves that exact
+delta and its optional caller-written `recovery_note`. The viewer presents it as
+a selectable transition before the chapter, including a before-to-after summary
+for the fields that changed. It never infers whether the boundary was a short
+rest, long rest, healing, or something else. Old bundles and ordinary links that
+omit `recovery` have no extra boundary; an explicit empty recovery still has one
+because the caller recorded that the story boundary happened.
+
 ```bash
 fivee adventure.list                                  # the runs on disk
 fivee adventure.replay adv-1                          # into the replays root
@@ -47,9 +56,11 @@ will otherwise assume:
   listing and out of the served chooser even though it lands in the replays root
   beside ordinary exports. So hand over **the path**, not a link — that is the one
   way a reader reaches it. The viewer page itself does play it: open or drop the
-  file and a **Chapter** picker appears in the header, one entry per fight, and
-  choosing one plays that fight. That works with no server at all, which is just
-  as well, since the chooser will never offer it. `fivee replay.validate`
+  file and a **Chapter** picker appears in the header. Choosing a recovery entry
+  shows the recorded pre-chapter transition; choosing its chapter plays the
+  fight or interlude. Continuous playback visits the transition before beginning
+  that chapter. That works with no server at all, which is just as well, since
+  the chooser will never offer it. `fivee replay.validate`
   understands it too, and the composer validates before publishing a byte, so a
   chapter corrupted on disk is refused rather than shipped inside the run.
 

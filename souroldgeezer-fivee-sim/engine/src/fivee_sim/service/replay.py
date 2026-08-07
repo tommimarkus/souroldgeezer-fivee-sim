@@ -1233,6 +1233,7 @@ def _validate_chapters(value: Any, found: list[dict[str, str]]) -> None:
             )
         else:
             seen[encounter_id] = index
+        _validate_chapter_recovery(chapter, at, index, found)
         nested = chapter.get("replay")
         if not isinstance(nested, Mapping):
             found.append(_diagnostic(f"{at}.replay", "must be an object"))
@@ -1242,6 +1243,40 @@ def _validate_chapters(value: Any, found: list[dict[str, str]]) -> None:
             _diagnostic(f"{at}.replay.{one['path']}", one["problem"])
             for one in validate_replay(nested)
         )
+
+
+def _validate_chapter_recovery(
+    chapter: Mapping[str, Any], at: str, index: int, found: list[dict[str, str]]
+) -> None:
+    """Grade the optional caller-stated boundary without inventing rest rules."""
+    if "recovery" not in chapter:
+        if "recovery_note" in chapter:
+            found.append(
+                _diagnostic(f"{at}.recovery_note", "requires recovery")
+            )
+        return
+    if index == 0:
+        found.append(
+            _diagnostic(f"{at}.recovery", "must be absent from the first chapter")
+        )
+    recovery = chapter["recovery"]
+    if not isinstance(recovery, Mapping):
+        found.append(_diagnostic(f"{at}.recovery", "must be an object"))
+    else:
+        for name, delta in recovery.items():
+            path = f"{at}.recovery.{name}"
+            if not isinstance(name, str) or not name.strip():
+                found.append(
+                    _diagnostic(f"{at}.recovery", "combatant names must be non-empty strings")
+                )
+            if not isinstance(delta, Mapping):
+                found.append(_diagnostic(path, "must be an object"))
+    if "recovery_note" in chapter:
+        note = chapter["recovery_note"]
+        if not isinstance(note, str) or not note.strip():
+            found.append(
+                _diagnostic(f"{at}.recovery_note", "must be a non-empty string")
+            )
 
 
 def _validate_chapter_mode(

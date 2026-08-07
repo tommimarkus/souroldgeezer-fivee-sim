@@ -80,6 +80,7 @@ __all__ = [
     "FORMAT",
     "FORMAT_VERSION",
     "LIST_STATUSES",
+    "RECOVERY_NOTE_MAX",
     "adventure_path",
     "carry_forward",
     "compose_replay",
@@ -110,6 +111,10 @@ DOCUMENT_FIELDS: tuple[str, ...] = ("id", "name", "created_at", "status")
 #: guarantee than deriving it outright and a strictly stronger one than the
 #: exemption ``encounter.list.status`` still carries.
 LIST_STATUSES: tuple[str, ...] = ("active", "finalized", "all")
+
+#: A recovery note is caller-authored replay prose, bounded like an encounter
+#: note so one chapter boundary cannot become an unbounded adventure document.
+RECOVERY_NOTE_MAX = 4000
 
 #: Still anchored on ``adv-``, but no longer for the reason it was: the two
 #: kinds have separate roots now and cannot name each other's files whatever the
@@ -659,6 +664,7 @@ def link_encounter(
     *,
     mode: str = EncounterMode.COMBAT.value,
     carry_map: bool = False,
+    recovery_note: str | None = None,
 ) -> dict[str, Any]:
     """Start the adventure's next encounter, carrying the last one's cast into it.
 
@@ -677,6 +683,11 @@ def link_encounter(
     :data:`CARRIED_STATE_KEYS`, applied to their ending state before the
     carry-over composes it. That is where "they took a long rest" lives, and it
     is deliberately the caller's to state.
+
+    ``recovery_note`` is the caller's plain-language name for that boundary,
+    such as ``"Long rest at the abbey"``. It requires ``recovery`` but the
+    recovery may be empty: a rest that changed no carried value is still a
+    fact the replay can show. The note is never interpreted as a rules input.
 
     ``mode`` says which kind of chapter this one is — a fight by default, so a
     link written before interludes existed starts what it always started. It is
@@ -707,6 +718,7 @@ def link_encounter(
             f"adventure {adventure_id!r} is {document['status']}; "
             f"start another one to keep playing"
         )
+    checked_note = _checked_recovery_note(recovery, recovery_note)
     # Checked here as well as under the lock, and the duplication is the point:
     # the guarded write below is what makes the precondition *sound*, but it
     # runs after the fight has been created, so a caller holding an old version
@@ -722,7 +734,9 @@ def link_encounter(
         # it: a link that started its encounter and only then found there was no
         # map to carry would leave a whole journal belonging to no run at all.
         map_id = _carried_map_id(adventure_id, members, map_spec, map_id)
-    carried = _carried_specs(state, adventure_id, members, carry, recovery)
+    carried, checked_recovery = _carried_specs(
+        state, adventure_id, members, carry, recovery
+    )
     roster = [*carried, *(dict(entry) for entry in (combatants or []))]
     created = encounters.create(
         state,
@@ -743,6 +757,10 @@ def link_encounter(
         # creation journal record takes it in.
         "mode": str(created["state"]["mode"]),
     }
+    if checked_recovery is not None:
+        member["recovery"] = deepcopy(checked_recovery)
+        if checked_note is not None:
+            member["recovery_note"] = checked_note
     document["members"] = [*members, member]
     if request_id is not None:
         document["request_ids"] = {
@@ -867,7 +885,7 @@ def _carried_specs(
     members: Sequence[Mapping[str, Any]],
     carry: Sequence[str] | None,
     recovery: Mapping[str, Any] | None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]] | None]:
     """The previous encounter's cast, as creation specs for the next one."""
     if not members:
         if carry:
@@ -875,19 +893,18 @@ def _carried_specs(
                 f"adventure {adventure_id!r} has no encounter to carry from yet; "
                 f"give 'combatants' for the first one"
             )
-        if recovery:
+        if recovery is not None:
             raise RequestError(
                 f"adventure {adventure_id!r} has no encounter to recover from yet"
             )
-        return []
+        return [], None
     previous = str(members[-1]["encounter_id"])
     if carry is not None and not carry:
         # An explicit empty carry means the previous fight is not consulted at
         # all. Worth the branch rather than falling through: ``session_for``
         # recovers a fight by replaying every recorded action, which is a lot of
         # work to do to a fight nobody is bringing anybody out of.
-        _checked_recovery(recovery, set())
-        return []
+        return [], _checked_recovery(recovery, set())
     session = sessions.session_for(state, previous)
     captured = {str(entry["name"]): entry for entry in session.normalized_combatants}
     live = {
@@ -909,15 +926,40 @@ def _carried_specs(
                 f"cannot carry {name!r}: encounter {previous!r} had {known}"
             )
     deltas = _checked_recovery(recovery, seen)
-    return [
-        carry_forward(captured[name], {**live[name], **deltas.get(name, {})})
-        for name in names
-    ]
+    return (
+        [
+            carry_forward(
+                captured[name], {**live[name], **(deltas or {}).get(name, {})}
+            )
+            for name in names
+        ],
+        deltas,
+    )
+
+
+def _checked_recovery_note(
+    recovery: Mapping[str, Any] | None, recovery_note: str | None
+) -> str | None:
+    """One optional caller label, kept as replay prose and never interpreted."""
+    if recovery_note is None:
+        return None
+    if recovery is None:
+        raise RequestError("recovery_note requires recovery")
+    if not isinstance(recovery_note, str):
+        raise RequestError(f"recovery_note must be a string, got {recovery_note!r}")
+    checked = recovery_note.strip()
+    if not checked:
+        raise RequestError("recovery_note must not be blank")
+    if len(checked) > RECOVERY_NOTE_MAX:
+        raise RequestError(
+            f"recovery_note must be at most {RECOVERY_NOTE_MAX} characters"
+        )
+    return checked
 
 
 def _checked_recovery(
     recovery: Mapping[str, Any] | None, carried: set[str]
-) -> dict[str, dict[str, Any]]:
+) -> dict[str, dict[str, Any]] | None:
     """The caller's deltas, refused key by key rather than partly applied.
 
     ``bool(...)``-style leniency is the wrong tool here for the reason
@@ -926,7 +968,7 @@ def _checked_recovery(
     who is not coming would silently do nothing to anybody.
     """
     if recovery is None:
-        return {}
+        return None
     if not isinstance(recovery, Mapping):
         raise RequestError(
             f"recovery must be an object of combatant names to changes, got {recovery!r}"
@@ -946,5 +988,5 @@ def _checked_recovery(
                 f"unknown recovery key {key!r} for {name!r}. Valid keys: "
                 f"{', '.join(sorted(CARRIED_STATE_KEYS))}"
             )
-        checked[name] = dict(delta)
+        checked[name] = deepcopy(dict(delta))
     return checked

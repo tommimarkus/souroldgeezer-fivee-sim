@@ -79,9 +79,19 @@ def test_the_party_reaches_each_chapter_where_the_previous_one_left_it() -> None
 
     for previous, following in zip(chapters[:-1], chapters[1:], strict=True):
         for name in ("Arin", "Mira"):
-            assert carried_state(previous["replay"]["latest_state"], name) == (
-                carried_state(following["replay"]["initial"]["state"], name)
+            expected = carried_state(previous["replay"]["latest_state"], name)
+            expected.update(following.get("recovery", {}).get(name, {}))
+            assert expected == carried_state(
+                following["replay"]["initial"]["state"], name
             ), f"{name}'s carried state breaks before chapter {following['index'] + 1}"
+
+
+def test_the_showcase_demonstrates_a_caller_stated_rest_boundary() -> None:
+    _, _, aftermath = adventure_replay_sample.sample_bundle()["chapters"]
+
+    assert aftermath["recovery_note"] == "Short rest after the gatehouse battle"
+    assert aftermath["recovery"] == {"Arin": {"hp": 12}}
+    assert combatant(aftermath["replay"]["initial"]["state"], "Arin")["hp"] == 12
 
 
 def test_the_interludes_show_arrival_and_aftermath_rather_than_padding() -> None:

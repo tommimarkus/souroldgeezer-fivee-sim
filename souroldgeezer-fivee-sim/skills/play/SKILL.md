@@ -117,7 +117,9 @@ party. Carry hit points, conditions, slots, death saves, stability, and death.
 The **encounter-sim** skill owns commands, write versions, and replay details.
 
 A rest is an explicit `recovery` delta because the engine does not model rests.
-State what the module says is recovered. Finalize each encounter when it ends.
+State what the module says is recovered and add a concise `recovery_note`, such
+as `Long rest at the abbey`; replay shows that caller-recorded boundary without
+inferring a rest type. Finalize each encounter when it ends.
 
 ## 5. Record scenes between fights
 

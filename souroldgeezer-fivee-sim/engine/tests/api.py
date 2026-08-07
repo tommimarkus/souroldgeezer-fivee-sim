@@ -294,6 +294,7 @@ def adventure_encounter(
     combatants: list[dict[str, Any]] | None = None,
     carry: list[str] | None = None,
     recovery: dict[str, Any] | None = None,
+    recovery_note: str | None = None,
     seed: int | None = None,
     movement_rule: str = "5-5-5",
     map: dict[str, Any] | None = None,
@@ -317,6 +318,7 @@ def adventure_encounter(
         expected_version,
         mode=mode,
         carry_map=carry_map,
+        recovery_note=recovery_note,
     )
 
 

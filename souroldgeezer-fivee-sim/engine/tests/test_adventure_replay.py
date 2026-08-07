@@ -194,6 +194,35 @@ class TestComposingTheRun:
             assert {key: chapter[key] for key in member} == member
         assert envelope["chapters"][1]["carried"] == ["Thora", "Goblin"]
 
+    def test_a_recovery_boundary_is_frozen_beside_the_chapter_it_precedes(
+        self,
+    ) -> None:
+        adventure_id = str(api.adventure_create("The Sunless Citadel")["id"])
+        first = api.adventure_encounter(
+            adventure_id,
+            combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+            seed=711,
+        )
+        api.encounter_finalize(str(first["encounter_id"]))
+        second = api.adventure_encounter(
+            adventure_id,
+            recovery={"Thora": {"hp": 20}, "Goblin": {}},
+            recovery_note="Long rest beside the sealed door",
+            seed=712,
+        )
+        api.encounter_finalize(str(second["encounter_id"]))
+
+        envelope = composed(adventure_id)
+
+        assert "recovery" not in envelope["chapters"][0]
+        assert envelope["chapters"][1]["recovery"] == {
+            "Thora": {"hp": 20}, "Goblin": {}
+        }
+        assert envelope["chapters"][1]["recovery_note"] == (
+            "Long rest beside the sealed door"
+        )
+        assert replay_service.validate_adventure_replay(envelope) == []
+
     def test_the_envelope_names_the_run_by_every_field_a_document_must_have(
         self,
     ) -> None:
@@ -439,6 +468,48 @@ class TestTheEnvelopeValidator:
         }
 
         assert "at least one" in problems["chapters"]
+
+    @pytest.mark.parametrize(
+        ("field", "value", "path"),
+        [
+            ("recovery", [], "chapters.1.recovery"),
+            ("recovery", {"Thora": []}, "chapters.1.recovery.Thora"),
+            ("recovery_note", "", "chapters.1.recovery_note"),
+        ],
+    )
+    def test_malformed_recovery_metadata_is_named_at_its_chapter(
+        self, field: str, value: object, path: str
+    ) -> None:
+        envelope = composed(run_of(2))
+        envelope["chapters"][1][field] = value
+
+        paths = {
+            one["path"] for one in replay_service.validate_adventure_replay(envelope)
+        }
+
+        assert path in paths
+
+    def test_a_recovery_note_without_a_recovery_is_not_a_boundary(self) -> None:
+        envelope = composed(run_of(2))
+        envelope["chapters"][1]["recovery_note"] = "Long rest"
+
+        problems = {
+            one["path"]: one["problem"]
+            for one in replay_service.validate_adventure_replay(envelope)
+        }
+
+        assert "requires recovery" in problems["chapters.1.recovery_note"]
+
+    def test_the_first_chapter_cannot_claim_a_preceding_recovery(self) -> None:
+        envelope = composed(run_of(2))
+        envelope["chapters"][0]["recovery"] = {}
+
+        problems = {
+            one["path"]: one["problem"]
+            for one in replay_service.validate_adventure_replay(envelope)
+        }
+
+        assert "first chapter" in problems["chapters.0.recovery"]
 
     def test_a_chapter_whose_own_bundle_is_broken_is_named_under_that_chapter(
         self,
