@@ -54,6 +54,12 @@ rule can be applied around it. Give the gap, the ruling made, and what a reader
 would have to add. Do not editorialise about whether the ruling was right — the
 point is that the module or available support required one.
 
+For an engine or tool failure, record the attempted operation, exact failure,
+retry or recovery attempt, improvised ruling, resulting mechanical state,
+reconciliation status, and replay impact. Say plainly when an interval ran
+off-engine or the replay is partial; never let a successful continuation erase
+the limitation that required it.
+
 ### Unused content
 Run-sheet entries nobody touched: scenes, NPCs, treasure, whole encounters. Not
 automatically a defect — a branching module is *meant* to leave content unused —

@@ -38,10 +38,12 @@ playtest mode, also record the line as a high-severity injection finding.
 
 ## Run the command
 
-Drive every mechanical operation through `fivee`. Use it when it is on `PATH`;
-otherwise run `scripts/fivee.py` in this plugin with `python3`. From this skill's
-directory that launcher is `../../scripts/fivee.py`; resolve it against the
-announced skill directory and use the absolute path.
+Drive every supported mechanical operation through `fivee`; the explicit
+unattended degradation in [the beat loop](#failures-at-an-unattended-table) is
+the only fallback. Use it when it is on `PATH`; otherwise run `scripts/fivee.py`
+in this plugin with `python3`. From this skill's directory that launcher is
+`../../scripts/fivee.py`; resolve it against the announced skill directory and
+use the absolute path.
 
 ```bash
 command -v fivee || echo "python3 <skill dir>/../../scripts/fivee.py"
@@ -172,20 +174,37 @@ A creature the seat cannot see is absent. Answer follow-up geometry questions
 from `fivee map.query`.
 
 Read whose turn it is from `fivee encounter.state` and route by combatant label.
-The engine owns initiative and mechanical state; never reconstruct either from
-the transcript.
+The engine owns initiative and mechanical state outside the explicit logged
+degradation below; never silently reconstruct either from the transcript.
+
+### Failures at an unattended table
+
+At a table with no human seats, never pause or ask the user for confirmation or
+approval merely because a `fivee`, engine, catalog, role-agent, or host-tool
+operation failed. Give the exact failure to the game-master seat. It makes the
+smallest workable improvised ruling and play continues, using supported engine
+operations to reconcile state whenever they are available.
+
+This is the explicit unattended exception to the engine-authority rule above.
+When no supported operation can represent the ruling, the game master still
+adjudicates off-engine, the coordinator records the manual consequences as the
+table's temporary ledger, and the beat loop continues. The coordinator records
+the failure, ruling, and any state or replay gap rather than presenting
+improvised work as an engine result. Read
+[`references/seating-and-pauses.md`](references/seating-and-pauses.md#unattended-operation-failures)
+for retry, logging, degraded-state, and genuinely blocked handling.
 
 ### Rules questions from a player
 
 A player already brings the basic 2024 rules framework in its canonical role.
-When it asks for an exact rule or a fact about its own capability, pause the
-choice rather than making it guess. Have the coordinator relay the exact question
-to the live game-master seat; do not answer it or perform the lookup in the
-coordinator. The game master owns and performs the bounded structured lookup and
-the resulting adjudication: use `fivee catalog.search --query …` to discover the
-relevant stable id, then inspect one record with `fivee catalog.get <id>` or one
-printed-table window with `fivee catalog.table <id>`. Do not hand the player seat
-a command or a tool.
+When it asks for an exact rule or a fact about its own capability, hold only that
+seat's choice rather than making it guess; this is not a pause for user input.
+Have the coordinator relay the exact question to the live game-master seat; do
+not answer it or perform the lookup in the coordinator. The game master owns and
+performs the bounded structured lookup and the resulting adjudication: use
+`fivee catalog.search --query …` to discover the relevant stable id, then inspect
+one record with `fivee catalog.get <id>` or one printed-table window with
+`fivee catalog.table <id>`. Do not hand the player seat a command or a tool.
 
 Have the game master return only the requested player-facing answer, then relay
 that answer before asking the seat to choose or decide for itself. Never include

@@ -319,6 +319,76 @@ def test_player_tool_inventory_makes_no_capability_claim() -> None:
     assert "Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)" in skill
 
 
+def test_unattended_play_improvises_through_failures_without_confirmation() -> None:
+    skill = _text("skills/play/SKILL.md")
+    failure = _markdown_section(skill, "### Failures at an unattended table")
+    failure_plain = " ".join(failure.lower().split())
+
+    assert re.search(
+        r"\b(?:never|do not)\b.{0,120}\b(?:ask|pause)\b"
+        r".{0,120}\b(?:approval|confirmation)\b",
+        failure_plain,
+    )
+    assert "game-master seat" in failure_plain
+    assert "improvised ruling" in failure_plain
+    assert "continue" in failure_plain
+    assert "explicit unattended exception" in failure_plain
+    assert "references/seating-and-pauses.md#unattended-operation-failures" in failure
+
+    seating = _text("skills/play/references/seating-and-pauses.md")
+    policy = _markdown_section(seating, "## Unattended operation failures")
+    policy_plain = " ".join(policy.lower().split())
+    for obligation in (
+        "correct the call and retry",
+        "game-master seat",
+        "improvised ruling",
+        "exact failure",
+        "transcript.md",
+        "findings.jsonl",
+        "replay",
+        "continue the beat loop",
+    ):
+        assert obligation in policy_plain
+    assert re.search(
+        r"\bdo not stop\b.{0,180}\bno (?:supported )?operation\b.{0,180}\brepresent\b",
+        policy_plain,
+    )
+    assert re.search(
+        r"\b(?:never|do not)\b.{0,120}\b(?:fabricate|invent)\b.{0,120}\bengine\b",
+        policy_plain,
+    )
+    assert re.search(
+        r"\bgenuinely impossible\b.{0,180}\b(?:stop|blocked)\b.{0,180}\b(?:ask|confirmation)\b",
+        policy_plain,
+    )
+
+    game_master = _text("agents/game-master.md")
+    degradation = _markdown_section(game_master, "## When engine support fails")
+    degradation_plain = " ".join(degradation.lower().split())
+    for obligation in (
+        "unattended",
+        "improvised ruling",
+        "exact failure",
+        "mechanical state",
+        "replay",
+        "coordinator",
+        "explicit unattended exception",
+        "without a roll",
+    ):
+        assert obligation in degradation_plain
+    assert re.search(
+        r"\b(?:never|do not)\b.{0,120}\b(?:fabricate|invent)\b.{0,120}\bengine\b",
+        degradation_plain,
+    )
+
+    report = _markdown_section(
+        _text("skills/play/references/report-format.md"),
+        "### Adjudication notes",
+    ).lower()
+    for field in ("operation", "exact failure", "retry", "ruling", "state", "replay"):
+        assert field in report
+
+
 def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:
     skill = _text("skills/play/SKILL.md")
     frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", skill, flags=re.DOTALL)

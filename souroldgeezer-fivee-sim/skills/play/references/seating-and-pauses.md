@@ -62,6 +62,47 @@ The `sheet` is a combatant spec the engine will accept — name, team, ac, max_h
 position, attacks, and whatever else the character has. The bundled parties in
 `../assets/pregens.json` are already in that shape.
 
+## Unattended operation failures
+
+A failed operation at a table with no human seats is not a user decision. Never
+ask for approval or confirmation to continue. Handle it in this order:
+
+1. Read the refusal or error. If the coordinator or game master formed a bad
+   request, correct the call and retry. Return an engine-refused player
+   declaration and its exact reason to the acting agent instead of changing the
+   declaration for them.
+2. For a transient failure, re-read authoritative state and make one safe retry.
+   Re-spawn a failed role agent from the same bounded resume material. Do not
+   repeat an identical state-changing call whose outcome is unknown.
+3. If the operation is unsupported or remains unavailable, give the exact
+   failure to the game-master seat. The game master makes the smallest workable
+   improvised ruling and continues. Prefer supported `fivee` operations,
+   including any documented encounter-correction operation exposed by
+   `fivee help`, so the engine remains authoritative. If none can represent the
+   ruling, keep the manual consequence explicit in the transcript as the
+   table's temporary state ledger until the next safe reconciliation point.
+   Continue the beat loop. Do not stop merely because no supported operation can
+   represent the ruling.
+
+Append an `engine degradation` beat to `transcript.md` with the attempted
+operation, exact failure, retry or recovery attempt, improvised ruling,
+mechanical state consequence, reconciliation status, and replay impact. When the
+engine is available, also write the ruling with `encounter.note --category
+ruling`. In playtest mode, append the same evidence as an adjudication entry in
+`findings.jsonl` and carry it into `report.md`.
+
+Never fabricate engine JSON, an engine event, or replay coverage. If manual
+state was necessary, the final handoff says which interval is off-engine and
+that the replay is partial. Engine unavailability alone does not make the run a
+user decision: the game master improvises while the table and its audit record
+remain usable. Prefer an adjudication without a roll while the engine cannot
+roll; record a disclosed outcome rather than inventing a die face.
+
+Only when continuation is genuinely impossible — for example, no game-master
+seat can be restored, the adventure itself cannot be read, or no audit record
+can be preserved — may the coordinator stop as blocked. Preserve the pause
+artifacts and report the exact blocker without asking the user for confirmation.
+
 ## Asking a seat
 
 ### An agent seat
