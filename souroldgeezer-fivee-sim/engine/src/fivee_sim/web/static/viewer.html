@@ -178,8 +178,36 @@ if (typeof FiveeRenderer === "undefined") {
 <script>
 "use strict";
 (function () {
+  var CONFIG = window.__FIVEE_EDITOR__ || null;
+  adoptLaunchToken(CONFIG);
   var R = FiveeRenderer;
   var FLASH_KINDS = { attack: 1, opportunity_attack: 1, cast: 1, spell_effect: 1 };
+
+  /* The launch token arrives as this URL's fragment and nowhere else. The
+     served body cannot carry it: a page is handed to any client on the port
+     without one — being what tells the browser the token is exactly why — so a
+     token in the markup is a token every local process can read with a single
+     unauthenticated GET, and this token writes files wherever the launching
+     user can. A fragment is the one part of a URL a browser never sends, so it
+     reaches no request log and no problem+json `instance` either.
+
+     Adopted onto the injected config object itself, under the same `token` key
+     `apiGet` already reads off it — this is the same object, so no call site
+     changes — and then removed from the address bar, so it is not shoulder-read
+     or pasted into a bug report along with `?replay=`. It leaves
+     `window.__FIVEE_EDITOR__` present or absent exactly as the server left it,
+     which is the whole offline guarantee: a bundle exported to disk carries no
+     config, reaches none of the served half, and so issues no request. */
+  function adoptLaunchToken(config) {
+    if (!config) { return; }
+    var raw = ((window.location && window.location.hash) || "").replace(/^#/, "");
+    try { config.token = decodeURIComponent(raw); } catch (error) { config.token = raw; }
+    if (config.token && window.history && window.history.replaceState) {
+      window.history.replaceState(
+        null, "", window.location.pathname + (window.location.search || "")
+      );
+    }
+  }
 
   /* Feature kinds this page draws nothing for. The renderer is shared with
      the editor and draws every feature it is handed, which is right there —
@@ -1966,7 +1994,17 @@ if (typeof FiveeRenderer === "undefined") {
     embedded = JSON.parse(document.getElementById("embedded-data").textContent);
   } catch (error) { embedded = null; }
   if (embedded !== null) { openPayload(embedded, "embedded replay"); }
-  else if (window.__FIVEE_EDITOR__) { connectToServer(); }
+  else if (CONFIG && !CONFIG.token) {
+    /* Served, but opened at the bare path: the token is the fragment, so this
+       page has nothing to authenticate with. `connectToServer` is deliberately
+       quiet on failure, so calling it here would leave no chooser and no
+       reason — a page that looks like a server with no replays rather than one
+       that cannot ask. Dropping a file still works, and this says so. */
+    byId("empty-hint").textContent =
+      "Opened without this launch's access token, so the server's replays cannot "
+        + "be listed — open the URL printed by `fivee serve`, including the # and "
+        + "everything after it. A bundle file dropped here still plays.";
+  } else if (CONFIG) { connectToServer(); }
 })();
 </script>
 </body>

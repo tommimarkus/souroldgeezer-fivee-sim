@@ -255,9 +255,18 @@ class TestOneServiceTwoPages:
         # The offline guarantee, as source: the page's single fetch call sits
         # inside apiGet, and apiGet is only reachable from connectToServer,
         # which the boot block calls only when the injected config exists.
+        #
+        # The gate is spelled through `CONFIG` now, so what that name is bound
+        # to is asserted rather than assumed: bound to anything else, the line
+        # below would be a gate in name only. And the call is pinned as the
+        # *only* one, so a second boot path added outside the gate — the way
+        # this guarantee would actually be lost — fails here instead of
+        # shipping. The bare-token branch beside it reaches no network at all.
         source = read("viewer.html")
         assert source.count("window.fetch(") == 1
-        assert "else if (window.__FIVEE_EDITOR__) { connectToServer(); }" in source
+        assert "var CONFIG = window.__FIVEE_EDITOR__ || null;" in source
+        assert source.count("connectToServer();") == 1
+        assert "} else if (CONFIG) { connectToServer(); }" in source
 
     def test_the_served_viewer_reuses_the_one_bundle_load_path(self) -> None:
         # A second load path is how the validation, the level wiring and the

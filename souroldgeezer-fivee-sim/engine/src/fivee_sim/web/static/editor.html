@@ -464,7 +464,32 @@ if (typeof FiveeRenderer === "undefined") {
 "use strict";
 (function () {
   var CONFIG = window.__FIVEE_EDITOR__ || null;
+  adoptLaunchToken(CONFIG);
   var R = FiveeRenderer;
+
+  /* The launch token arrives as this URL's fragment and nowhere else. The
+     served body cannot carry it: a page is handed to any client on the port
+     without one — being what tells the browser the token is exactly why — so a
+     token in the markup is a token every local process can read with a single
+     unauthenticated GET, and this token writes files wherever the launching
+     user can. A fragment is the one part of a URL a browser never sends, so it
+     reaches no request log and no problem+json `instance` either.
+
+     Adopted onto the injected config under the same `token` key `request()`
+     already reads, so no call site knows where it came from — and then removed
+     from the address bar, so it is not shoulder-read or pasted into a bug
+     report along with the rest of the URL. `window.__FIVEE_EDITOR__` stays the
+     served-versus-`file://` discriminator and is untouched by this. */
+  function adoptLaunchToken(config) {
+    if (!config) { return; }
+    var raw = ((window.location && window.location.hash) || "").replace(/^#/, "");
+    try { config.token = decodeURIComponent(raw); } catch (error) { config.token = raw; }
+    if (config.token && window.history && window.history.replaceState) {
+      window.history.replaceState(
+        null, "", window.location.pathname + (window.location.search || "")
+      );
+    }
+  }
 
   /* --- state ------------------------------------------------------------ */
   var doc = null;         /* the in-memory document payload; edits are local */
@@ -3218,6 +3243,19 @@ if (typeof FiveeRenderer === "undefined") {
       "no server attached, so this page cannot say what content is loaded";
     byId("catalog-results").textContent =
       "no server attached — describe a combatant with Add instead";
+  } else if (!CONFIG.token) {
+    /* Served, but opened at the bare path. The token is the URL's fragment, so
+       this page has nothing to authenticate with and every call it makes comes
+       back 401 — including the two below, which nobody asked for. Say it once
+       here instead: a boot that fires them anyway greets the user with a wall
+       of refusals whose real cause is the address they typed. */
+    byId("mode-note").textContent = "no access token — reopen the URL fivee printed";
+    setStatus(
+      "This page was opened without its access token, so the engine will refuse "
+        + "every request. Open the URL printed by `fivee serve`, including the # "
+        + "and everything after it.",
+      "error"
+    );
   } else {
     /* What content this engine has loaded, asked for at boot: the panel is
        always on screen in Edit, and one that opened on "press refresh" would

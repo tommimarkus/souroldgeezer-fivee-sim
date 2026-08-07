@@ -58,11 +58,33 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
   stating rather than discovering. Until `2026.08.34` those four were tools on
   a stdio server, so reaching them meant already being able to run code as you
   — which is out of scope below. They are now HTTP operations, so reaching them
-  means holding the token. The token is well defended (random per launch,
-  `0600` at rest, constant-time compared, never logged and never in a URL), and
-  we know of no way to obtain it short of code execution as the user. **A way
-  to obtain it is therefore a serious finding, and more serious than it looks**,
-  because of what it now reaches.
+  means holding the token, so **a way to obtain the token is a serious finding,
+  and more serious than it looks**, because of what it now reaches.
+
+  Where the token travels is therefore worth stating exactly. It is random per
+  launch, `0600` at rest, and constant-time compared. It reaches the browser as
+  the **fragment** of the URL `fivee serve` prints — `…/editor#<token>` — which
+  the page reads off `location.hash` and then strips from the visible address.
+  It is not logged, and a fragment is the one part of a URL a browser never
+  sends, so it reaches no request log, no `Referer`, and no problem+json
+  `instance`.
+
+  It used to be injected into the body of `/`, `/editor` and `/viewer`
+  instead, and that was a hole rather than a nuance: those pages are
+  served to any client on the port *without* the token — being what tells the
+  browser the token is exactly why they have to be — so any local process could
+  `GET /`, read the token out of the markup, and go straight to the arbitrary
+  file write above, with no filesystem access and no need to read the state
+  file at all. It is fixed, and the trade that fixed it runs one way: the
+  terminal that prints the URL is already inside the user's trust domain, and
+  the loopback socket is not.
+
+  What is left is what a URL costs. Anywhere a user pastes one — a bug report,
+  a chat, a shared screen, a shell history — carries the token with it, and
+  anything that can read the launching user's clipboard or terminal scrollback
+  can read it. That is the same trust domain that could read the `0600` state
+  file, which is why it is a trade rather than a new exposure; a token
+  disclosed that way is still a finding worth telling us about.
 - **The browser assets are offline.** `editor.html`, `viewer.html`, and
   `renderer.js` load nothing from a network; `tests/test_web_assets.py` asserts
   it.

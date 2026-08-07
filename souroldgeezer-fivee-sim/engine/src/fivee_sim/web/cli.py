@@ -164,7 +164,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"{server.url}viewer"
     )
     print(f"API: {server.url}api/v1/operations")
-    print("Open the index in a browser; each page configures its own access token.")
+    # Deliberately without the token, and so deliberately not openable from
+    # here: these lines go to a log file, and a token written into a second
+    # file at rest is a second thing to protect for no gain. A page is told
+    # the token by the fragment of the URL it is opened with, and `fivee
+    # serve` is what prints those — it holds the token already.
+    print("Run `fivee serve` for the page URLs; each carries this launch's access token.")
     sys.stdout.flush()
     try:
         server.serve_forever()

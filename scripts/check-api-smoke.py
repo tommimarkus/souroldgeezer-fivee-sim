@@ -2182,11 +2182,28 @@ def main() -> int:
             "identical bytes" if root_body == editor_body else "one of them served nothing",
         )
         report(
-            "__FIVEE_EDITOR__" in root_body
-            and primary.token is not None
-            and primary.token in root_body,
-            "the landing page is configured with this launch's own token",
+            "__FIVEE_EDITOR__" in root_body,
+            "the landing page is configured by this launch",
             "the injected config is absent from GET /",
+        )
+        # The token is not in any of them, and this is the only place that
+        # claim is made against the shipped surface as a host reaches it. A
+        # page is served to a client that holds no token — being what tells the
+        # browser the token is exactly why — so a body carrying one hands the
+        # launch's whole authority to any local process that can reach the
+        # port, and `map.uvtt` above proves that authority writes a file
+        # wherever the launching user can. It travels as the URL's fragment
+        # now, which a browser never sends. Walked over every declared page
+        # rather than the three that exist today.
+        leaked = sorted(
+            path
+            for path, (_status, _kind, body) in answered.items()
+            if primary.token and primary.token in body
+        )
+        report(
+            bool(primary.token) and not leaked,
+            "no served page hands this launch's token to an unauthenticated client",
+            f"token present in: {leaked}" if leaked else "this launch reported no token",
         )
 
         # -- 9. and it all stops ---------------------------------------------

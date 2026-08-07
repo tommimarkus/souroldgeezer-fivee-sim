@@ -101,8 +101,11 @@ map is written, because no flag grammar should try to spell one.
    `editor_url` for the map editor, `viewer_url` for the replay viewer (step 8),
    and `url` for the landing page that links to both. Hand the user whichever
    they asked for, and **`editor_url` when they asked for the editor**: `url` is
-   the index, not the editor. Each page configures its own access token, so there
-   is nothing else to pass along. `fivee stop` shuts them down. If a server is
+   the index, not the editor. **Pass the URL exactly as printed, `#` and all** —
+   the fragment is this launch's access token, and it is the only way the page
+   gets one. Trimmed to the path, the page opens and the engine refuses every
+   request it makes. There is nothing else to pass along. `fivee stop` shuts
+   them down. If a server is
    already up, `serve` reports it with `already_running` true rather than
    starting a second.
 
@@ -133,8 +136,9 @@ map is written, because no flag grammar should try to spell one.
    of the maps root.
 
    Two ways to show a fight, and they answer different asks. If a server is
-   running, a written bundle comes back with a `viewer_url` — hand that over and it
-   plays in the browser they already have open. For a file to give someone who is
+   running, a written bundle comes back with a `viewer_url` — hand that over whole,
+   fragment included, and it plays in the browser they already have open. For a
+   file to give someone who is
    *not* at this machine, call `encounter.replay` with `--embed`: the result is a
    single self-contained HTML page that plays the fight back in any browser — no
    server, no install. Report the written path and SHA-256; small plain bundles come

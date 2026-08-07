@@ -26,8 +26,16 @@ Security posture, for a single-user localhost tool:
 
 * **Per-launch token.** Every ``/api/*`` request must carry the launch's
   random token in the ``X-Fivee-Editor-Token`` header or it is refused with
-  401. The token reaches the browser only by being injected into the served
-  pages — it is never logged and never put in a URL.
+  401. It reaches the browser as the **fragment** of the URL the user opens —
+  ``…/editor#<token>`` — which the page reads off ``location.hash`` and then
+  strips from the visible address. The served body does not carry it, and must
+  not: a page is served to any unauthenticated client on this port, so a token
+  in its markup is a token every local process can read with one GET, and this
+  token authorises writing a file anywhere the launching user can write.
+  A fragment is the one part of a URL a browser never sends, so it reaches
+  neither the request log nor a problem+json ``instance``. The trade is
+  deliberate and it is one way: the terminal that prints the URL is already
+  inside the user's trust domain, and the loopback socket is not.
 * **Host-header check.** A request whose ``Host`` is not ``127.0.0.1`` or
   ``localhost`` is refused with 403; a DNS-rebinding page can make a browser
   send the request, but not with a local ``Host``. No CORS headers are ever
@@ -352,6 +360,12 @@ class EngineServer:
         Offered only for a file inside the directory this launch serves
         replays from: a link to a bundle this server cannot see would fail in
         the user's browser and be blamed on the export rather than on the link.
+
+        The launch token is the fragment, because that is now the only way the
+        page is told one — the served body no longer carries it. A fragment is
+        never put on the wire by a browser, so this link reaches no access log
+        and no problem+json ``instance``; it is a secret in the same sense the
+        terminal that printed it is, and must be handed over whole.
         """
         try:
             written = target.resolve()
@@ -363,6 +377,7 @@ class EngineServer:
         return (
             f"http://127.0.0.1:{self.port}/viewer"
             f"?replay={quote(slugify(written.stem), safe='')}"
+            f"#{self.token}"
         )
 
 
@@ -493,10 +508,15 @@ class _Handler(BaseHTTPRequestHandler):
     def _check_token(self) -> None:
         given = self.headers.get(TOKEN_HEADER)
         if given is None or not secrets.compare_digest(given, self.engine.token):
+            # Points at the URL rather than at the page. The page used to carry
+            # the token, which was both this sentence's advice and the reason
+            # it had to stop being true; a reader sent to look for one in the
+            # markup would not find it. Losing the fragment off a copied link
+            # is the common way a caller ends up here.
             raise _Problem(
                 HTTPStatus.UNAUTHORIZED,
-                f"missing or invalid {TOKEN_HEADER} header; the served editor "
-                f"page carries the token for this launch",
+                f"missing or invalid {TOKEN_HEADER} header; this launch's token "
+                f"is the fragment of the URL `fivee serve` prints, after the #",
             )
 
     # -- reading the request -------------------------------------------------
@@ -740,10 +760,18 @@ class _Handler(BaseHTTPRequestHandler):
             # being fetched: it is a fact about this launch, it is wanted
             # before any request completes, and the page is a static asset no
             # release step rewrites, so being told is the only way it can know.
+            #
+            # The **token is not here**, and its absence is the point. A page is
+            # served to any client on the port without one — it has to be, since
+            # it is what tells the browser the token — so a token in this object
+            # is a token any local process can read with one unauthenticated
+            # GET, and the token authorises writing a file anywhere the
+            # launching user can write. It arrives in the URL fragment instead;
+            # the page adopts it onto this object under the same ``token`` key,
+            # so nothing that reads a config changes.
             config = (
                 f"window.__FIVEE_EDITOR__ = "
-                f"{{token: {json.dumps(self.engine.token)}, "
-                f"apiBase: {json.dumps(API_PREFIX)}, "
+                f"{{apiBase: {json.dumps(API_PREFIX)}, "
                 f"version: {json.dumps(__version__)}}};"
             )
             text = text.replace(CONFIG_MARKER, config)

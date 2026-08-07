@@ -324,8 +324,16 @@ class TestLifecycle:
         # The editor used to be the root, so a caller handed `url` to open it;
         # naming it separately is what stops that habit reaching a browser at
         # the wrong page and being reported as "the editor is broken".
-        assert first["editor_url"] == f"{first['url']}editor"
-        assert first["viewer_url"] == f"{first['url']}viewer"
+        # Each carries the launch token as its fragment, which is how the page
+        # is told one at all: it is no longer injected into the body, because a
+        # body is served to any unauthenticated client on the port. A fragment
+        # is never put on the wire, so it reaches no request log and no
+        # problem+json `instance` either. Read off the running server rather
+        # than restated, so a producer that appended a constant fails here.
+        running = discovery.find_running(discovery.state_path_for())
+        assert running is not None and running.token
+        assert first["editor_url"] == f"{first['url']}editor#{running.token}"
+        assert first["viewer_url"] == f"{first['url']}viewer#{running.token}"
 
         assert run("serve") == cli.EXIT_OK
         second = out(capsys)

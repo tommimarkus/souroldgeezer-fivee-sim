@@ -827,8 +827,14 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
     _print_json(
         {
             "url": server.url,
-            "editor_url": f"{server.url}editor",
-            "viewer_url": f"{server.url}viewer",
+            # The fragment is the launch token, and it is how each page is told
+            # one: the served body no longer carries it, because a body is
+            # served to any unauthenticated client on the port. So these two
+            # must be handed over whole — truncated to the path, the page
+            # opens and cannot talk to the engine. A fragment is never sent by
+            # a browser, so it reaches no log and no problem+json `instance`.
+            "editor_url": f"{server.url}editor#{server.token}",
+            "viewer_url": f"{server.url}viewer#{server.token}",
             "port": server.port,
             "maps_dir": server.maps_dir,
             "replays_dir": server.replays_dir,

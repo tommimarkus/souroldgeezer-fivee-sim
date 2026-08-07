@@ -470,11 +470,13 @@ function makePage(options) {
   const requests = [];
   const blobs = [];
   const alerts = [];
+  const history_ = [];
   const animationFrames = new Map();
   let nextAnimationFrame = 1;
   let immediateFrameTime = 0;
   const page = {
     fills, paths, context, element, elements, documentStub, requests, blobs, alerts,
+    history: history_,
     renders: [],
     reply: () => ({ status: 200, body: {} }),
   };
@@ -512,10 +514,27 @@ function makePage(options) {
       setItem: (key, value) => store.set(key, String(value)),
       removeItem: (key) => store.delete(key),
     },
+    /* What the server injects, and it carries no token — a served body is
+     * readable by any unauthenticated client on the port, so the launch token
+     * is not in it. No `config` passed to this harness may carry one either:
+     * that is what makes "the page sent the right token" a claim about the
+     * page reading `location.hash` rather than about this object. */
     __FIVEE_EDITOR__: options.config || null,
-    /* Enough of `location` for a page to read its own query string. Only the
-     * deep-link path uses it, and only ever to read — nothing here navigates. */
-    location: { search: options.search || "", href: "http://127.0.0.1/", hash: "" },
+    /* Enough of `location` for a page to read its own query string and its
+     * fragment. The fragment is where the launch token arrives; `pathname` is
+     * read only to rebuild the address without it. Nothing here navigates. */
+    location: {
+      search: options.search || "",
+      href: "http://127.0.0.1/",
+      hash: options.hash || "",
+      pathname: "/",
+    },
+    /* Recorded rather than ignored: stripping the token out of the visible URL
+     * is part of delivering it by fragment, so `page.history` is how a case
+     * reads whether the page did. */
+    history: {
+      replaceState: (state, title, url) => { history_.push({ state, title, url }); },
+    },
     Headers: class { get() { return null; } },
     Blob: class { constructor(parts) { this.parts = parts; blobs.push(parts.join("")); } },
     URL: { createObjectURL: () => "blob:harness", revokeObjectURL: () => {} },
@@ -2294,7 +2313,8 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     const served = makePage({
       canvasIds: ["stage"],
       seed: { "embedded-data": "null" },
-      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#launch-token",
       hiddenIds: VIEWER_HIDDEN,
     });
     served.reply = (url) => (
@@ -2338,7 +2358,8 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     const refused = makePage({
       canvasIds: ["stage"],
       seed: { "embedded-data": "null" },
-      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#launch-token",
       hiddenIds: VIEWER_HIDDEN,
     });
     refused.reply = (url) => (
@@ -2366,7 +2387,8 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     const older = makePage({
       canvasIds: ["stage"],
       seed: { "embedded-data": "null" },
-      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#launch-token",
       hiddenIds: VIEWER_HIDDEN,
     });
     older.reply = () => ({ status: 404, body: { detail: "no route for /api/replays" } });
@@ -2385,7 +2407,8 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     const linked = makePage({
       canvasIds: ["stage"],
       seed: { "embedded-data": "null" },
-      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#launch-token",
       search: "?replay=cellar",
       hiddenIds: VIEWER_HIDDEN,
     });
@@ -2410,7 +2433,8 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     const stale = makePage({
       canvasIds: ["stage"],
       seed: { "embedded-data": "null" },
-      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#launch-token",
       search: "?replay=deleted-last-week",
       hiddenIds: VIEWER_HIDDEN,
     });
@@ -3014,8 +3038,12 @@ function makeEditorPage(options) {
   };
   const page = makePage({
     canvasIds: ["map"],
+    /* No token here, deliberately: the served body has none. A page opened
+     * this way is one this launch handed a URL to, so the fragment carries it
+     * — `hash: ""` is the other case, and it is the bare-URL one. */
     config: settings.config === undefined
-      ? { token: "harness", apiBase: "/api", version: "test" } : settings.config,
+      ? { apiBase: "/api", version: "test" } : settings.config,
+    hash: settings.hash === undefined ? "#harness" : settings.hash,
     selectAll,
     manualAnimationFrames: settings.manualAnimationFrames,
   });
@@ -4401,7 +4429,10 @@ function playHarness(options) {
   const engine = settings.engine || playEngine(settings);
   const page = makePage({
     canvasIds: ["map"],
-    config: { token: "harness", apiBase: "/api", version: "test" },
+    /* Inert: the driver is handed a `request` below and never reads a config,
+     * so this only marks the page as served. Token-free like every other
+     * config here, because a served body carries none. */
+    config: { apiBase: "/api", version: "test" },
     manualAnimationFrames: !!settings.manualAnimationFrames,
   });
   page.reply = engine.reply;
@@ -5141,8 +5172,8 @@ const OPERATION_INDEX = {
   ],
 };
 
-const homePage = (config, reply) => {
-  const page = makePage({ config, hiddenIds: HOME_HIDDEN });
+const homePage = (config, reply, hash) => {
+  const page = makePage({ config, hiddenIds: HOME_HIDDEN, hash });
   if (reply) { page.reply = reply; }
   return page;
 };
@@ -5154,11 +5185,14 @@ const groupsOf = (page) => page.element("operations").children.map((group) => ({
 await suite("home.html: the landing page", "the page sandbox in makePage()", async () => {
   /* 1. Served: one request, carrying the launch token, and the answer becomes
    *    the page. The token assertion is the one a grep cannot make — the
-   *    header is read off what the stub was actually called with. */
+   *    header is read off what the stub was actually called with. And the
+   *    injected config below carries no token, so the only place that header
+   *    can have come from is the fragment. */
   let sentHeaders = null;
   const served = homePage(
-    { token: "launch-token", apiBase: "/api", version: "2026.8.99" },
-    (url, init) => { sentHeaders = (init || {}).headers || null; return { status: 200, body: OPERATION_INDEX }; }
+    { apiBase: "/api", version: "2026.8.99" },
+    (url, init) => { sentHeaders = (init || {}).headers || null; return { status: 200, body: OPERATION_INDEX }; },
+    "#launch-token"
   );
   served.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
   await flush();
@@ -5198,8 +5232,9 @@ await suite("home.html: the landing page", "the page sandbox in makePage()", asy
   /* 2. A refusal reports the server's own words. A status code alone would not
    *    tell the user that the token is what is wrong. */
   const refused = homePage(
-    { token: "stale", apiBase: "/api", version: "test" },
-    () => ({ status: 401, body: { detail: "missing or invalid editor token" } })
+    { apiBase: "/api", version: "test" },
+    () => ({ status: 401, body: { detail: "missing or invalid editor token" } }),
+    "#stale"
   );
   refused.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
   await flush();
@@ -5212,7 +5247,9 @@ await suite("home.html: the landing page", "the page sandbox in makePage()", asy
   /* 3. The server stopped underneath the page. A network-level rejection has
    *    to land as a status line; unhandled, it would leave "Loading…" on
    *    screen with the reason only in a console nobody has open. */
-  const dropped = homePage({ token: "launch-token", apiBase: "/api", version: "test" });
+  const dropped = homePage(
+    { apiBase: "/api", version: "test" }, null, "#launch-token"
+  );
   dropped.sandbox.fetch = () => Promise.reject(new Error("connection refused"));
   dropped.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
   await flush();
@@ -5249,6 +5286,140 @@ await suite("home.html: opened without a server", "the page sandbox in makePage(
     offline.element("operations").children.length === 0,
     show(offline.element("operations").children.length));
 });
+
+/* --- the launch token, delivered by fragment ------------------------------ */
+
+/* The one property that made this change worth making, driven rather than
+ * grepped. The served body carries no token — a page is handed to any
+ * unauthenticated client on the port, and this token writes files anywhere the
+ * launching user can — so it arrives as the URL's fragment, which a browser
+ * never sends. Every config stub in this file is token-free, so a page that
+ * sent the right header can only have read it off `location.hash`.
+ *
+ * Both halves per page, and the absent half is the one that would otherwise be
+ * discovered by a user: the fragment is easy to lose to a copied link, a
+ * bookmark, or a chat client that trims one, and a page that carried on would
+ * answer with a wall of 401s naming the token rather than the address. */
+await suite("home.html: the launch token comes from the fragment",
+  "the page sandbox in makePage()", async () => {
+    let sentHeaders = null;
+    const carried = homePage(
+      { apiBase: "/api", version: "test" },
+      (url, init) => {
+        sentHeaders = (init || {}).headers || null;
+        return { status: 200, body: OPERATION_INDEX };
+      },
+      "#frag-token"
+    );
+    carried.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
+    await flush();
+    check("the token the page sends is the one in the fragment",
+      sentHeaders !== null && sentHeaders["X-Fivee-Editor-Token"] === "frag-token",
+      show(sentHeaders));
+    check("and the fragment is replaced out of the visible address",
+      carried.history.length === 1 && carried.history[0].url === "/",
+      show(carried.history));
+
+    /* Opened at the bare path: served, so a config was injected, but no token
+     * with it. One sentence naming the fix, and not a single refused call. */
+    const bare = homePage({ apiBase: "/api", version: "test" }, null, "");
+    bare.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
+    await flush();
+    check("with no fragment the page asks the server for nothing",
+      bare.requests.length === 0, show(bare.requests));
+    check("and says the token is missing rather than showing a refusal",
+      bare.element("ops-status").className === "error"
+        && bare.element("ops-status").textContent.indexOf("access token") !== -1
+        && bare.element("ops-status").textContent.indexOf("fivee serve") !== -1,
+      bare.element("ops-status").textContent);
+    check("and nothing is rewritten out of an address that had nothing in it",
+      bare.history.length === 0, show(bare.history));
+  });
+
+await suite("editor.html: the launch token comes from the fragment",
+  "the page sandbox in makePage()", async () => {
+    let sentHeaders = null;
+    const carried = makeEditorPage({
+      hash: "#frag-token",
+      reply: (url, init) => {
+        sentHeaders = (init || {}).headers || null;
+        return { status: 200, body: { ok: true, maps_dir: "/tmp/maps" } };
+      },
+    });
+    await flush();
+    check("the token the page sends is the one in the fragment",
+      sentHeaders !== null && sentHeaders["X-Fivee-Editor-Token"] === "frag-token",
+      show(sentHeaders));
+    check("and the fragment is replaced out of the visible address",
+      carried.history.length === 1 && carried.history[0].url === "/",
+      show(carried.history));
+
+    /* Boot is where this bites hardest: the editor asks for content and pings
+     * without being told to, so a page that shrugged at a missing token would
+     * greet the user with two refusals before they touched anything. */
+    const bare = makeEditorPage({ hash: "" });
+    await flush();
+    check("with no fragment the editor's boot asks the server for nothing",
+      bare.requests.length === 0, show(bare.requests));
+    check("and says the token is missing rather than showing a refusal",
+      bare.element("status").className === "error"
+        && bare.element("status").textContent.indexOf("access token") !== -1
+        && bare.element("status").textContent.indexOf("fivee serve") !== -1,
+      bare.element("status").textContent);
+    check("the mode note says so too, where the serverless note would be",
+      bare.element("mode-note").textContent.indexOf("access token") !== -1,
+      bare.element("mode-note").textContent);
+  });
+
+await suite("viewer.html: the launch token comes from the fragment",
+  "the page sandbox in makePage()", async () => {
+    let sentHeaders = null;
+    const carried = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#frag-token",
+      /* Carried alongside the fragment on purpose: `viewer_url` is a deep link
+       * with both, so the rewrite has to be told apart from "drop the tail". */
+      search: "?replay=cellar",
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    carried.reply = (url, init) => {
+      sentHeaders = (init || {}).headers || null;
+      return { status: 200, body: { replays: [] } };
+    };
+    carried.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("the token the page sends is the one in the fragment",
+      sentHeaders !== null && sentHeaders["X-Fivee-Editor-Token"] === "frag-token",
+      show(sentHeaders));
+    /* The query survives and only the fragment goes: `?replay=` is a deep link
+     * the export hands out, and a page that rewrote it away would break a
+     * reload and the back button's meaning along with it. */
+    check("and only the fragment is replaced out of the visible address",
+      carried.history.length === 1 && carried.history[0].url === "/?replay=cellar",
+      show(carried.history));
+
+    /* `connectToServer` is deliberately quiet on failure, so a bare-URL page
+     * that called it anyway would look like a server with no replays rather
+     * than one it could not ask. */
+    const bare = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "",
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    bare.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("with no fragment the viewer asks the server for nothing",
+      bare.requests.length === 0, show(bare.requests));
+    check("and the empty state says why, and that a dropped file still plays",
+      bare.element("empty-hint").textContent.indexOf("access token") !== -1
+        && bare.element("empty-hint").textContent.indexOf("fivee serve") !== -1
+        && bare.element("empty-hint").textContent.indexOf("dropped") !== -1,
+      bare.element("empty-hint").textContent);
+  });
 
 /* --- totals --------------------------------------------------------------- */
 

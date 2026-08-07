@@ -55,8 +55,14 @@ from .conftest import mapless_fight
 
 PROBLEM_TYPE = "application/problem+json"
 STATIC = Path(str(resources.files("fivee_sim.web"))) / "static"
+# The injected shape, and deliberately exact: this is also the substitution
+# `test_each_path_serves_the_shipped_file_the_table_names` undoes to recover the
+# bytes on disk, so a pattern loose enough to tolerate a stray field would let
+# that identity check pass against a page carrying one. No `token` — it reaches
+# the browser in the URL fragment now, and a body that still named it would be
+# handing the launch's whole authority to every process that can reach the port.
 CONFIG_RE = re.compile(
-    r'window\.__FIVEE_EDITOR__ = \{token: "[^"]+", apiBase: "/api/v1", version: "[^"]+"\};'
+    r'window\.__FIVEE_EDITOR__ = \{apiBase: "/api/v1", version: "[^"]+"\};'
 )
 
 HERO: dict[str, Any] = {
@@ -439,6 +445,23 @@ class TestGuards:
             editor.request("GET", "/api/v1/ping", token="not-the-token"), 401, TOKEN_HEADER
         )
 
+    def test_the_401_says_where_the_token_actually_comes_from(self, editor: Editor) -> None:
+        """The refusal's only job beyond the status: point at the fix.
+
+        It used to say the served page carries the token, which was both the
+        advice and the vulnerability — the page carries no token now, so the
+        sentence would send a reader to look for one that is not there. The
+        URL is where it lives, and losing the fragment off a copied link is
+        exactly how a caller arrives here.
+        """
+        problem = assert_problem(
+            editor.request("GET", "/api/v1/ping", token=False), 401, TOKEN_HEADER
+        )
+        assert "fragment" in problem["detail"]
+        assert "fivee serve" in problem["detail"]
+        # And it does not send anyone back to the page, which has none to give.
+        assert "served editor page" not in problem["detail"]
+
     def test_a_foreign_host_header_is_403_even_with_the_token(self, editor: Editor) -> None:
         response = editor.request("GET", "/api/v1/ping", host="evil.example")
         assert_problem(response, 403, "evil.example")
@@ -614,7 +637,7 @@ class TestStaticPages:
         assert response.headers["Cache-Control"] == "no-store"
         assert CONFIG_MARKER not in response.text
         assert len(CONFIG_RE.findall(response.text)) == 1
-        assert editor.server.token in response.text
+        assert editor.server.token not in response.text
 
     def test_the_configured_page_names_the_running_version(self, editor: Editor) -> None:
         # Not merely well-shaped: the page must be told the version of the
@@ -664,13 +687,41 @@ class TestStaticPages:
         recovered = CONFIG_RE.sub(CONFIG_MARKER, response.text) if injected else response.text
         assert recovered == shipped, f"GET {path} did not serve {filename}"
 
+    @pytest.mark.parametrize("path", sorted(routes.PAGES))
+    def test_no_page_hands_the_launch_token_to_an_unauthenticated_client(
+        self, editor: Editor, path: str
+    ) -> None:
+        """No served body carries the token, for every page the table serves.
+
+        A page is served without the token — being the thing that *delivers*
+        the token is exactly why it has to be — so a body holding it hands the
+        launch's whole authority to any local process that can reach the port,
+        with no filesystem access and no need to read the ``0600`` state file.
+        That authority is not confined to ``.fivee-sim/``: ``map.uvtt`` and
+        ``encounter.replay`` write to any path the caller names, so the harvest
+        is an arbitrary local file write as the launching user. The token
+        travels in the URL fragment instead, which a browser never sends.
+
+        Driven off ``routes.PAGES`` rather than the three paths that exist
+        today, so a page added later is covered without anybody remembering
+        this case. ``sorted`` only to keep the ids stable.
+        """
+        # Vacuity guard: an empty token is in every string, so a launch that
+        # somehow had none would make the assertion below unfalsifiable.
+        assert editor.server.token
+        response = editor.request("GET", path, token=False)
+        assert response.status == 200
+        assert editor.server.token not in response.text, (
+            f"GET {path} served the launch token to an unauthenticated client"
+        )
+
     def test_the_landing_page_is_configured_like_any_served_page(self, editor: Editor) -> None:
         # It fetches the operations index with the launch token, so it needs
         # the same injection the other two get — and needs it exactly once.
         response = editor.request("GET", "/", token=False)
         assert CONFIG_MARKER not in response.text
         assert len(CONFIG_RE.findall(response.text)) == 1
-        assert editor.server.token in response.text
+        assert editor.server.token not in response.text
         assert f'version: "{__version__}"' in response.text
 
     def test_the_viewer_page_is_configured_and_keeps_its_data_slot(self, editor: Editor) -> None:
@@ -2480,8 +2531,13 @@ class TestEncountersOverHttp:
             json_body={"path": str(editor.replays_dir / "brawl.json")},
         ).json()
         assert Path(exported["path"]).exists()
+        # The fragment is the token, and it goes after the query: that is the
+        # whole of how the page is told one, now that the served body no longer
+        # names it. A browser never sends a fragment, so handing this link
+        # around is not the disclosure that injecting it into the body was.
         assert exported["viewer_url"] == (
-            f"http://127.0.0.1:{editor.server.port}/viewer?replay=brawl"
+            f"http://127.0.0.1:{editor.server.port}/viewer"
+            f"?replay=brawl#{editor.server.token}"
         )
         # The bundle it just wrote is the one the viewer would play.
         assert editor.request("GET", "/api/v1/replays/brawl").status == 200

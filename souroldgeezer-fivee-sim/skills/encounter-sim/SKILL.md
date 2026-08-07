@@ -458,7 +458,9 @@ fight as a shareable replay — use the **map-forge** skill.
 **If the user would rather drive the fight themselves**, the editor page has a
 Play mode: they place a roster on a map and act turn by turn in the browser,
 either as the whole table or from one creature's seat, rolling their own dice or
-letting the engine roll. Point them at `editor_url` from `fivee serve`.
+letting the engine roll. Point them at `editor_url` from `fivee serve`, passed
+exactly as printed — the `#` and everything after it is this launch's access
+token, and a URL trimmed to the path opens a page the engine will refuse.
 
 A chair there reads the same `encounter.brief` projection step 2 describes,
 through the same `--as`: the whole table's chair reads `encounter.state` and a
