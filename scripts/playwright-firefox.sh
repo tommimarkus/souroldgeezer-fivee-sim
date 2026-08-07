@@ -3,7 +3,32 @@ set -euo pipefail
 
 playwright_repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 playwright_config="$playwright_repo_root/.playwright/cli.config.json"
-playwright_cache="$playwright_repo_root/.cache/playwright"
+playwright_cache_root="$playwright_repo_root"
+
+# Linked worktrees share the primary checkout's ignored cache. Resolve Git's
+# own pointers directly so every command avoids both another install and a git
+# subprocess. An exported/archive copy simply keeps its checkout-local cache.
+playwright_dot_git="$playwright_repo_root/.git"
+if [[ -f "$playwright_dot_git" ]]; then
+  IFS= read -r playwright_git_pointer < "$playwright_dot_git"
+  if [[ "$playwright_git_pointer" == "gitdir: "* ]]; then
+    playwright_git_dir="${playwright_git_pointer#gitdir: }"
+    if [[ "$playwright_git_dir" != /* ]]; then
+      playwright_git_dir="$playwright_repo_root/$playwright_git_dir"
+    fi
+    playwright_common_dir="$playwright_git_dir"
+    if [[ -f "$playwright_git_dir/commondir" ]]; then
+      IFS= read -r playwright_common_pointer < "$playwright_git_dir/commondir"
+      playwright_common_dir="$playwright_git_dir/$playwright_common_pointer"
+    fi
+    if playwright_common_dir="$(cd -- "$playwright_common_dir" 2>/dev/null && pwd -P)" &&
+      [[ "${playwright_common_dir##*/}" == ".git" ]]; then
+      playwright_cache_root="${playwright_common_dir%/*}"
+    fi
+  fi
+fi
+
+playwright_cache="$playwright_cache_root/.cache/playwright"
 
 if ! command -v npx >/dev/null 2>&1; then
   echo "Firefox-only Playwright requires npx from Node.js/npm (an fnm runtime is fine)." >&2
@@ -48,6 +73,11 @@ export npm_config_cache="$playwright_cache/npm"
 export XDG_CACHE_HOME="$playwright_cache/xdg"
 export PLAYWRIGHT_BROWSERS_PATH="$playwright_cache/browsers"
 export NO_UPDATE_NOTIFIER=1
+export npm_config_audit=false
+export npm_config_fund=false
+export npm_config_prefer_offline=true
+export npm_config_progress=false
+export npm_config_update_notifier=false
 
 # Firefox's inner process sandboxes cannot initialize inside the workspace
 # sandbox. The JSON preferences cover the browser profile; these variables
