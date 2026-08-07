@@ -1,7 +1,9 @@
 # Core seating
 
-Load this core for every run. Human transport, failure handling, and pause/resume
-are separate conditional references linked directly from `SKILL.md`.
+Load this core for every run. The root establishes the roster before live play;
+each disposable interval controller receives only a redacted seat bootstrap and
+owns live seat children for that interval. Human transport, failure handling,
+and pause/resume are separate conditional references linked from `SKILL.md`.
 
 ## roster.json
 
@@ -48,26 +50,30 @@ is the intended confined profile. Codex does not apply
 that profile, so a Codex seat with reported tools is in **honour-system mode**.
 Treat a broader Claude inventory the same way.
 
-Append each honour-system classification, seat, and reported tools to
-`transcript.md`; in playtest mode also append it to `findings.jsonl` and report
-it. Continue without asking for approval solely because tools are present. The
-player still must not use them or seek the adventure.
+The live interval controller appends each honour-system classification, seat,
+and reported tools to `transcript.md`; in playtest mode it also appends the
+finding to `findings.jsonl` and the report. Continue without asking for approval
+solely because tools are present. The player still must not use them or seek the
+adventure.
 
-Re-ask after every re-spawn or resume and record the new inventory before new
-player-facing material. A new child may have different tools. `none` or the exact
-confined Claude profile belongs only in `tool_check`; every other inventory also
-belongs in the chronology and, in playtest mode, the findings and report.
+Re-ask in every fresh interval and after any in-interval re-spawn or saved-run
+resume, then record the new inventory before new player-facing material. A new
+child may have different tools. `none` or the exact confined Claude profile
+belongs only in `tool_check`; every other inventory also belongs in the
+chronology and, in playtest mode, the findings and report.
 
 ## Agent seats
 
-Keep one child per agent player alive so private experience persists. Dispatch
-participants in the same council pass together; no responder sees another answer
-from that pass. Spread temperaments such as cautious, bold, thorough, and social.
+Keep one child per agent player alive only for the current interval. At the
+interval boundary persist its witnessed state, end it, and let the next
+controller spawn a fresh child from `seats/<name>.md`. Dispatch participants in
+the same council pass together; no responder sees another answer from that pass.
+Spread temperaments such as cautious, bold, thorough, and social.
 
-The coordinator stores what each seat witnesses in `seats/<name>.md`, but never
-feeds that file back to a live child. It is rehydration material only. The full
-transcript, another seat's memory, module identity, and run sheet never enter a
-player prompt.
+The interval controller stores what each seat witnesses in `seats/<name>.md`,
+but never feeds that file back to the same live child. It is fresh-interval
+rehydration material only. The full transcript, another seat's memory, module
+identity, and run sheet never enter a player prompt.
 
 ## council.json
 

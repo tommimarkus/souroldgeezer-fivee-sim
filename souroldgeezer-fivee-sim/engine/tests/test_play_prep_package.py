@@ -115,8 +115,8 @@ def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None
     assert re.search(r"(?:at most|max(?:imum)?)\s*1[, ]?200\s+proxy tokens", frames, flags=re.I)
     assert "complete manifest" in frames.lower()
     assert re.search(r'"?complete"?\s*:\s*true', frames, flags=re.I)
-    assert re.search(r"coordinator.{0,200}\.partial", frames, flags=re.I | re.S)
-    assert re.search(r"coordinator.{0,220}(?:atomic|publish)", frames, flags=re.I | re.S)
+    assert re.search(r"root supervisor.{0,200}\.partial", frames, flags=re.I | re.S)
+    assert re.search(r"root supervisor.{0,220}(?:atomic|publish)", frames, flags=re.I | re.S)
     assert re.search(
         r"(?:do not|never).{0,200}(?:write|publish).{0,100}artifact",
         frames,
@@ -126,11 +126,11 @@ def test_prep_emits_a_bounded_module_index_for_coordinator_publication() -> None
 
 def test_live_game_master_reads_only_current_indexed_module_sections() -> None:
     game_master = _text("agents/game-master.md")
-    initial = _section(game_master, "## Initial spawn only")
+    initial = _section(game_master, "## Interval spawn")
     initial_plain = " ".join(initial.lower().split())
 
     assert "module-index.json" in initial
-    for obligation in ("module ids", "locators", "bounded checkpoint", "lazy"):
+    for obligation in ("module ids", "locators", "bounded private checkpoint", "lazy"):
         assert obligation in initial_plain
     assert re.search(
         r"(?:do not|never).{0,180}(?:whole|entire|end to end).{0,120}adventure",

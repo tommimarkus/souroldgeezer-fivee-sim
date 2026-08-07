@@ -2,31 +2,52 @@
 
 Load this file only when Claude Code is the active host.
 
-Spawn the named agent `adventure-prep` with only the adventure path, source
-digest and format, active mode, and bounded frame contract; it receives no
-player or seat private memory. End it after its complete manifest. Spawn the
-named agent `game-master` with the source path and digest, module-index pointer
-and digest, only current entries and locators, a party summary including each
-seat's rules brief, active mode, and current bounded checkpoint when present.
-Spawn the named agent `typical-player` once per agent seat with only its
-identity, character sheet, gear, rules brief, temperament, voice, and permitted
-rehydration state. Claude Code discovers the packaged named agents and applies
-their frontmatter, including tools, model, and effort; do not reproduce or
-override it.
+Before live intervals, the root may spawn the named agent `adventure-prep` with
+only adventure path, source digest and format, active mode, and bounded frame
+contract. It receives no player or seat private memory. End it after its complete
+manifest; the root validates and writes initial artifacts before granting the
+live write lease.
 
-For each decision beat, spawn the named `play-mechanics` agent with only the
-compact mechanical brief: encounter id, exact adjudicated request, participant
-labels, which seats need a baseline or delta, and a recovery note when
-applicable. It receives no adventure or module text and no player or seat
-private memory. End it after its bounded one-beat return. The existing named
-`encounter-sim` agent remains available for direct encounter-sim workflows; do
-not load it as the live play beat child.
+For every live interval the root spawns the named agent `play-controller`. Give
+it only the redacted table bootstrap, mode, current engine/adventure IDs,
+artifact pointers and digests, bounded rehydration, opaque game-master launch
+fields, and the 800-token return contract. Never give it module text, hidden
+module state, current locators, full roster, transcript, raw council, or raw
+engine traffic. The root communicates only the four allowed frame types and
+does not spawn or message live roles around the controller.
 
-Record player tool inventory before the first scene/brief and after re-spawn.
-The expected `Read (player-visible/** only)` inventory is confined-profile;
-anything broader is honour-system and is reported without pausing.
+At controller startup confirm its `Agent` tool is present. Nested delegation
+requires a subagent depth that leaves `Agent` available to this first-level
+controller. If host policy removes it, return the ordinary bounded `blocked`
+frame; the root must not inline the live roles or recurring relay as a fallback.
 
-At every live checkpoint—encounter finalization, chapter boundary, or the
-six-decision-beat cadence—end and re-spawn the game-master agent through this
-same dispatch. Player agents remain live unless pause/resume or a failure
-requires rehydration.
+The `play-controller` owns the named child agents `game-master`,
+`typical-player`, and `play-mechanics`. It spawns a fresh named `game-master` and
+one fresh named `typical-player` per agent seat at every interval. The game
+master receives source path and digest, module-index pointer and digest, current
+entry IDs, party summary including each seat's rules brief, active mode, and its
+bounded private checkpoint. It resolves current IDs to locators itself. In
+playtest it also receives the run-sheet pointer, digest, and current IDs, never
+the whole run sheet.
+
+Each player receives only identity, character sheet, gear, rules brief,
+temperament, voice, its `seats/<name>.md` rehydration, and any participant-scoped
+bounded council projection. It never receives the adventure path or text, run
+sheet, other roster entries, or full transcript. Record player tool inventory
+before the first player-facing material in every interval. The expected
+`Read (player-visible/** only)` inventory is confined-profile; anything broader
+is honour-system and is reported without pausing.
+
+For each decision beat the controller spawns a fresh named `play-mechanics`
+agent with only encounter id, exact adjudicated request, participant labels,
+baseline/delta needs, and recovery note when applicable. It receives no
+adventure or module text and no player or seat private memory. End it after its
+bounded one-beat return. The named `encounter-sim` agent remains available for
+direct encounter-sim workflows; never use it as the live play beat child.
+
+Claude Code discovers every packaged named agent and applies its shared
+frontmatter, including tools, model, and effort; do not reproduce or override
+the canonical role body. At the six-beat, encounter, or chapter boundary the
+controller flushes artifacts, terminates every named child and descendant,
+returns its bounded interval frame, and ends. The root starts a fresh named
+`play-controller` when play continues.

@@ -348,7 +348,7 @@ def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
 
 def test_play_skill_has_a_bounded_participant_scoped_party_council() -> None:
     skill = _text("skills/play/SKILL.md")
-    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    beat_loop = _markdown_section(skill, "## 3. Supervise intervals")
     council = _markdown_section(
         _packaged_reference(
             "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
@@ -393,7 +393,7 @@ def test_play_skill_has_a_bounded_participant_scoped_party_council() -> None:
 
 def test_party_council_keeps_table_talk_out_of_world_state_and_gm_bulk_context() -> None:
     skill = _text("skills/play/SKILL.md")
-    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    beat_loop = _markdown_section(skill, "## 3. Supervise intervals")
     council = _markdown_section(
         _packaged_reference(
             "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
@@ -438,7 +438,7 @@ def test_party_council_keeps_table_talk_out_of_world_state_and_gm_bulk_context()
 
 def test_party_council_is_resumable_for_mixed_human_and_agent_seats() -> None:
     skill = _text("skills/play/SKILL.md")
-    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    beat_loop = _markdown_section(skill, "## 3. Supervise intervals")
     council = _markdown_section(
         _packaged_reference(
             "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
@@ -736,7 +736,7 @@ def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:
 
 def test_play_skill_uses_one_brief_baseline_then_chair_scoped_deltas() -> None:
     skill = _text("skills/play/SKILL.md")
-    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    beat_loop = _markdown_section(skill, "## 3. Supervise intervals")
     table_loop = _packaged_reference(
         "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
     )
@@ -776,7 +776,7 @@ def test_brief_delivery_cursor_forces_safe_rebaseline_after_lost_ownership() -> 
     skill = _text("skills/play/SKILL.md")
     table_loop = _packaged_reference(
         "skills/play/SKILL.md",
-        _markdown_section(skill, "## 3. Run the beat loop"),
+        _markdown_section(skill, "## 3. Supervise intervals"),
         "references/table-loop.md",
     )
     resume = _packaged_reference(
@@ -817,7 +817,7 @@ def test_player_council_returns_are_bounded_and_chronology_is_out_of_band() -> N
     skill = _text("skills/play/SKILL.md")
     table_loop = _packaged_reference(
         "skills/play/SKILL.md",
-        _markdown_section(skill, "## 3. Run the beat loop"),
+        _markdown_section(skill, "## 3. Supervise intervals"),
         "references/table-loop.md",
     )
     assert re.search(
@@ -828,7 +828,7 @@ def test_player_council_returns_are_bounded_and_chronology_is_out_of_band() -> N
     )
 
 
-def test_live_run_checkpoints_bound_the_coordinator_and_game_master() -> None:
+def test_live_run_checkpoints_bound_the_interval_controller_and_game_master() -> None:
     skill = _text("skills/play/SKILL.md")
     checkpoint = _markdown_section(skill, "## 6. Checkpoint, pause, and resume")
     game_master = _markdown_section(
@@ -839,7 +839,7 @@ def test_live_run_checkpoints_bound_the_coordinator_and_game_master() -> None:
     assert re.search(r"encounter.{0,120}chapter.{0,120}boundar", combined)
     assert re.search(r"six.{0,160}resolved decision beats", combined)
     assert "checkpoint.json" in combined
-    assert re.search(r"(?:600\s+tokens|token cap.{0,80}600)", combined)
+    assert re.search(r"(?:800\s+tokens|token cap.{0,80}800)", combined)
     for field in (
         "objective",
         "run position",
@@ -870,15 +870,20 @@ def test_playtest_run_sheet_is_private_durable_checkpoint_evidence() -> None:
     assert re.search(r"private.{0,160}durable", guidance)
     assert re.search(r"run-sheet\.json.{0,200}(?:pointer|digest).{0,200}position", guidance)
     assert re.search(r"(?:never|do not).{0,160}player", guidance)
-    assert re.search(r"re-spawn.{0,240}(?:relevant|current).{0,160}(?:entry|entries)", guidance)
+    assert re.search(
+        r"fresh interval.{0,120}game-master spawn.{0,240}"
+        r"(?:relevant|current).{0,160}(?:entry|entries)",
+        guidance,
+    )
     assert re.search(r"(?:do not|never).{0,200}(?:whole|full) run sheet", guidance)
 
     initial = _markdown_section(
-        _text("agents/game-master.md"), "## Initial spawn only"
+        _text("agents/game-master.md"), "## Interval spawn"
     )
-    assert re.search(r"initial spawn.{0,240}run sheet", initial, flags=re.I | re.S)
+    assert re.search(r"every interval spawn", initial, flags=re.I)
+    assert re.search(r"run.sheet pointer", initial, flags=re.I)
     assert re.search(
-        r"checkpoint re-spawn.{0,240}(?:do not|never).{0,240}"
+        r"fresh interval spawn.{0,240}(?:do not|never).{0,240}"
         r"(?:repeat|reread|re-emit)",
         initial,
         flags=re.I | re.S,
@@ -1155,7 +1160,7 @@ def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> No
     protocol = _markdown_section(
         _packaged_reference(
             "skills/play/SKILL.md",
-            _markdown_section(skill, "## 3. Run the beat loop"),
+            _markdown_section(skill, "## 3. Supervise intervals"),
             "references/table-loop.md",
         ),
         "## Rules questions from a player",
@@ -1235,7 +1240,7 @@ def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> N
     protocol = _markdown_section(
         _packaged_reference(
             "skills/play/SKILL.md",
-            _markdown_section(skill, "## 3. Run the beat loop"),
+            _markdown_section(skill, "## 3. Supervise intervals"),
             "references/table-loop.md",
         ),
         "## Rules questions from a player",

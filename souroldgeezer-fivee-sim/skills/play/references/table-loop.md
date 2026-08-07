@@ -1,17 +1,20 @@
 # Table loop
 
-Load this reference immediately before the first scene. It is the ordinary table
-protocol for both play and playtest.
+Load this reference before the first live interval. It is the ordinary table
+protocol for both play and playtest. The disposable interval controller is the
+coordinator described below; the root supervisor never runs these recurring
+relays or receives their raw returns.
 
 ## Mechanical context and briefs
 
-The coordinator owns a **resettable mechanical context** separate from the
-persistent narrative game master. Use the packaged `play-mechanics` role for one decision beat,
+The interval controller owns a **resettable mechanical context** separate from
+the narrative game master. Use the packaged `play-mechanics` role for one decision beat,
 then end it immediately after its bounded return.
 Give it encounter ids and exact adjudicated operation requests, never the module,
 run sheet, transcript, or player memories. Reset it after each decision beat and
 at every encounter or chapter checkpoint so raw engine traffic does not
-accumulate in the coordinator or game-master context.
+accumulate in the controller or game-master context and is never forwarded to
+the root.
 
 For a decision beat, the mechanical context reads one authoritative
 `encounter.state` snapshot to identify the turn and detect whether state changed.
@@ -38,7 +41,7 @@ full baseline and relay it once. Never retry for a delta, never substitute
 another chair's baseline, and never send a full brief or full baseline again on
 each council pass or response when state is unchanged.
 
-The coordinator owns `.fivee-sim/plays/<id>/brief-cursors.json`. The
+The interval controller owns `.fivee-sim/plays/<id>/brief-cursors.json`. The
 play-mechanics child never writes this or any other table artifact. For each seat,
 record the encounter id, player-context generation, delivered `state_sha256`,
 and delivery status **only after a successful relay**. This cursor records what
@@ -61,7 +64,8 @@ STATE DELTA: <chair> | full | delta
 PAYLOAD: <exact chair-safe engine payload>
 ```
 
-After all requested chair frames, it emits one bounded control frame and exits:
+After all requested chair frames, it emits one bounded control frame to the
+interval controller and exits:
 
 ```text
 STATUS: ok | refused | degraded | blocked
@@ -122,7 +126,8 @@ The coordinator relays the fields, then appends the labeled exchange to
 `transcript.md` and witnessed fields to seat-private memory as out-of-band
 chronology. After recording, drop the raw return from the live council working
 set; retain only `current_plan`, exact open questions, and readiness in
-`council.json`. Never replay raw discussion to a player or game master.
+`council.json`. Never replay raw discussion to a player or game master, and
+never send raw council returns or COMMITs to the root supervisor.
 
 Relay only an exact `GM QUESTION` and return only its player-facing answer. Give
 the game master audible `SAY`, final `COMMIT`, and a table-only plan summary of at
@@ -131,7 +136,9 @@ monster, enemy, or NPC knowledge. The plan stays advisory; the acting seat alone
 chooses and sends `COMMIT`.
 
 Human transport and its checkpointed extension rule live in `human-seats.md` and
-are loaded only when a human participates.
+are loaded only when a human participates. A human prompt is the only council
+transport that crosses to the root: the same live interval controller receives
+the relayed answer and continues.
 
 ## Rules questions from a player
 

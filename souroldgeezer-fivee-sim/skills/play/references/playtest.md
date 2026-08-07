@@ -10,18 +10,22 @@ first scene to establish the private run sheet: scenes, encounters, NPCs,
 treasure, stated DCs, assumed route, and material omissions. Keep it from
 players. Measure unused content and pacing against it.
 
-Persist it immediately as the private durable
+Before the first interval, the root persists it as the private durable
 `.fivee-sim/plays/<id>/run-sheet.json`, with stable entry IDs, a
 `module_index_id` that references the corresponding `module-index.json` entry,
-and per-entry status/pacing fields. Never send it to a player. At every encounter or chapter
-checkpoint, update the artifact and put only its pointer, digest, current entry
-ids, and run position in `checkpoint.json`. On game-master re-spawn, supply the
-pointer and only the relevant current entries, never the whole run sheet. A
-fresh report context may read the durable artifact at the end.
+and per-entry status/pacing fields. Never send it to a player. During a live
+interval, only the controller updates the artifact. At every encounter or
+chapter checkpoint, put only its pointer, digest, current entry ids, and run
+position in `checkpoint.json`. On a fresh interval's game-master spawn, the game master alone
+reads the pointer and relevant current entries; neither controller nor root
+receives the whole run sheet. A fresh report context may read the durable
+artifact after live intervals end.
 
-The coordinator is also the harness: observe rather than narrate, append each
-finding when it occurs, and never steer choices toward an expected or optimal
-route.
+The interval controller is also the live harness: observe rather than narrate,
+append each finding when it occurs, and never steer choices toward an expected
+or optimal route. It does not forward raw findings, hidden run-sheet state, or
+worker reasoning to the root; the root receives artifact pointers/digests and
+user-visible interval results only.
 
 ## Measure the fights
 

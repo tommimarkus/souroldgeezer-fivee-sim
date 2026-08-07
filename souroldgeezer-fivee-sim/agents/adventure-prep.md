@@ -80,8 +80,8 @@ scene prose, NPC motives, treasure details, or route conditions in an index
 title.
 
 Do not place playtest findings in `module-index.json`. Emit them as separate
-run-sheet inventory data keyed by the same stable IDs so the coordinator can
-own the existing `run-sheet.json` artifact.
+run-sheet inventory data keyed by the same stable IDs so the root supervisor can
+publish the initial `run-sheet.json` before live intervals begin.
 
 ## Output frames
 
@@ -92,7 +92,7 @@ giving the total frame and entry counts, all emitted ID ranges, any unresolved
 cross-reference IDs, and `"complete": true`. Never repeat earlier frames merely
 to make the last one self-contained.
 
-You emit data; you do not write or publish either artifact. The coordinator
+You emit data; you do not write or publish either artifact. The root supervisor
 writes `module-index.json.partial`, validates each frame and the complete
 manifest, then atomically publishes `module-index.json` only when the set is
 complete. In playtest mode it performs the corresponding private run-sheet

@@ -4,9 +4,10 @@ Load this reference only when at least one seat is human.
 
 ## Handing over the live view
 
-After creating the adventure and linking its first encounter, run `fivee serve`.
-The command starts the local server or reuses the running one. Read the returned
-`viewer_url`; do not reuse a URL remembered from an earlier launch.
+After creating the adventure and linking its first encounter, the interval
+controller asks one fresh mechanics child to run `fivee serve`. The command
+starts the local server or reuses the running one. Read the returned `viewer_url`;
+do not reuse a URL remembered from an earlier launch.
 
 For each human player seat, URL-encode the adventure id and URL-encode that
 seat's combatant name. Insert the query immediately before the `#` launch-token
@@ -39,18 +40,21 @@ is useful, record only that a live view must be reconstructed, without a token.
 
 ## Asking a human seat
 
-After printing narration, use the host's user-input operation. Ask up to four
-humans in one pause when supported; beyond that, pause again. Offer two or three
-plausible actions and let free text carry anything else—the options are a
-convenience, never a menu.
+The interval controller cannot ask the user directly. After user-visible
+narration, it sends the root one bounded human-seat prompt. The root uses the
+host's user-input operation, asks up to four humans in one pause when supported,
+and relays the answer to the same live controller. The controller retains every
+live child and the exclusive table-artifact write lease while waiting. Beyond
+four humans, pause again. Offer two or three plausible actions and let free text
+carry anything else—the options are a convenience, never a menu.
 
-During council ask for the same bounded fields as an agent: a `TABLE` proposal or
+During council the user-input prompt asks for the same bounded fields as an agent: a `TABLE` proposal or
 response, optional `SAY`, at most one exact `GM QUESTION`, and `READY: yes|no`.
 After council, ask only a decision owner for its separate `COMMIT`.
 
 Ordinary council has one proposal pass and one response/revision pass. A human
 may request an extra pass **one pass at a time**. After **two extra extension
-passes**, checkpoint the council before any further extension: update
+passes**, the live controller checkpoints the council before any further extension: update
 `council.json` with `current_plan`, `open_questions`, `ready`, pass number, and
 decision owners, then compact active council context to those fields. Never use
 the raw discussion to continue. A human may then request another single pass;

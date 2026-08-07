@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
+CONTROLLER_PATH = PLUGIN_ROOT / "agents/play-controller.md"
 
 
 def _text(relative_path: str) -> str:
@@ -20,6 +21,153 @@ def _section(markdown: str, heading: str) -> str:
     )
     assert match is not None, f"missing stable guidance section {heading!r}"
     return match.group("body")
+
+
+def _frontmatter(markdown: str) -> tuple[str, str]:
+    match = re.match(r"---\s*\n(?P<metadata>.*?)\n---(?P<body>.*)", markdown, re.DOTALL)
+    assert match is not None
+    return match.group("metadata"), match.group("body")
+
+
+def _metadata_value(metadata: str, key: str) -> str:
+    match = re.search(rf"^{re.escape(key)}:\s*(?P<value>.+)$", metadata, re.MULTILINE)
+    assert match is not None, f"missing {key!r} metadata"
+    return match.group("value")
+
+
+def test_play_controller_tools_are_scoped_to_roles_references_and_play_artifacts() -> None:
+    controller = CONTROLLER_PATH.read_text(encoding="utf-8")
+    metadata, _ = _frontmatter(controller)
+
+    tools = {tool.strip() for tool in _metadata_value(metadata, "tools").split(",")}
+    assert tools == {
+        "Agent",
+        "SendMessage",
+        "Read(/${CLAUDE_PLUGIN_ROOT}/agents/**)",
+        "Read(/${CLAUDE_PLUGIN_ROOT}/skills/play/references/**)",
+        "Read(.fivee-sim/plays/**)",
+        "Write(.fivee-sim/plays/**)",
+    }
+    denied = {
+        tool.strip()
+        for tool in _metadata_value(metadata, "disallowedTools").split(",")
+    }
+    assert {
+        "AskUserQuestion",
+        "Bash",
+        "Skill",
+        "WebFetch",
+        "WebSearch",
+        "mcp__*",
+    } <= denied
+
+
+def test_play_controller_ends_at_the_first_interval_boundary() -> None:
+    controller = CONTROLLER_PATH.read_text(encoding="utf-8")
+    _, body = _frontmatter(controller)
+    lifetime = _section(body, "## Interval lifetime")
+
+    assert re.search(r"at most six resolved (?:decision )?beats", lifetime, re.I)
+    assert re.search(r"encounter.{0,120}chapter.{0,160}boundary", lifetime, re.I | re.S)
+    assert re.search(r"flush.{0,160}artifact", lifetime, re.I | re.S)
+    assert re.search(r"terminate.{0,160}(?:child|descendant)", lifetime, re.I | re.S)
+    assert re.search(r"(?:end|terminate).{0,120}(?:interval|yourself)", lifetime, re.I | re.S)
+
+
+def test_play_controller_cannot_open_or_return_hidden_module_state() -> None:
+    controller = CONTROLLER_PATH.read_text(encoding="utf-8")
+    _, body = _frontmatter(controller)
+    capability = _section(body, "## Capability and information boundary")
+
+    assert "skills/play/references/" in capability
+    assert re.search(r"(?:never|do not).{0,160}(?:adventure|module) text", capability, re.I | re.S)
+    assert re.search(r"(?:never|do not).{0,160}hidden module state", capability, re.I | re.S)
+    assert re.search(r"current module locators.{0,160}game master", capability, re.I | re.S)
+    assert re.search(r"exactly one.{0,160}(?:writer|write owner)", capability, re.I | re.S)
+    assert re.search(r"Agent.? tool.{0,160}blocked", capability, re.I | re.S)
+
+
+def test_root_is_a_thin_supervisor_with_a_closed_return_boundary() -> None:
+    skill = _text("skills/play/SKILL.md")
+    supervision = _section(skill, "## 3. Supervise intervals")
+    plain = " ".join(supervision.lower().split())
+
+    assert "play-controller" in supervision
+    assert re.search(
+        r"root.{0,160}(?:does not|never).{0,160}"
+        r"(?:write|edit).{0,100}table artifact",
+        plain,
+    )
+    assert re.search(r"exactly one.{0,120}(?:controller|writer).{0,120}(?:owns|writes)", plain)
+    for allowed_return in (
+        "user-visible narration",
+        "human-seat prompt",
+        "blocker",
+        "interval result",
+    ):
+        assert allowed_return in plain
+    for retained_private in (
+        "raw council returns",
+        "commits",
+        "chair payloads",
+        "mechanics control frames",
+        "raw engine traffic",
+        "game-master private checkpoint data",
+        "worker reasoning",
+    ):
+        assert retained_private in plain
+    assert re.search(r"same.{0,100}controller.{0,160}(?:human|answer)", plain)
+    assert re.search(r"800 stable-proxy tokens", plain)
+
+
+def test_fresh_interval_rehydrates_roles_from_bounded_table_state() -> None:
+    controller = CONTROLLER_PATH.read_text(encoding="utf-8")
+    rehydration = _section(controller, "## Fresh interval rehydration")
+    plain = " ".join(rehydration.lower().split())
+
+    for artifact in (
+        "checkpoint.json",
+        "seats/<name>.md",
+        "council.json",
+        "brief-cursors.json",
+        "module-index.json",
+    ):
+        assert artifact in rehydration
+    assert "run-sheet.json" in rehydration
+    assert re.search(r"pointer.{0,120}digest", plain)
+    assert re.search(r"fresh.{0,120}game.master", plain)
+    assert re.search(r"fresh.{0,120}(?:player|seat)", plain)
+    assert re.search(r"fork_turns=\"none\"", rehydration)
+    assert re.search(r"(?:never|do not).{0,160}full transcript", plain)
+
+
+def test_host_dispatch_puts_the_controller_between_root_and_live_roles() -> None:
+    codex = _text("skills/play/references/dispatch-codex.md")
+    assert "../../agents/play-controller.md" in codex
+    assert re.search(
+        r"root.{0,240}play-controller.{0,160}fork_turns=\"none\"",
+        codex,
+        flags=re.I | re.S,
+    )
+    assert re.search(
+        r"controller.{0,240}(?:game-master|typical-player|play-mechanics)"
+        r".{0,300}fork_turns=\"none\"",
+        codex,
+        flags=re.I | re.S,
+    )
+
+    claude = _text("skills/play/references/dispatch-claude-code.md")
+    assert re.search(r"root.{0,200}named agent `play-controller`", claude, re.I | re.S)
+    assert re.search(
+        r"play-controller.{0,300}owns.{0,240}(?:game-master|typical-player|play-mechanics)",
+        claude,
+        flags=re.I | re.S,
+    )
+    assert re.search(
+        r"Agent.? tool.{0,240}(?:depth|nested).{0,240}blocked",
+        claude,
+        flags=re.I | re.S,
+    )
 
 
 def test_play_prepares_a_private_module_index_before_spawning_the_game_master() -> None:

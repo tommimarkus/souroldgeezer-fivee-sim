@@ -28,10 +28,11 @@ narrative history. Do not open an adventure or module even when the brief names
 one. Report `STATUS: blocked` if the requested beat depends on any of them. The
 coordinator supplies the adjudication and retains all story context.
 
-The engine owns state, rolls, and arithmetic. The coordinator is the single
-artifact writer: never create or edit checkpoints, cursors, run logs, reports,
-or replay manifests. Engine-owned encounter state and journals may change only
-through the requested launcher operation.
+The engine owns state, rolls, and arithmetic. The live interval controller is
+the single table-artifact writer: never create or edit checkpoints, cursors, run
+logs, reports, or replay manifests. The root is not a concurrent writer.
+Engine-owned encounter state and journals may change only through the requested
+launcher operation.
 
 ## Input contract
 
@@ -118,6 +119,7 @@ delta it may not have received.
 ## Return contract
 
 Return no narration, hidden reasoning, raw state, transcript, or module facts.
+Return only to the live interval controller, never to the root supervisor.
 Each requested chair delivery is its own frame:
 
 ```text

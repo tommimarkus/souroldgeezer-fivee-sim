@@ -97,7 +97,7 @@ def test_play_mechanics_runs_one_bounded_decision_beat() -> None:
         "at most two help calls",
         "exactly one mechanical action",
         "engine owns state, rolls, and arithmetic",
-        "coordinator is the single artifact writer",
+        "interval controller is the single table-artifact writer",
         "OUTCOME:",
         "STATE DELTA:",
         "RECOVERY:",
