@@ -45,7 +45,7 @@ from ..map_document import MapDocument
 from ..map_document import serialize as serialize_map
 from ..model.creature import Creature
 from ..model.encounter import Encounter, EncounterError, EncounterMode
-from ..paths import source_id
+from ..paths import StorageLayout, source_id
 from . import blobs, specs
 from . import encounter_journal as journal_service
 from . import maps as map_service
@@ -190,6 +190,9 @@ class EngineState:
     #: environment/default configuration; runtime content.configure remains an
     #: in-memory overlay and never changes this launch fact.
     configuration_path: Path | None = None
+    #: Immutable launch storage, constructed by the adapter composition root.
+    #: ``None`` keeps direct service-test construction lightweight.
+    storage: StorageLayout | None = None
 
 
 def utc_now() -> str:

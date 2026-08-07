@@ -24,10 +24,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .configuration import Configuration
 from .content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 
 __all__ = [
@@ -41,10 +44,14 @@ __all__ = [
     "MAPS_SUBDIR",
     "REPLAYS_ENV",
     "REPLAYS_SUBDIR",
+    "RUNS_ENV",
+    "RUNS_SUBDIR",
     "SCENES_ENV",
     "SCENES_SUBDIR",
     "SOURCE_ID_ENV",
     "STATE_FILENAME",
+    "RunSelectionError",
+    "StorageLayout",
     "adventures_root",
     "blobs_root",
     "encounters_root",
@@ -54,9 +61,11 @@ __all__ = [
     "project_root",
     "read_state",
     "replays_root",
+    "runs_root",
     "scenes_root",
     "source_id",
     "state_file_for",
+    "storage_layout",
 ]
 
 #: Environment variable holding an ``os.pathsep``-separated list of map files
@@ -107,8 +116,13 @@ BLOBS_ENV = "FIVEE_SIM_BLOBS"
 #: names payloads that are not there, and recovery says so.
 BLOBS_SUBDIR = Path(".fivee-sim") / "blobs"
 
-#: The editor's launch state file; it lives next to the maps directory (for the
-#: default ``<project>/.fivee-sim/maps`` that means ``<project>/.fivee-sim/``).
+#: Environment variable naming the root of isolated adventure-run workspaces.
+RUNS_ENV = "FIVEE_SIM_RUNS"
+#: Where isolated adventure-run workspaces live by default.
+RUNS_SUBDIR = Path(".fivee-sim") / "runs"
+
+#: The editor's launch state filename; selector-specific directories beneath
+#: ``.fivee-sim/runtime`` keep control, legacy and adventure processes apart.
 STATE_FILENAME = "fivee-sim-server.json"
 
 #: Environment variable naming the engine source this launch was started from,
@@ -123,6 +137,74 @@ STATE_FILENAME = "fivee-sim-server.json"
 #: exception: the client imports nothing of the engine but this module's
 #: functions, and that boundary is worth more than the third copy costs.
 SOURCE_ID_ENV = "FIVEE_SIM_SOURCE_ID"
+_SAFE_RUN_ID = re.compile(r"^adv-[A-Za-z0-9_-]+$")
+
+
+class RunSelectionError(ValueError):
+    """A requested adventure run is unsafe or does not exist."""
+
+
+@dataclass(frozen=True, slots=True)
+class StorageLayout:
+    """All storage roots owned by one engine process.
+
+    ``run_id`` is an ``adv-*`` workspace, ``legacy`` for the pre-run mutable
+    roots, or ``None`` for the read/control process. Shared maps, scenes and
+    replays remain explicit inputs; an adventure run writes only below its
+    own :attr:`run_root`.
+    """
+
+    run_id: str | None
+    runs_dir: Path
+    runtime_dir: Path
+    shared_map_paths: tuple[Path, ...]
+    shared_replay_paths: tuple[Path, ...]
+    shared_scenes_dir: Path
+    legacy_encounters_dir: Path
+    legacy_adventures_dir: Path
+    legacy_blobs_dir: Path
+
+    @property
+    def run_root(self) -> Path | None:
+        if self.run_id is None or self.run_id == "legacy":
+            return None
+        return self.runs_dir / self.run_id
+
+    @property
+    def maps_dir(self) -> Path:
+        return self.run_root / "maps" if self.run_root else self.shared_map_paths[0]
+
+    @property
+    def replays_dir(self) -> Path:
+        return self.run_root / "replays" if self.run_root else self.shared_replay_paths[0]
+
+    @property
+    def scenes_dir(self) -> Path:
+        return self.run_root / "scenes" if self.run_root else self.shared_scenes_dir
+
+    @property
+    def encounters_dir(self) -> Path:
+        return (
+            self.run_root / "encounters"
+            if self.run_root
+            else self.legacy_encounters_dir
+        )
+
+    @property
+    def adventures_dir(self) -> Path:
+        return (
+            self.run_root / "adventures"
+            if self.run_root
+            else self.legacy_adventures_dir
+        )
+
+    @property
+    def blobs_dir(self) -> Path:
+        return self.run_root / "blobs" if self.run_root else self.legacy_blobs_dir
+
+    @property
+    def state_path(self) -> Path:
+        return self.runtime_dir / STATE_FILENAME
 
 
 def source_id(env: Mapping[str, str] | None = None) -> str:
@@ -251,9 +333,83 @@ def blobs_root(env: Mapping[str, str] | None = None) -> Path:
     return _single_root(BLOBS_ENV, BLOBS_SUBDIR, env)
 
 
+def runs_root(env: Mapping[str, str] | None = None) -> Path:
+    """Where isolated adventure-run workspaces live."""
+    return _single_root(RUNS_ENV, RUNS_SUBDIR, env)
+
+
+def storage_layout(
+    *,
+    configuration: Configuration | None = None,
+    run_id: str | None = None,
+    maps_dir: str | Path | None = None,
+    replays_dir: str | Path | None = None,
+    env: Mapping[str, str] | None = None,
+) -> StorageLayout:
+    """Resolve one launch's immutable storage ownership.
+
+    Adventure run selection is intentionally strict at the composition root:
+    a misspelled id must not start a fresh process pointing at a directory that
+    merely resembles a run. ``legacy`` is the explicit compatibility selector;
+    ``None`` is the control/read process used to allocate a new run.
+    """
+    if configuration is not None:
+        runs = configuration.runs_dir
+        shared_maps = configuration.map_paths
+        shared_replays = configuration.replay_paths
+        shared_scenes = configuration.scenes_dir
+        legacy_encounters = configuration.encounters_dir
+        legacy_adventures = configuration.adventures_dir
+        legacy_blobs = configuration.blobs_dir
+        runtime_base = configuration.path.parent / "runtime"
+    else:
+        shared_maps = (
+            (Path(maps_dir).expanduser(),)
+            if maps_dir is not None
+            else tuple(Path(path).expanduser() for path in environment_roots(env))
+            or (maps_root(env),)
+        )
+        shared_replays = (
+            (Path(replays_dir).expanduser(),)
+            if replays_dir is not None
+            else tuple(Path(path).expanduser() for path in environment_replay_roots(env))
+            or (replays_root(env),)
+        )
+        shared_scenes = scenes_root(env)
+        legacy_encounters = encounters_root(env)
+        legacy_adventures = adventures_root(env)
+        legacy_blobs = blobs_root(env)
+        runs = runs_root(env)
+        runtime_base = runs.parent / "runtime"
+
+    if run_id is not None and run_id != "legacy":
+        if _SAFE_RUN_ID.fullmatch(run_id) is None:
+            raise RunSelectionError(f"run {run_id!r} is not a safe adventure id")
+        if not (runs / run_id).is_dir():
+            raise RunSelectionError(f"run {run_id!r} does not exist under {runs}")
+
+    selector = run_id if run_id is not None else "control"
+    return StorageLayout(
+        run_id=run_id,
+        runs_dir=runs,
+        runtime_dir=runtime_base / selector,
+        shared_map_paths=shared_maps,
+        shared_replay_paths=shared_replays,
+        shared_scenes_dir=shared_scenes,
+        legacy_encounters_dir=legacy_encounters,
+        legacy_adventures_dir=legacy_adventures,
+        legacy_blobs_dir=legacy_blobs,
+    )
+
+
 def state_file_for(maps_dir: str | Path) -> Path:
-    """Where the launch state file for ``maps_dir`` lives: next to the maps dir."""
-    return Path(maps_dir).expanduser().parent / STATE_FILENAME
+    """The legacy-config control rendezvous associated with ``maps_dir``."""
+    return (
+        Path(maps_dir).expanduser().parent
+        / "runtime"
+        / "control"
+        / STATE_FILENAME
+    )
 
 
 def read_state(path: str | Path) -> dict[str, Any] | None:

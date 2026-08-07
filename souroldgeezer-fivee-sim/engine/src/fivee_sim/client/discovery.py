@@ -12,9 +12,9 @@ after the port it names answers ``GET /api/v1/ping`` with this launch's token.
 A record nobody answers for is removed before spawning, so the fresh server's
 record is the only one anybody can read.
 
-**The rendezvous is beside the selected project config.** That keeps discovery
-stable when a config edit changes the maps directory. The legacy no-file path
-keeps its historical record beside the maps directory.
+**The rendezvous is selector-specific beneath the project runtime root.** That
+keeps discovery stable when a config edit changes a storage directory and keeps
+control, legacy and adventure processes from finding one another's records.
 
 **Three constants are copied here rather than imported from the server**, and
 that is the constraint working as intended: this package may not import
@@ -57,7 +57,7 @@ from pathlib import Path
 from typing import Any
 
 from ..configuration import Configuration, configuration_identity
-from ..paths import STATE_FILENAME, maps_root, read_state, state_file_for
+from ..paths import maps_root, read_state, state_file_for, storage_layout
 
 __all__ = [
     "API_PREFIX",
@@ -129,6 +129,10 @@ class Server:
     #: whether that file still means what the running process loaded.
     configuration_path: str = ""
     configuration_id: str = ""
+    #: Selected adventure run, and the roots reported by the live process.
+    run_id: str | None = None
+    run_root: str = ""
+    runtime_dir: str = ""
     #: True when this call stopped a server running other source and started
     #: this one in its place. Always implies :attr:`spawned`: the sibling says a
     #: process began here, this one says a process also ended here, and a caller
@@ -152,15 +156,18 @@ def state_path_for(
     maps_dir: str | Path | None = None,
     *,
     configuration: Configuration | None = None,
+    run_id: str | None = None,
 ) -> Path:
     """Where this project records its server.
 
     A selected configuration is the stable project identity, even when one of
-    its storage paths changes. Without one, retain the historical maps-adjacent
-    location. The server makes the same choice from the same inputs.
+    its storage paths changes. The selector keeps each run's process distinct;
+    without a project file the maps-adjacent ``runtime`` root is retained.
     """
-    if configuration is not None:
-        return configuration.path.parent / STATE_FILENAME
+    if configuration is not None or run_id is not None:
+        return storage_layout(
+            configuration=configuration, run_id=run_id, maps_dir=maps_dir
+        ).state_path
     root = Path(maps_dir).expanduser() if maps_dir is not None else maps_root()
     return state_file_for(root)
 
@@ -208,6 +215,9 @@ def find_running(state_path: str | Path) -> Server | None:
         source_id=str(answer.get("source_id", "")),
         configuration_path=str(answer.get("configuration_path", "")),
         configuration_id=str(answer.get("configuration_id", "")),
+        run_id=(str(answer["run_id"]) if answer.get("run_id") is not None else None),
+        run_root=str(answer.get("run_root") or ""),
+        runtime_dir=str(answer.get("runtime_dir") or ""),
         pid=pid if isinstance(pid, int) else None,
         spawned=False,
     )
@@ -218,6 +228,7 @@ def spawn(
     *,
     maps_dir: str | Path | None = None,
     configuration: Configuration | None = None,
+    run_id: str | None = None,
     port: int | None = None,
     timeout: float = SPAWN_TIMEOUT,
 ) -> Server:
@@ -236,6 +247,8 @@ def spawn(
         arguments += ["--maps-dir", str(maps_dir)]
     if configuration is not None:
         arguments += ["--config", str(configuration.path)]
+    if run_id is not None:
+        arguments += ["--run", run_id]
     if port is not None:
         arguments += ["--port", str(port)]
     # 0600 from the first byte, for the reason the state file beside it is:
@@ -295,6 +308,7 @@ def ensure_server(
     *,
     maps_dir: str | Path | None = None,
     configuration: Configuration | None = None,
+    run_id: str | None = None,
     state_path: str | Path | None = None,
     port: int | None = None,
     timeout: float = SPAWN_TIMEOUT,
@@ -310,7 +324,7 @@ def ensure_server(
     path = (
         Path(state_path)
         if state_path is not None
-        else state_path_for(maps_dir, configuration=configuration)
+        else state_path_for(maps_dir, configuration=configuration, run_id=run_id)
     )
     found = find_running(path)
     if found is not None:
@@ -333,6 +347,7 @@ def ensure_server(
         path,
         maps_dir=root,
         configuration=configuration,
+        run_id=run_id,
         port=port,
         timeout=timeout,
     )

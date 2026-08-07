@@ -16,7 +16,7 @@ CONFIG_SUBPATH = Path(".fivee-sim/config.toml")
 _TOP_LEVEL_KEYS = frozenset({"format_version", "content", "storage", "development"})
 _CONTENT_KEYS = frozenset({"paths", "builtin"})
 _STORAGE_KEYS = frozenset(
-    {"maps", "replays", "scenes", "encounters", "adventures", "blobs"}
+    {"maps", "replays", "scenes", "encounters", "adventures", "blobs", "runs"}
 )
 _DEVELOPMENT_KEYS = frozenset({"reload"})
 
@@ -29,6 +29,7 @@ _SCENES_ENV = "FIVEE_SIM_SCENES"
 _ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
 _ADVENTURES_ENV = "FIVEE_SIM_ADVENTURES"
 _BLOBS_ENV = "FIVEE_SIM_BLOBS"
+_RUNS_ENV = "FIVEE_SIM_RUNS"
 _RELOAD_ENV = "FIVEE_SIM_RELOAD"
 LEGACY_PROJECT_ENVIRONMENT = (
     _PROJECT_ENV,
@@ -40,6 +41,7 @@ LEGACY_PROJECT_ENVIRONMENT = (
     _ENCOUNTERS_ENV,
     _ADVENTURES_ENV,
     _BLOBS_ENV,
+    _RUNS_ENV,
     _RELOAD_ENV,
 )
 
@@ -69,6 +71,7 @@ class Configuration:
     encounters_dir: Path
     adventures_dir: Path
     blobs_dir: Path
+    runs_dir: Path
     reload: bool
 
 
@@ -162,6 +165,12 @@ def load_config(path: str | os.PathLike[str]) -> Configuration:
         storage.get("blobs", "blobs"),
         "storage.blobs",
     )
+    runs_dir = _single_path(
+        config_path,
+        config_dir,
+        storage.get("runs", "runs"),
+        "storage.runs",
+    )
 
     reload_value = development.get("reload", False)
     if type(reload_value) is not bool:
@@ -178,6 +187,7 @@ def load_config(path: str | os.PathLike[str]) -> Configuration:
         encounters_dir=encounters_dir,
         adventures_dir=adventures_dir,
         blobs_dir=blobs_dir,
+        runs_dir=runs_dir,
         reload=reload_value,
     )
 
@@ -245,6 +255,7 @@ def apply_to_environment(config: Configuration, env: MutableMapping[str, str]) -
     env[_ENCOUNTERS_ENV] = str(config.encounters_dir.resolve())
     env[_ADVENTURES_ENV] = str(config.adventures_dir.resolve())
     env[_BLOBS_ENV] = str(config.blobs_dir.resolve())
+    env[_RUNS_ENV] = str(config.runs_dir.resolve())
     if config.reload:
         env[_RELOAD_ENV] = "1"
 
@@ -268,6 +279,7 @@ def configuration_identity(config: Configuration) -> str:
         "encounters_dir": str(config.encounters_dir),
         "adventures_dir": str(config.adventures_dir),
         "blobs_dir": str(config.blobs_dir),
+        "runs_dir": str(config.runs_dir),
         "reload": config.reload,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()

@@ -76,6 +76,7 @@ from .. import __version__
 from ..configuration import Configuration, configuration_identity
 from ..map_document import validate_document
 from ..paths import SOURCE_ID_ENV as SOURCE_ID_ENV
+from ..paths import StorageLayout, storage_layout
 from ..service import adventures as adventure_service
 from ..service import analytics as analytics_service
 from ..service import catalog as catalog_service
@@ -274,22 +275,24 @@ class EngineServer:
         maps_dir: str | Path | None = None,
         replays_dir: str | Path | None = None,
         configuration: Configuration | None = None,
+        run_id: str | None = None,
         port: int = 0,
         token: str | None = None,
         log: TextIO | None = None,
     ) -> None:
-        self.maps_dir = (
-            Path(maps_dir).expanduser() if maps_dir is not None else map_service.maps_root()
+        self.storage: StorageLayout = storage_layout(
+            configuration=configuration,
+            run_id=run_id,
+            maps_dir=maps_dir,
+            replays_dir=replays_dir,
         )
+        self.run_id = run_id
+        self.maps_dir = self.storage.maps_dir
         # Replays are rooted independently of maps rather than derived from
         # them: a caller may point FIVEE_SIM_MAPS anywhere, and deriving the
         # replay root from that path would put fights in whatever directory
         # happened to be the maps one's neighbour.
-        self.replays_dir = (
-            Path(replays_dir).expanduser()
-            if replays_dir is not None
-            else replay_service.replays_root()
-        )
+        self.replays_dir = self.storage.replays_dir
         self.token = token if token else secrets.token_urlsafe(16)
         # Read here rather than per request, for the same reason the token is
         # settled here: it is a fact about the launch, and the process cannot
@@ -306,6 +309,7 @@ class EngineServer:
         self.state = EngineState(
             maps_dir=self.maps_dir,
             configuration_path=configuration.path if configuration is not None else None,
+            storage=self.storage,
         )
         self._httpd = _EngineHTTPServer(("127.0.0.1", port), _Handler)
         self._httpd.engine = self
@@ -792,6 +796,13 @@ class _Handler(BaseHTTPRequestHandler):
                 "source_id": self.engine.source_id,
                 "configuration_path": self.engine.configuration_path,
                 "configuration_id": self.engine.configuration_id,
+                "run_id": self.engine.run_id,
+                "run_root": (
+                    str(self.engine.storage.run_root)
+                    if self.engine.storage.run_root is not None
+                    else None
+                ),
+                "runtime_dir": str(self.engine.storage.runtime_dir),
             },
         )
 

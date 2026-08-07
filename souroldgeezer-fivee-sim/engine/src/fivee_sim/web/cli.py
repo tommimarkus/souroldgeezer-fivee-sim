@@ -41,7 +41,7 @@ from ..configuration import (
     apply_to_environment,
     find_and_load_config,
 )
-from ..paths import STATE_FILENAME, read_state, state_file_for
+from ..paths import STATE_FILENAME, RunSelectionError, read_state, state_file_for
 from ..service import maps as map_service
 from ..service import replay as replay_service
 from .http_server import EngineServer
@@ -59,6 +59,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--config",
         default=None,
         help="project configuration file (default: nearest .fivee-sim/config.toml)",
+    )
+    parser.add_argument(
+        "--run",
+        default=None,
+        help="adventure run id, or legacy for the pre-run storage roots",
     )
     parser.add_argument(
         "--maps-dir",
@@ -98,7 +103,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         if configuration is not None
         else map_service.maps_root()
     )
-    maps_dir.mkdir(parents=True, exist_ok=True)
     replays_dir = (
         Path(args.replays_dir).expanduser()
         if args.replays_dir
@@ -106,19 +110,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         if configuration is not None
         else replay_service.replays_root()
     )
+    try:
+        server = EngineServer(
+            maps_dir=maps_dir,
+            replays_dir=replays_dir,
+            configuration=configuration,
+            run_id=args.run,
+            port=args.port,
+        )
+    except RunSelectionError as error:
+        parser.error(str(error))
     state_path = (
         Path(args.state_file).expanduser()
         if args.state_file
-        else configuration.path.parent / STATE_FILENAME
-        if configuration is not None
-        else state_file_for(maps_dir)
-    )
-
-    server = EngineServer(
-        maps_dir=maps_dir,
-        replays_dir=replays_dir,
-        configuration=configuration,
-        port=args.port,
+        else server.storage.state_path
     )
 
     # Written only after the bind succeeded, so a reader never finds a state
@@ -143,6 +148,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "source_id": server.source_id,
                 "configuration_path": server.configuration_path,
                 "configuration_id": server.configuration_id,
+                "run_id": server.run_id,
+                "run_root": (
+                    str(server.storage.run_root)
+                    if server.storage.run_root is not None
+                    else None
+                ),
                 "started": datetime.now(UTC).isoformat(timespec="seconds"),
             },
             handle,

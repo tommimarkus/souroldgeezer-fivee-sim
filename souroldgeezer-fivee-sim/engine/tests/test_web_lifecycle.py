@@ -182,7 +182,7 @@ replays = "frozen-replays"
 """,
             encoding="utf-8",
         )
-        state_path = config_dir / "fivee-sim-server.json"
+        state_path = config_dir / "runtime" / "control" / "fivee-sim-server.json"
         process = _spawn_cli(
             ["--config", str(config), "--port", "0"],
             {
@@ -248,9 +248,11 @@ replays = "frozen-replays"
                 process.kill()
                 process.communicate(timeout=10)
 
-    def test_the_state_file_defaults_to_beside_the_maps_dir(self, tmp_path: Path) -> None:
+    def test_the_state_file_defaults_to_the_control_runtime(self, tmp_path: Path) -> None:
         maps_dir = tmp_path / ".fivee-sim" / "maps"
-        assert state_file_for(maps_dir) == tmp_path / ".fivee-sim" / STATE_FILENAME
+        assert state_file_for(maps_dir) == (
+            tmp_path / ".fivee-sim" / "runtime" / "control" / STATE_FILENAME
+        )
 
     def test_one_launch_serves_maps_and_replays_and_says_so(self, tmp_path: Path) -> None:
         """The launch is one service, so its record and its ping describe both.

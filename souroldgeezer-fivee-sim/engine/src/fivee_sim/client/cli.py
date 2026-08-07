@@ -69,6 +69,7 @@ from ..configuration import (
     extract_config_argument,
     find_and_load_config,
 )
+from ..paths import RunSelectionError
 from . import http
 from .discovery import (
     API_PREFIX,
@@ -772,6 +773,7 @@ class Options:
     selectors: tuple[tuple[str, str], ...] = ()
     raw: bool = False
     configuration: Configuration | None = None
+    run_id: str | None = None
 
 
 _MISSING = object()
@@ -917,7 +919,9 @@ def _announce(server: Server) -> Server:
 
 
 def _ensure(options: Options, **kwargs: Any) -> Server:
-    return ensure_server(configuration=options.configuration, **kwargs)
+    return ensure_server(
+        configuration=options.configuration, run_id=options.run_id, **kwargs
+    )
 
 
 def _serve(tokens: Sequence[str], options: Options) -> int:
@@ -949,6 +953,9 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
             "port": server.port,
             "maps_dir": server.maps_dir,
             "replays_dir": server.replays_dir,
+            "run_id": server.run_id,
+            "run_root": server.run_root or None,
+            "runtime_dir": server.runtime_dir,
             "already_running": not server.spawned,
             # Distinct from the line above, and not derivable from it:
             # `already_running` is False for a cold start and False for a
@@ -966,7 +973,9 @@ def _stop(tokens: Sequence[str], options: Options) -> int:
     parsed = _parse_tokens(tokens)
     if parsed.flags or parsed.positional:
         raise UsageError("stop takes no arguments")
-    result = stop_server(state_path_for(configuration=options.configuration))
+    result = stop_server(
+        state_path_for(configuration=options.configuration, run_id=options.run_id)
+    )
     _note("stopped the engine server" if result["stopped"] else "no engine server was running")
     _print_json(result, options)
     return EXIT_OK
@@ -1075,6 +1084,7 @@ def main(
         compact = False
         json_errors = False
         raw = False
+        run_id: str | None = None
         index = 0
         while index < len(tokens):
             token = tokens[index]
@@ -1084,6 +1094,19 @@ def main(
                 json_errors = True
             elif token == "--raw":
                 raw = True
+            elif token == "--run":
+                if run_id is not None:
+                    raise UsageError("--run may be specified only once")
+                if index + 1 >= len(tokens) or tokens[index + 1].startswith("--"):
+                    raise UsageError("--run requires an adventure id or legacy")
+                run_id = tokens[index + 1]
+                index += 1
+            elif token.startswith("--run="):
+                if run_id is not None:
+                    raise UsageError("--run may be specified only once")
+                run_id = token.partition("=")[2]
+                if not run_id.strip():
+                    raise UsageError("--run requires an adventure id or legacy")
             elif token == "--select":
                 if index + 1 >= len(tokens) or tokens[index + 1].startswith("--"):
                     raise UsageError("--select takes NAME=/json/pointer")
@@ -1108,6 +1131,7 @@ def main(
             selectors=tuple(selectors),
             raw=raw,
             configuration=configuration,
+            run_id=run_id,
         )
         tokens = operation_tokens
         if not tokens:
@@ -1118,6 +1142,9 @@ def main(
             return EXIT_USAGE
         return _run(tokens, options)
     except ConfigurationError as error:
+        _note(str(error))
+        return EXIT_USAGE
+    except RunSelectionError as error:
         _note(str(error))
         return EXIT_USAGE
     except UsageError as error:

@@ -453,7 +453,9 @@ class TestConfigurationLifecycle:
         state_path = discovery.state_path_for(configuration=first_config)
         first = discovery.ensure_server(configuration=first_config)
         try:
-            assert state_path == config_dir / "fivee-sim-server.json"
+            assert state_path == (
+                config_dir / "runtime" / "control" / "fivee-sim-server.json"
+            )
             assert first.maps_dir == str(config_dir / "first-maps")
 
             unchanged = discovery.ensure_server(configuration=first_config)
