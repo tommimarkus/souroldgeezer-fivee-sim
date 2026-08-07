@@ -2352,15 +2352,17 @@ class Encounter:
         """
         target = self._require_combatant(target_name)
         self.check_correctable(changes)
-        # Every refusal is behind us, so nothing below leaves a combatant half
-        # corrected — the same discipline ``_begin_beat`` is called under.
         stated = ["hp"] if "hp" in changes else []
         stated += [key for key in sorted(changes) if key != "hp"]
+        # Every value is computed before any of them is written, so every
+        # refusal is behind us and nothing below leaves a combatant half
+        # corrected — the same discipline ``_begin_beat`` is called under.
+        planned = self._planned_correction(target, changes, stated)
         before = self._creature_state(target)
         for key in stated:
             if key == "conditions" and "condition_levels" in changes:
                 continue  # written as a pair, at ``condition_levels`` above
-            self._write_correction(target, key, changes)
+            self._write_correction(target, key, planned)
         after = self._creature_state(target)
         reported = list(stated)
         if "hp" not in changes and after.get("hp") != before.get("hp"):
@@ -2434,77 +2436,96 @@ class Encounter:
                 "initiative can only be corrected before the first turn is taken"
             )
 
-    def _write_correction(
-        self, target: Creature, field: str, changes: Mapping[str, Any]
-    ) -> None:
-        """Apply one corrected field, given the whole request.
+    def _planned_correction(
+        self, target: Creature, changes: Mapping[str, Any], stated: Sequence[str]
+    ) -> dict[str, Any]:
+        """Every stated field's new value, computed before any of them is written.
 
-        The whole request rather than one value, because ``conditions`` and
-        ``condition_levels`` are one field wearing two keys and are read
-        together.
+        This is the half of a correction that can *fail*, hoisted out of the
+        half that writes. It used to be interleaved with the writes, one field
+        at a time, and that made :meth:`correct`'s "nothing leaves a combatant
+        half corrected" claim false: ``{"ac": 55, "items": {"Rope": [1, 2]}}``
+        set the AC and then raised out of ``int()``, leaving a combatant
+        corrected by a request nobody accepted and no ``correction`` event to
+        say it had happened.
+
+        **The model still writes what it is given.** Nothing here is a new
+        opinion about whether a value is plausible — every coercion below is
+        the one :meth:`_write_correction` already performed, moved earlier.
+        The caller-facing sentences stay ``service/encounters.py``'s, which is
+        why a failure here is still a bare ``TypeError`` or ``ValueError``: it
+        is a caller the service already refused, or a journal replay, which has
+        no caller to answer.
+
+        It matters at this layer rather than only at the service boundary
+        because ``sessions._replay_correct`` calls :meth:`correct` with raw
+        journalled arguments and nothing in front of it, and a recovery that
+        raised part-way through would leave a recovered fight silently
+        disagreeing with the one that was journalled.
         """
-        value = changes[field]
-        if field == "hp":
-            target.set_hp(int(value))
-        elif field == "max_hp":
-            # Floored rather than refused, and floored at 1: ``health_band``
-            # reads a maximum of 0 or less as permanently "unharmed" while
-            # ``take_damage``'s overflow check kills on the first point past
-            # zero, so a fight holding one lies about the same creature twice.
-            target.max_hp = max(1, int(value))
-            if target.hp > target.max_hp:
-                # A maximum lowered under the creature's current total pulls it
-                # down with it, and says so in its own event: leaving a
-                # combatant above its own maximum would be a state no other
-                # path in the engine can produce.
-                target.set_hp(target.max_hp)
-        elif field == "temp_hp":
-            target.temp_hp = int(value)
-        elif field == "ac":
-            target.ac = int(value)
-        elif field in ("conditions", "condition_levels"):
-            self._correct_conditions(target, changes)
-        elif field == "death_saves":
-            target.death_save_successes = int(value["successes"])
-            target.death_save_failures = int(value["failures"])
-        elif field in ("stable", "dead", "surrendered"):
-            setattr(target, field, bool(value))
-        elif field == "present":
-            target.arrived = bool(value)
-        elif field == "spell_slots":
-            target.spell_slots = {int(k): int(v) for k, v in value.items()}
-        elif field == "items":
-            target.items = {str(k): int(v) for k, v in value.items()}
-        elif field == "position":
-            target.position = as_point(
-                value if isinstance(value, int) else (int(value[0]), int(value[1]))
-            )
-        elif field == "level":
-            target.level = int(value)
-        elif field == "facing":
-            target.facing = None if value is None else str(value)
-        elif field == "initiative":
-            self._correct_initiative(target.name, int(value))
-        else:  # pragma: no cover - CORRECTABLE_KEYS is what lets a field in here
-            raise AssertionError(
-                f"{field!r} is declared correctable and nothing here writes it"
-            )
+        planned: dict[str, Any] = {}
+        if "conditions" in changes or "condition_levels" in changes:
+            # One computed set under both keys: they are one field wearing two,
+            # and :meth:`correct` writes whichever of them it reaches first.
+            wanted = self._planned_conditions(target, changes)
+            planned["conditions"] = wanted
+            planned["condition_levels"] = wanted
+        for key in stated:
+            if key in ("conditions", "condition_levels"):
+                continue
+            value = changes[key]
+            if key in ("hp", "temp_hp", "ac", "level", "initiative"):
+                planned[key] = int(value)
+            elif key == "max_hp":
+                # Floored rather than refused, and floored at 1: ``health_band``
+                # reads a maximum of 0 or less as permanently "unharmed" while
+                # ``take_damage``'s overflow check kills on the first point past
+                # zero, so a fight holding one lies about the same creature twice.
+                planned[key] = max(1, int(value))
+            elif key == "death_saves":
+                planned[key] = (int(value["successes"]), int(value["failures"]))
+            elif key in ("stable", "dead", "surrendered", "present"):
+                planned[key] = bool(value)
+            elif key == "spell_slots":
+                planned[key] = {int(k): int(v) for k, v in value.items()}
+            elif key == "items":
+                planned[key] = {str(k): int(v) for k, v in value.items()}
+            elif key == "position":
+                planned[key] = as_point(
+                    value if isinstance(value, int) else (int(value[0]), int(value[1]))
+                )
+            elif key == "facing":
+                planned[key] = None if value is None else str(value)
+            else:  # pragma: no cover - CORRECTABLE_KEYS is what lets a field in
+                raise AssertionError(
+                    f"{key!r} is declared correctable and nothing here computes it"
+                )
+        return planned
 
-    def _correct_conditions(self, target: Creature, changes: Mapping[str, Any]) -> None:
-        """The stated conditions, reached through the ledger's own owner.
+    def _planned_conditions(
+        self, target: Creature, changes: Mapping[str, Any]
+    ) -> dict[str, int]:
+        """The condition set a correction asks for, with every name resolved.
 
         ``conditions`` names the whole set and ``condition_levels`` puts a level
         on a name in it; stating ``condition_levels`` alone re-levels against
-        what the creature already holds, which is the reading that needs no
-        refusal for a level naming a condition nobody has.
+        what the creature already holds, and a level naming a condition the
+        creature does *not* hold **grants** it. That reading is deliberate: a
+        game master saying "her exhaustion is 3" is stating a fact about the
+        creature, not annotating one the fight already agreed with, and the
+        alternative — silently ignoring the level — would answer a correction
+        with no correction and no refusal. ``conditions`` is how a table says
+        what she does *not* have.
 
-        Every removal goes through :meth:`set_condition`, which also clears
-        whatever ongoing effect was sustaining the condition. A *re-level* does
-        not: the ledger keys on the condition being held at all, so an effect
-        survives its level changing — but the level has to be dropped and
-        re-imposed rather than added to, because
-        :meth:`Creature.add_condition` accumulates on a cumulative row and "her
-        exhaustion is 3" would otherwise come out at 5.
+        Every name that will actually be imposed is resolved here, in the order
+        :meth:`Creature.add_condition` resolves it — level floor, then immunity,
+        then the table — so a set whose *second* name is undefined refuses
+        before the first one is imposed rather than after. Mirroring that order
+        rather than simply looking every name up is what keeps a creature immune
+        to a condition the active table does not define working: ``add_condition``
+        returns ``False`` for it without ever consulting the table, and a
+        pre-resolution that consulted the table anyway would turn that silent
+        no-op into a refusal.
         """
         current = dict(target.conditions)
         if "conditions" in changes:
@@ -2513,7 +2534,34 @@ class Encounter:
             wanted = dict(current)
         for name, level in changes.get("condition_levels", {}).items():
             wanted[str(name)] = int(level)
-        for name in sorted(current):
+        for name in sorted(wanted):
+            if current.get(name) == wanted[name]:
+                continue  # untouched, so ``add_condition`` never sees it
+            if wanted[name] < 1:
+                raise ValueError(
+                    f"{target.name}: levels must be at least 1 to impose "
+                    f"{name!r}, got {wanted[name]}"
+                )
+            if name in target.condition_immunities:
+                continue  # refused before the table is consulted, as above
+            effect_of(name, target.condition_effects)
+        return wanted
+
+    def _correct_conditions(self, target: Creature, wanted: Mapping[str, int]) -> None:
+        """The planned conditions, reached through the ledger's own owner.
+
+        Every removal goes through :meth:`set_condition`, which also clears
+        whatever ongoing effect was sustaining the condition. A *re-level* does
+        not: the ledger keys on the condition being held at all, so an effect
+        survives its level changing — but the level has to be dropped and
+        re-imposed rather than added to, because
+        :meth:`Creature.add_condition` accumulates on a cumulative row and "her
+        exhaustion is 3" would otherwise come out at 5.
+
+        ``wanted`` arrives already computed and already resolved by
+        :meth:`_planned_conditions`, so nothing below can raise.
+        """
+        for name in sorted(dict(target.conditions)):
             if name not in wanted:
                 self.set_condition(target.name, name, applied=False)
         for name in sorted(wanted):
@@ -2522,6 +2570,57 @@ class Encounter:
             if name in target.conditions:
                 target.remove_condition(name)
             self.set_condition(target.name, name, applied=True, levels=wanted[name])
+
+    def _write_correction(
+        self, target: Creature, field: str, planned: Mapping[str, Any]
+    ) -> None:
+        """Apply one corrected field from the already-computed plan.
+
+        Nothing here coerces and nothing here can refuse:
+        :meth:`_planned_correction` did both, for every field at once, before
+        the first of these ran. Keeping the two apart is the whole of the
+        guarantee — a coercion left in this method is a partial write waiting
+        for the next malformed payload.
+        """
+        value = planned[field]
+        if field == "hp":
+            target.set_hp(value)
+        elif field == "max_hp":
+            target.max_hp = value
+            if target.hp > target.max_hp:
+                # A maximum lowered under the creature's current total pulls it
+                # down with it, and says so in its own event: leaving a
+                # combatant above its own maximum would be a state no other
+                # path in the engine can produce.
+                target.set_hp(target.max_hp)
+        elif field == "temp_hp":
+            target.temp_hp = value
+        elif field == "ac":
+            target.ac = value
+        elif field in ("conditions", "condition_levels"):
+            self._correct_conditions(target, value)
+        elif field == "death_saves":
+            target.death_save_successes, target.death_save_failures = value
+        elif field in ("stable", "dead", "surrendered"):
+            setattr(target, field, value)
+        elif field == "present":
+            target.arrived = value
+        elif field == "spell_slots":
+            target.spell_slots = value
+        elif field == "items":
+            target.items = value
+        elif field == "position":
+            target.position = value
+        elif field == "level":
+            target.level = value
+        elif field == "facing":
+            target.facing = value
+        elif field == "initiative":
+            self._correct_initiative(target.name, value)
+        else:  # pragma: no cover - CORRECTABLE_KEYS is what lets a field in here
+            raise AssertionError(
+                f"{field!r} is declared correctable and nothing here writes it"
+            )
 
     def _correct_initiative(self, name: str, value: int) -> None:
         self.initiative[name] = value

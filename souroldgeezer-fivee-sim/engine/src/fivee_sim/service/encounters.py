@@ -15,7 +15,7 @@ afterwards — and ``map_source`` reports that divergence rather than hiding it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Collection, Mapping
+from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy
 from pathlib import Path
 from random import Random
@@ -609,6 +609,15 @@ def _checked_correction(
     checked: dict[str, Any] = dict(changes)
     for numeric_key in ("hp", "max_hp", "temp_hp", "ac", "level", "initiative"):
         if numeric_key in changes:
+            # ``bool`` is excluded before the coercion, not after: ``int(True)``
+            # is 1, so a caller who sent the wrong type got a fight changed
+            # instead of a refusal. Same idiom as ``parse_natural``'s reported
+            # d20 face and ``parse_carried_flag``'s mirror of it, which already
+            # refuses ``stable: 1`` — this is the other half of that pair.
+            if isinstance(changes[numeric_key], bool):
+                raise RequestError(
+                    f"{numeric_key} must be a whole number, got {changes[numeric_key]!r}"
+                )
             try:
                 checked[numeric_key] = int(changes[numeric_key])
             except (TypeError, ValueError) as error:
@@ -617,6 +626,17 @@ def _checked_correction(
                 ) from error
     if "max_hp" in checked and checked["max_hp"] < 1:
         raise RequestError(f"max_hp must be at least 1, got {checked['max_hp']}")
+    # ``hp`` and ``ac`` are deliberately unbounded below — see
+    # ``TestTheBoundsThatAreDeliberatelyAbsent``. ``temp_hp`` is not like them:
+    # ``Creature.take_damage`` computes ``absorbed = min(temp_hp, amount)`` and
+    # deals ``amount - absorbed``, so a negative buffer *amplifies* every blow
+    # that lands afterwards rather than absorbing it. It is also a value no
+    # other writer can produce — ``grant_temp_hp`` refuses an ``amount <= 0`` —
+    # so a correction reaching it would be the only source of a state the rest
+    # of the engine treats as impossible. Floored at 0 rather than 1, because
+    # "she has no temporary hit points" is a correction a table makes.
+    if "temp_hp" in checked and checked["temp_hp"] < 0:
+        raise RequestError(f"temp_hp must be 0 or more, got {checked['temp_hp']}")
     if "hp" in checked:
         ceiling = checked.get("max_hp", creature.max_hp)
         if checked["hp"] > ceiling:
@@ -633,14 +653,66 @@ def _checked_correction(
     for flag_key in ("stable", "dead", "surrendered", "present"):
         if flag_key in changes:
             checked[flag_key] = specs.parse_carried_flag(changes[flag_key], flag_key)
-    if "spell_slots" in changes and not isinstance(changes["spell_slots"], Mapping):
-        raise RequestError(
-            f"spell_slots must be an object of level to count, got {changes['spell_slots']!r}"
-        )
-    if "items" in changes and not isinstance(changes["items"], Mapping):
-        raise RequestError(
-            f"items must be an object of item name to count, got {changes['items']!r}"
-        )
+    # The three nested collections are typed all the way down, not just at
+    # their container. Checking only the container left the coercion of what is
+    # *inside* one to ``Encounter._write_correction``, which is past the last
+    # layer that can name the key a caller got wrong — and a JSON list, object
+    # or ``null`` in there raises ``TypeError``, which is outside the
+    # ``ValueError`` family ``audited_primitive`` and the adapter catch, so the
+    # caller was answered 500 with the raw interpreter message.
+    if "spell_slots" in changes:
+        if not isinstance(changes["spell_slots"], Mapping):
+            raise RequestError(
+                f"spell_slots must be an object of level to count, "
+                f"got {changes['spell_slots']!r}"
+            )
+        parsed_slots: dict[int, int] = {}
+        for level_key, count in changes["spell_slots"].items():
+            # The level is a key rather than a value and still has to be a
+            # number: JSON has no integer keys, so a slot level arrives as
+            # ``"1"`` from the wire and as ``1`` from a Python caller, and both
+            # have to mean the same slot.
+            try:
+                parsed_level_key = int(level_key)
+            except (TypeError, ValueError) as error:
+                raise RequestError(
+                    f"spell_slots level {level_key!r} must be a whole number"
+                ) from error
+            try:
+                parsed_slots[parsed_level_key] = int(count)
+            except (TypeError, ValueError) as error:
+                raise RequestError(
+                    f"spell_slots[{parsed_level_key}] must be a whole number, got {count!r}"
+                ) from error
+        checked["spell_slots"] = parsed_slots
+    if "items" in changes:
+        if not isinstance(changes["items"], Mapping):
+            raise RequestError(
+                f"items must be an object of item name to count, got {changes['items']!r}"
+            )
+        parsed_items: dict[str, int] = {}
+        for item_name, count in changes["items"].items():
+            try:
+                parsed_items[str(item_name)] = int(count)
+            except (TypeError, ValueError) as error:
+                raise RequestError(
+                    f"items[{str(item_name)!r}] must be a whole number, got {count!r}"
+                ) from error
+        checked["items"] = parsed_items
+    if "conditions" in changes:
+        # A ``str`` is refused with everything else that is not a list, and it
+        # is the reason this check exists rather than being left to the set
+        # comprehension below: a string is iterable, so ``conditions: "prone"``
+        # asked for five conditions named after its letters and the caller was
+        # told there is no condition named 'e'.
+        if isinstance(changes["conditions"], str) or not isinstance(
+            changes["conditions"], Sequence
+        ):
+            raise RequestError(
+                f"conditions must be a list of condition names, "
+                f"got {changes['conditions']!r}"
+            )
+        checked["conditions"] = [str(name) for name in changes["conditions"]]
     if "condition_levels" in changes:
         if not isinstance(changes["condition_levels"], Mapping):
             raise RequestError(

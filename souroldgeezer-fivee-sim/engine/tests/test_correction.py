@@ -268,6 +268,98 @@ class TestTheRefusals:
         assert corrections(encounter) == []
 
 
+class TestNothingIsWrittenUntilEveryValueIsComputed:
+    """The half-corrected combatant, closed for the callers with no service layer.
+
+    :meth:`Encounter.correct` says "every refusal is behind us, so nothing below
+    leaves a combatant half corrected", and :meth:`check_correctable` only
+    covers the *structural* refusals. Coercion is the rest, and it used to run
+    field by field *while writing*: ``{"ac": 55, "items": {"Rope": [1, 2]}}``
+    wrote the AC and then raised, leaving a combatant nobody corrected and no
+    ``correction`` event to say so.
+
+    That matters here rather than only at the service boundary because
+    ``sessions._replay_correct`` calls straight into this method with raw
+    journalled arguments and nothing in front of it.
+
+    The model still **writes what it is given** — these cases assert only that
+    the raise lands before the first write, never that the model grew an
+    opinion about a value. The caller-facing sentences stay the service's.
+    """
+
+    #: A refusal the model raises for itself, one per mechanism that can fail
+    #: after ``check_correctable`` has passed: a value the coercion cannot
+    #: take, and a condition name the active table does not define.
+    UNWRITEABLE: dict[str, Mapping[str, Any]] = {
+        "an item count that is not a number": {"items": {"Rope": [1, 2]}},
+        "a spell slot count that is not a number": {"spell_slots": {1: None}},
+        "a spell slot level that is not a number": {"spell_slots": {"x": 1}},
+        "a condition the table does not define": {"conditions": ["prone", "nonsuch"]},
+        "a condition level on an undefined condition": {
+            "condition_levels": {"nonsuch": 2}
+        },
+        "a death save count that is not a number": {
+            "death_saves": {"successes": [1], "failures": 0}
+        },
+    }
+
+    @pytest.mark.parametrize("case", sorted(UNWRITEABLE))
+    def test_a_value_that_cannot_be_written_leaves_the_combatant_untouched(
+        self, case: str
+    ) -> None:
+        # ``ac`` rides along as the witness: it is written before every field
+        # below in ``correct``'s own sorted order, so it is the one that used
+        # to land. If the combatant is byte-identical afterwards, nothing did.
+        encounter = fight()
+        before = entry(encounter, "Thora")
+
+        with pytest.raises(Exception):  # noqa: B017 - the *sentence* is the service's
+            encounter.correct(
+                "Thora", {"ac": 55, **self.UNWRITEABLE[case]}, reason=REASON
+            )
+
+        assert entry(encounter, "Thora") == before
+        assert corrections(encounter) == []
+
+    def test_a_partly_writable_condition_set_imposes_none_of_it(self) -> None:
+        # Sharper than the case above, because conditions are written one
+        # ``set_condition`` at a time: a list whose *second* name is undefined
+        # used to impose the first and then raise, and the effect ledger kept
+        # what it had been given.
+        #
+        # ``blinded`` and ``nonsuch`` rather than any pair: the write loop runs
+        # in ``sorted`` order, so the *defined* name has to sort first or the
+        # undefined one raises before anything is imposed and this passes
+        # against the very defect it is here to catch.
+        assert sorted(["blinded", "nonsuch"]) == ["blinded", "nonsuch"]
+        encounter = fight()
+        before = entry(encounter, "Thora")
+
+        with pytest.raises(Exception):  # noqa: B017 - the sentence is the service's
+            encounter.correct(
+                "Thora", {"conditions": ["blinded", "nonsuch"]}, reason=REASON
+            )
+
+        assert entry(encounter, "Thora") == before
+        assert encounter.creatures["Thora"].conditions == {}
+        assert corrections(encounter) == []
+
+    def test_a_correction_that_can_be_written_still_is(self) -> None:
+        # The guard against a fix that refuses everything: the same shape as
+        # the cases above, with values that are legal, must still land whole.
+        encounter = fight()
+
+        encounter.correct(
+            "Thora",
+            {"ac": 55, "items": {"Rope": 2}, "conditions": ["poisoned"]},
+            reason=REASON,
+        )
+
+        assert entry(encounter, "Thora")["ac"] == 55
+        assert encounter.creatures["Thora"].items == {"Rope": 2}
+        assert encounter.creatures["Thora"].conditions == {"poisoned": 1}
+
+
 class TestHitPointsRunTheirOwnBookkeeping:
     """A raw write to ``hp`` is the defect this closes.
 
@@ -449,6 +541,48 @@ class TestConditionsGoThroughTheLedger:
         )
 
         assert encounter.creatures["Thora"].conditions["exhaustion"] == 3
+
+    def test_a_level_alone_grants_a_condition_the_creature_did_not_hold(self) -> None:
+        """The named contract, not an artifact of ``wanted = dict(current)``.
+
+        ``condition_levels`` alone re-levels against what the creature already
+        holds, and the case the sibling above does *not* cover is a level naming
+        a condition nobody has. Three readings were available — grant it, ignore
+        it, refuse it — and granting is the one the table means: a game master
+        saying "her exhaustion is 3" is stating a fact about the creature, not
+        annotating one the fight already agreed with.
+
+        Ignoring is the reading to argue against, because it is what falls out
+        of doing nothing: it answers a correction with no correction *and* no
+        refusal, which is the one outcome a table cannot see. Refusing is
+        coherent but makes the single most common phrasing at a table a
+        two-key call, and buys nothing — the condition name is validated either
+        way, so there is no nonsense condition a grant could invent.
+        ``conditions`` remains how a table says what she does *not* have.
+        """
+        encounter = fight()
+        assert encounter.creatures["Thora"].conditions == {}
+
+        encounter.correct(
+            "Thora", {"condition_levels": {"exhaustion": 3}}, reason=REASON
+        )
+
+        assert encounter.creatures["Thora"].conditions == {"exhaustion": 3}
+
+    def test_granting_by_level_leaves_the_conditions_already_held_alone(self) -> None:
+        # The other half of the same contract: ``condition_levels`` alone is
+        # additive against the held set, never a replacement for it. A grant
+        # that wiped what was there would be ``conditions``'s job done badly.
+        encounter = fight()
+        encounter.correct("Thora", {"conditions": ["poisoned"]}, reason=REASON)
+
+        encounter.correct(
+            "Thora", {"condition_levels": {"exhaustion": 3}}, reason=REASON
+        )
+
+        assert encounter.creatures["Thora"].conditions == {
+            "poisoned": 1, "exhaustion": 3
+        }
 
     def test_lifting_a_condition_is_announced(self) -> None:
         encounter = fight()

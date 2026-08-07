@@ -2452,6 +2452,55 @@ class TestEncountersOverHttp:
             "'reason' must be at most",
         )
 
+    @pytest.mark.parametrize(
+        ("case", "changes", "fragment"),
+        [
+            ("item count", {"items": {"Rope": [1, 2]}}, "items['Rope'] must be a whole number"),
+            ("slot count", {"spell_slots": {"1": None}}, "spell_slots[1] must be a whole number"),
+            ("slot level", {"spell_slots": {"x": 1}}, "spell_slots level 'x' must be a whole"),
+            ("conditions", {"conditions": "prone"}, "conditions must be a list of condition"),
+        ],
+    )
+    def test_a_malformed_nested_correction_value_is_400_and_names_the_key(
+        self, editor: Editor, case: str, changes: dict[str, Any], fragment: str
+    ) -> None:
+        """The transport half of the nested-collection refusals.
+
+        The route schema types ``state`` as a bare object, so nothing above
+        this validates what is inside one — these values reached the model,
+        raised ``TypeError``, and fell to ``_dispatch``'s catch-all, which
+        answers **500** with the raw interpreter text as the ``detail``. An
+        operator reading that is told the engine has a defect when the honest
+        answer names the key they got wrong.
+
+        The journal is asserted too, and it is the half a status code cannot
+        show. The crash escaped ``audited_primitive``'s ``except ValueError``
+        without ever reaching ``attempt_finished``, so the journal kept a
+        *started* attempt with no result — which a later ``encounter.resume``
+        classifies ``interrupted`` and does not replay, leaving a recovered
+        fight disagreeing with the running one. Validation now refuses ahead of
+        ``attempt_started``, so the journal gains nothing at all: this is a
+        caller's mistake, not a record of the fight.
+        """
+        encounter_id = self.create(editor).json()["encounter_id"]
+        before = editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()
+        before_attempts = self.attempts(editor, encounter_id)
+
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/corrections",
+                json_body={
+                    "state": {"Thora": {"ac": 99, **changes}},
+                    "reason": "the stat block was mistyped",
+                },
+            ),
+            400,
+            fragment,
+        )
+
+        assert editor.request("GET", f"/api/v1/encounters/{encounter_id}").json() == before
+        assert self.attempts(editor, encounter_id) == before_attempts
+
     def test_an_unknown_encounter_is_404_and_names_the_active_ones(
         self, editor: Editor
     ) -> None:
