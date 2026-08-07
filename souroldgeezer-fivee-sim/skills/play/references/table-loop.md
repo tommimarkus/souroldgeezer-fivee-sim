@@ -18,9 +18,11 @@ the root.
 
 For a decision beat, the mechanical context reads one authoritative
 `encounter.state` snapshot to identify the turn and detect whether state changed.
-That raw snapshot remains inside the resettable context. Never derive or project
-a player's payload from `encounter.state`; `--as` is the engine-owned redaction
-boundary, including creatures hidden by total cover.
+Use CLI `--select` for the bounded control facts rather than wrapping the result
+in a Python parser; any unselected raw snapshot remains inside the resettable
+context. Never derive or project a player's payload from `encounter.state`;
+`--as` is the engine-owned redaction boundary, including creatures hidden by
+total cover.
 
 Establish **one full baseline** per seat when it first joins an encounter:
 

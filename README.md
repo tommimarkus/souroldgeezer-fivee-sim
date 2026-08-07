@@ -151,6 +151,20 @@ refusals, and the `etag` note go to **stderr**. An argument no flag grammar shou
 try to spell — a creature list, a map document — goes in `--json '{...}'`, or
 `--json -` to read it from stdin; given both, flags override the JSON's keys.
 
+When a caller needs a few facts rather than the whole document, repeat
+`--select NAME=/json/pointer`. The pointer is RFC 6901, missing fields are
+reported as `null` without changing a successful operation's exit code, and
+`--raw` prints one selected scalar without JSON quotes:
+
+```bash
+fivee encounter.state enc-1 --select turn=/turn --select over=/over
+fivee encounter.state enc-1 --select turn=/turn --raw
+fivee encounter.act enc-1 --kind dodge --select events=/events
+```
+
+Selection is local output projection after the server answers. It never adds a
+second request or widens a player-safe `--as` response.
+
 Exit codes separate the four failures that have four different fixes: **2** the
 command was wrong, **3** the engine refused, **4** the engine broke, **5** nothing
 answered.

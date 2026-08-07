@@ -710,6 +710,7 @@ class TestHelp:
         assert "--combatants" not in optional
         assert "--seed" in optional and "default null" in optional
         assert "--movement-rule" in optional and 'default "5-5-5"' in optional
+        assert "--select NAME=/pointer" in rendered
 
     def test_the_example_help_prints_is_a_command_that_runs(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
@@ -978,6 +979,121 @@ class TestInvocation:
         compact = capsys.readouterr().out
         assert compact.count("\n") == 1 and indented.count("\n") > 1
         assert json.loads(compact) == json.loads(indented)
+
+    def test_select_reads_control_facts_without_an_external_json_parser(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """An agent should not need a Python snippet to find whose turn it is.
+
+        Each selector names a result field and an RFC 6901 JSON Pointer.
+        """
+        assert run(
+            "encounter.create", "--seed", "43",
+            "--json", json.dumps({"combatants": [HERO, GOBLIN]}),
+        ) == cli.EXIT_OK
+        created = out(capsys)
+        encounter_id = str(created["encounter_id"])
+        actor = str(created["state"]["turn"])
+        thora_index = next(
+            index
+            for index, combatant in enumerate(created["state"]["combatants"])
+            if combatant["name"] == "Thora"
+        )
+
+        assert run(
+            "encounter.state", encounter_id, "--select", "turn=/turn", "--raw"
+        ) == cli.EXIT_OK
+        assert capsys.readouterr().out == actor + "\n"
+
+        assert run(
+            "encounter.state", encounter_id,
+            "--select", "turn=/turn",
+            "--select", f"thora=/combatants/{thora_index}",
+        ) == cli.EXIT_OK
+        selected = out(capsys)
+        assert selected["turn"] == actor
+        assert selected["thora"]["name"] == "Thora"
+        assert selected["thora"]["hp"] == 30
+
+        assert run("encounter.brief", encounter_id, "--as", "Thora") == cli.EXIT_OK
+        chair_brief = out(capsys)
+        assert run(
+            "encounter.brief", encounter_id, "--as", "Thora",
+            "--select", "enemies=/enemies",
+        ) == cli.EXIT_OK
+        assert out(capsys) == {"enemies": chair_brief["enemies"]}, (
+            "client selection must run after the server-owned chair projection"
+        )
+
+        assert run(
+            "encounter.act", encounter_id, "--kind", "dodge",
+            "--select", "events=/events",
+        ) == cli.EXIT_OK
+        projected_action = out(capsys)
+        assert set(projected_action) == {"events"}, (
+            "an unprojected action response also has events, so the key set proves "
+            "the selector actually narrowed it"
+        )
+        events = projected_action["events"]
+        assert events and all(isinstance(event["detail"], str) for event in events)
+
+    def test_a_missing_selection_does_not_turn_a_successful_write_into_a_retry(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Output narrowing runs after HTTP, when a write cannot be undone.
+
+        A missing field is therefore a warning and JSON null under exit zero,
+        never a usage failure that invites an agent to repeat the action.
+        """
+        assert run(
+            "encounter.create", "--seed", "47",
+            "--json", json.dumps({"combatants": [HERO, GOBLIN]}),
+        ) == cli.EXIT_OK
+        created = out(capsys)
+        encounter_id = str(created["encounter_id"])
+        actor = str(created["state"]["turn"])
+
+        assert run(
+            "encounter.act", encounter_id, "--kind", "dodge",
+            "--select", "missing=/not-there",
+        ) == cli.EXIT_OK
+        captured = capsys.readouterr()
+        assert json.loads(captured.out) == {"missing": None}
+        assert "selection missing=/not-there found no value" in captured.err
+
+        assert run("encounter.state", encounter_id) == cli.EXIT_OK
+        combatants = {
+            combatant["name"]: combatant for combatant in out(capsys)["combatants"]
+        }
+        assert combatants[actor]["dodging"] is True, (
+            "the null projection is produced after the write, not instead of it"
+        )
+
+    def test_raw_needs_one_valid_selection_and_renders_a_number_directly(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run(
+            "dice.roll", "--expression", "1d1", "--seed", "5",
+            "--select=total=/total", "--raw",
+        ) == cli.EXIT_OK
+        assert capsys.readouterr().out == "1\n"
+
+        assert run(
+            "dice.roll", "--expression", "1d1", "--seed", "5", "--raw"
+        ) == cli.EXIT_USAGE
+        assert "exactly one --select" in capsys.readouterr().err
+
+        assert run(
+            "dice.roll", "--expression", "1d1", "--seed", "5",
+            "--select", "total=/total", "--select", "seed=/seed", "--raw",
+        ) == cli.EXIT_USAGE
+        assert "exactly one --select" in capsys.readouterr().err
+
+        assert run(
+            "dice.roll", "--expression", "1d1", "--seed", "5",
+            "--select", "bad=/invalid/~escape",
+        ) == cli.EXIT_USAGE
+        assert "invalid ~ escape" in capsys.readouterr().err
 
     def test_a_query_parameter_goes_on_the_query_string_typed(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]

@@ -64,8 +64,9 @@ When invoked:
    is authoritative. If your narration and the state disagree, re-read the state.
    This is the whole point of the engine — narrating from memory reintroduces
    exactly the drift it removes.
-5. **Respect the turn order the dice rolled.** Read whose turn it is from
-   `fivee encounter.state <id>`, whose `turn` names the current combatant,
+5. **Respect the turn order the dice rolled.** Read whose turn it is with
+   `fivee encounter.state <id> --select turn=/turn --raw`; do not wrap the
+   launcher result in Python or another parser. The selected `turn` names the current combatant,
    before you post an act. A fight refuses an `--actor` — initiative already decided who
    acts — so `encounter.act` carries no name and resolves as whoever is currently
    up. A request meant for another creature is therefore **not refused; it is

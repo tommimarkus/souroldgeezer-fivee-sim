@@ -59,11 +59,18 @@ underspecified adjudication by reading files or reconstructing prior play.
    most two help calls for the whole beat. Help discovers syntax; it does not
    license extra work.
 2. When continuity must be checked, make at most one authoritative state read.
-   Keep raw state and raw events inside this child. Never return them or infer a
-   chair view from them.
+   Select only the control facts needed for the beat, for example
+   `--select turn=/turn --select mode=/mode --select over=/over --select
+   winner=/winner`; never launch Python or another parser around a launcher
+   result. Keep any unselected raw state and raw events inside this child. Never
+   return them or infer a chair view from them.
 3. For a mutating beat, execute exactly one mechanical action: the adjudicated
-   request in the brief. A lookup-only or delivery-only beat performs no
-   mutation. Never choose an action, target, resource, or tactic for a player.
+   request in the brief. Select the bounded result facts directly when useful:
+   `--select events=/events --select view=/view --select delta=/state_delta
+   --select full=/state --select state_sha256=/state_sha256`. A missing
+   delta/full alternative is `null` and does not mean the action failed or may
+   be retried. A lookup-only or delivery-only beat performs no mutation. Never
+   choose an action, target, resource, or tactic for a player.
 4. Ask the engine for only the requested chair deliveries. Use a chair-safe full
    brief for `baseline`, or a chair-safe resume delta for `delta`. Accept an
    engine `full` fallback as the new baseline. Emit one named chair frame at a

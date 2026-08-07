@@ -47,6 +47,25 @@ document — goes in `--json '{...}'`, or `--json -` to read it from stdin. Give
 both, `--json` is the base and flags override its keys, so "the same fight with
 one thing changed" is an edit to the command line.
 
+Do not launch Python or another JSON parser just to extract part of an answer.
+Repeat **`--select NAME=/json/pointer`** to ask the client for named RFC 6901
+fields, or add **`--raw`** when exactly one selected scalar should print without
+JSON quotes:
+
+```bash
+fivee encounter.state enc-1 --select turn=/turn --select over=/over
+fivee encounter.state enc-1 --select turn=/turn --raw
+fivee encounter.act enc-1 --kind dodge --select events=/events \
+  --select view=/view --select delta=/state_delta --select full=/state
+```
+
+A missing pointer is `null` plus a warning, under exit zero. That matters after
+a write: the action already succeeded, so output selection must never invite a
+retry. Selection runs on the server's answer and cannot recover anything a
+chair-safe `--as` projection withheld. Keep chair payloads whole when another
+seat must receive the exact engine document; select only the control and
+outcome facts you would otherwise parse locally.
+
 ## The one rule that matters
 
 **Never state combat state from memory. Read it from the engine.**

@@ -33,14 +33,17 @@ try to spell. Given both, ``--json`` is the base and flags override its keys, so
 "the same fight with one thing changed" is an edit to the command line rather
 than to the JSON.
 
-**A failure is visible without being parsed.** Results are JSON on stdout and
-nothing else, so ``$(fivee ...)`` is always either a parseable document or
-empty. Prose, warnings, and refusals go to stderr. And the exit code separates
-the four failures that have four different fixes: :data:`EXIT_USAGE` means the
-command was wrong, :data:`EXIT_REFUSED` that the engine said no,
-:data:`EXIT_FAULT` that the engine broke, :data:`EXIT_UNREACHABLE` that nothing
-answered. Collapsing any pair of those would leave a caller unable to tell
-"retry" from "fix the command" from "read the log".
+**A result need not be parsed by another interpreter.** Repeatable ``--select``
+flags project named RFC 6901 JSON Pointers directly from the answer, and
+``--raw`` makes one selected scalar ready for a shell variable. Without that
+explicit opt-in results remain JSON on stdout and nothing else, so
+``$(fivee ...)`` is always either a parseable document or empty. Prose,
+warnings, and refusals go to stderr. And the exit code separates the four
+failures that have four different fixes: :data:`EXIT_USAGE` means the command
+was wrong, :data:`EXIT_REFUSED` that the engine said no, :data:`EXIT_FAULT` that
+the engine broke, :data:`EXIT_UNREACHABLE` that nothing answered. Collapsing any
+pair of those would leave a caller unable to tell "retry" from "fix the
+command" from "read the log".
 
 ``--json-errors`` swaps the human line for the raw problem object, still on
 stderr. Deliberately not stdout: a caller capturing stdout must never receive
@@ -636,6 +639,8 @@ def render_index(contract: Contract) -> str:
         "",
         "flags every command takes",
         "  --json '{...}' | --json -     the request body; --flags override its keys",
+        "  --select NAME=/pointer       project a named RFC 6901 result field; repeatable",
+        "  --raw                        one selected scalar without JSON quotes",
         "  --compact                     one-line JSON on stdout",
         "  --json-errors                 the raw problem object on stderr, not a line",
         "  --config PATH                 select a project config; otherwise discover it",
@@ -681,7 +686,14 @@ def render_operation(operation: Operation) -> str:
             "  a whole JSON document, validated by the engine — pass it with "
             "--json '{...}' or --json -",
         ]
-    lines += ["", "example", f"  {_example(operation)}"]
+    lines += [
+        "result",
+        "  --select NAME=/pointer projects named RFC 6901 fields; repeat it",
+        "  --raw prints one selected scalar without JSON quotes",
+        "",
+        "example",
+        f"  {_example(operation)}",
+    ]
     return "\n".join(lines)
 
 
@@ -757,10 +769,110 @@ class Options:
 
     compact: bool = False
     json_errors: bool = False
+    selectors: tuple[tuple[str, str], ...] = ()
+    raw: bool = False
     configuration: Configuration | None = None
 
 
+_MISSING = object()
+
+
+def _pointer_segments(pointer: str) -> tuple[str, ...]:
+    """Parse an RFC 6901 JSON Pointer before the operation is sent."""
+    if not pointer.startswith("/"):
+        raise UsageError(
+            f"--select takes NAME=/json/pointer, not a pointer without /: {pointer!r}"
+        )
+    segments: list[str] = []
+    for encoded in pointer[1:].split("/"):
+        decoded: list[str] = []
+        index = 0
+        while index < len(encoded):
+            if encoded[index] != "~":
+                decoded.append(encoded[index])
+                index += 1
+                continue
+            if index + 1 >= len(encoded) or encoded[index + 1] not in "01":
+                raise UsageError(
+                    f"--select pointer {pointer!r} has an invalid ~ escape; "
+                    "use ~0 for ~ and ~1 for /"
+                )
+            decoded.append("~" if encoded[index + 1] == "0" else "/")
+            index += 2
+        segments.append("".join(decoded))
+    return tuple(segments)
+
+
+def _parse_selector(text: str) -> tuple[str, str]:
+    """One stable output name and the pointer that supplies its value."""
+    name, separator, pointer = text.partition("=")
+    if not separator or not name or not pointer:
+        raise UsageError(
+            f"--select takes NAME=/json/pointer, not {text!r}"
+        )
+    if any(character.isspace() for character in name):
+        raise UsageError(f"--select name {name!r} cannot contain whitespace")
+    _pointer_segments(pointer)
+    return name, pointer
+
+
+def _selected(value: Any, segments: Sequence[str]) -> Any:
+    """Walk one pointer through mappings and lists without another dependency."""
+    if not segments:
+        return value
+    segment, rest = segments[0], segments[1:]
+    if isinstance(value, Mapping):
+        if segment not in value:
+            return _MISSING
+        return _selected(value[segment], rest)
+    if isinstance(value, list):
+        try:
+            index = int(segment)
+        except ValueError:
+            return _MISSING
+        if index < 0 or index >= len(value):
+            return _MISSING
+        return _selected(value[index], rest)
+    return _MISSING
+
+
+def _project(value: Any, options: Options) -> Any:
+    """Project an answer without changing the successful operation's status.
+
+    A missing field cannot turn a successful write into a failure: by the time
+    its response can be inspected, the write is durable and a non-zero exit
+    would invite exactly the retry idempotency keys exist to prevent.
+    """
+    if not options.selectors:
+        return value
+    projected: dict[str, Any] = {}
+    for name, pointer in options.selectors:
+        found = _selected(value, _pointer_segments(pointer))
+        if found is _MISSING:
+            _note(
+                f"selection {name}={pointer} found no value; "
+                "the command still succeeded"
+            )
+            found = None
+        projected[name] = found
+    return projected
+
+
 def _print_json(value: Any, options: Options) -> None:
+    value = _project(value, options)
+    if options.raw:
+        selected = next(iter(value.values()))
+        if isinstance(selected, str):
+            sys.stdout.write(selected + "\n")
+            return
+        if selected is None or isinstance(selected, (bool, int, float)):
+            sys.stdout.write(json.dumps(selected, ensure_ascii=False) + "\n")
+            return
+        _note("--raw selected a list or object, so it remains compact JSON")
+        sys.stdout.write(
+            json.dumps(selected, ensure_ascii=False, separators=(",", ":")) + "\n"
+        )
+        return
     if options.compact:
         sys.stdout.write(json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n")
     else:
@@ -861,6 +973,8 @@ def _stop(tokens: Sequence[str], options: Options) -> int:
 
 
 def _help(tokens: Sequence[str], options: Options) -> int:
+    if options.selectors or options.raw:
+        raise UsageError("--select and --raw apply to JSON results, not help text")
     contract = Contract(_announce(_ensure(options)))
     if not tokens:
         sys.stdout.write(render_index(contract) + "\n")
@@ -956,14 +1070,46 @@ def main(
             configuration = find_and_load_config(Path.cwd())
         if configuration is not None:
             apply_to_environment(configuration, os.environ)
+        selectors: list[tuple[str, str]] = []
+        operation_tokens: list[str] = []
+        compact = False
+        json_errors = False
+        raw = False
+        index = 0
+        while index < len(tokens):
+            token = tokens[index]
+            if token == "--compact":
+                compact = True
+            elif token == "--json-errors":
+                json_errors = True
+            elif token == "--raw":
+                raw = True
+            elif token == "--select":
+                if index + 1 >= len(tokens) or tokens[index + 1].startswith("--"):
+                    raise UsageError("--select takes NAME=/json/pointer")
+                selectors.append(_parse_selector(tokens[index + 1]))
+                index += 1
+            elif token.startswith("--select="):
+                selectors.append(_parse_selector(token.partition("=")[2]))
+            else:
+                operation_tokens.append(token)
+            index += 1
+        names = [name for name, _pointer in selectors]
+        repeated = sorted({name for name in names if names.count(name) > 1})
+        if repeated:
+            raise UsageError(
+                f"--select names must be unique; repeated: {', '.join(repeated)}"
+            )
+        if raw and len(selectors) != 1:
+            raise UsageError("--raw needs exactly one --select")
         options = Options(
-            compact="--compact" in tokens,
-            json_errors="--json-errors" in tokens,
+            compact=compact,
+            json_errors=json_errors,
+            selectors=tuple(selectors),
+            raw=raw,
             configuration=configuration,
         )
-        tokens = [
-            token for token in tokens if token not in ("--compact", "--json-errors")
-        ]
+        tokens = operation_tokens
         if not tokens:
             _note(
                 "no command. `fivee help` lists every operation; `fivee serve` starts "
