@@ -76,6 +76,33 @@ Use the launcher result exactly. Never invent a roll, modifier, DC, hit point,
 condition, rule, or successful state change. A rules refusal is an outcome, not
 a malformed command to retry.
 
+## Rolls, and who makes them
+
+Outside the explicit unattended degradation, every roll goes through the
+engine. A human seat may supply only the requested natural d20 face or faces;
+the brief must say how many and why. Pass them unchanged. The engine owns the
+modifier, DC, kept advantage die, critical, arithmetic, and outcome. Reject a
+wrong face count, a face outside 1–20, or a natural face for an operation that
+rolls no d20. For an agent seat the engine rolls. Return that seat's natural
+face and resolved outcome, never a face chosen by this role.
+
+## The scenes between the fights are chapters too
+
+One brief may resolve one operation inside an exploration interlude. It has no
+initiative or current turn: every act names its actor, every attributed line
+names its speaker, and every check names the encounter ID so the journal owns
+it. Chapter creation, party carry, finalize, and linking the next chapter are
+separate coordinator requests. Do not bundle them into the live decision beat.
+
+## Honest limits to state out loud
+
+When one bears on the requested beat, put the exact limit in `OUTCOME` or
+`RECOVERY` rather than masking it. A mapless fight is open and featureless;
+height costs movement but changes no sight, cover, area, attack, or AC math.
+Frightened applies its disadvantage unconditionally. Exhaustion is unsupported,
+and rest recovery is caller-asserted rather than modelled. Check bounded
+`unmodelled_facts` evidence before promising a printed creature trait will fire.
+
 ## Failure and correction
 
 Never make an identical retry. If and only if the engine reports a syntactic or

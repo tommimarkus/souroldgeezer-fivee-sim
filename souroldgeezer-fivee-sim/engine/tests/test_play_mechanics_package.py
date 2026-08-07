@@ -35,6 +35,18 @@ def _proxy_tokens(text: str) -> int:
     return len(re.findall(r"\w+|[^\w\s]", text))
 
 
+def _section(markdown: str, heading: str) -> str:
+    level = len(heading) - len(heading.lstrip("#"))
+    next_heading = rf"(?=^#{{1,{level}}}\s|\Z)"
+    match = re.search(
+        rf"^{re.escape(heading)}\s*$\n(?P<body>.*?){next_heading}",
+        markdown,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    assert match is not None, f"missing stable guidance section {heading!r}"
+    return match.group("body")
+
+
 def test_play_mechanics_has_only_launcher_bash_and_read() -> None:
     metadata, body = _frontmatter(_agent())
 
@@ -110,3 +122,24 @@ def test_play_mechanics_runs_one_bounded_decision_beat() -> None:
     )
     assert re.search(r"OUTCOME:.{0,100}(?:120|160) words", plain, re.IGNORECASE)
     assert _proxy_tokens(agent) <= 2_750
+
+
+def test_play_mechanics_retains_the_moved_roll_interlude_and_limit_contracts() -> None:
+    agent = _agent()
+    rolls = _section(agent, "## Rolls, and who makes them").lower()
+    scenes = _section(agent, "## The scenes between the fights are chapters too").lower()
+    limits = _section(agent, "## Honest limits to state out loud").lower()
+
+    for obligation in ("human", "natural", "agent", "engine", "modifier", "outcome"):
+        assert obligation in rolls
+    for obligation in ("exploration", "actor", "encounter id", "speaker", "finalize"):
+        assert obligation in scenes
+    for obligation in (
+        "mapless",
+        "height",
+        "frightened",
+        "exhaustion",
+        "rest",
+        "unmodelled_facts",
+    ):
+        assert obligation in limits
