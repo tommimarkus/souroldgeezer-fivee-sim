@@ -11,6 +11,7 @@ from typing import Any
 from ..map_document import MapError as MapError
 
 __all__ = [
+    "IdempotencyConflictError",
     "MapEditError",
     "MapError",
     "NotFoundError",
@@ -46,6 +47,17 @@ class NotFoundError(RequestError):
     message would be one rephrasing away from mislabelling both. A caller that
     does not care catches :class:`RequestError`, which this is.
     """
+
+
+class IdempotencyConflictError(RequestError):
+    """One replay key was presented with a different semantic request."""
+
+    def __init__(self, request_id: str) -> None:
+        self.request_id = request_id
+        super().__init__(
+            f"idempotency key {request_id!r} was already used for a different "
+            "request; use a new key"
+        )
 
 
 class StaleWriteError(ValueError):

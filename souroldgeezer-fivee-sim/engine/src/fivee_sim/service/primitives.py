@@ -63,7 +63,7 @@ def audited_primitive(
         except DiceError as error:
             raise RequestError(str(error)) from error
     session = sessions.session_for(state, encounter_id)
-    cached = sessions.cached_request(session, request_id)
+    cached = sessions.cached_request(session, request_id, operation, arguments)
     if cached is not None:
         return cached
     # Ahead of the journal, beside the cache hit above and for the same reason:
@@ -201,11 +201,15 @@ def check(
     ability: str | None = None,
     skill: str | None = None,
 ) -> dict[str, Any]:
-    def execute() -> dict[str, Any]:
-        if ability is not None:
+    if ability is not None:
+        try:
             Ability(ability)
-        if skill is not None and not skill.strip():
-            raise RequestError("skill must not be blank")
+        except ValueError as error:
+            raise RequestError(str(error)) from error
+    if skill is not None and not skill.strip():
+        raise RequestError("skill must not be blank")
+
+    def execute() -> dict[str, Any]:
         used = specs.checked_seed(seed)
         test = make_d20_test(
             Random(used), modifier=modifier, dc=dc,
@@ -249,9 +253,13 @@ def save(
     request_id: str | None = None,
     ability: str | None = None,
 ) -> dict[str, Any]:
-    def execute() -> dict[str, Any]:
-        if ability is not None:
+    if ability is not None:
+        try:
             Ability(ability)
+        except ValueError as error:
+            raise RequestError(str(error)) from error
+
+    def execute() -> dict[str, Any]:
         used = specs.checked_seed(seed)
         test = make_d20_test(
             Random(used),

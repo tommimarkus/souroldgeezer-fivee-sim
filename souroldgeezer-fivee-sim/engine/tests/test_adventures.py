@@ -36,7 +36,12 @@ from fivee_sim.paths import (
     storage_layout,
 )
 from fivee_sim.service import adventures, specs
-from fivee_sim.service.errors import NotFoundError, RequestError, StaleWriteError
+from fivee_sim.service.errors import (
+    IdempotencyConflictError,
+    NotFoundError,
+    RequestError,
+    StaleWriteError,
+)
 
 from . import api
 from .conftest import AMBUSHER, LOOKOUT, MILL, SCOUT
@@ -133,7 +138,9 @@ class TestAdventureRunIsolation:
         real_lookup = adventures._by_request_id
 
         def synchronized_lookup(
-            request_id: str, state: Any = None
+            request_id: str,
+            arguments: dict[str, Any],
+            state: Any = None,
         ) -> dict[str, Any] | None:
             nonlocal calls
             with calls_lock:
@@ -141,7 +148,7 @@ class TestAdventureRunIsolation:
                 call = calls
             if call <= 2:
                 arrived.wait(timeout=5)
-            return real_lookup(request_id, state)
+            return real_lookup(request_id, arguments, state)
 
         monkeypatch.setattr(adventures, "_by_request_id", synchronized_lookup)
         with ThreadPoolExecutor(max_workers=2) as workers:
@@ -802,9 +809,41 @@ class TestLinkingEncounters:
         assert len(api.adventure_state("adv-1")["members"]) == 1
         assert len(api.encounter_list("all")["encounters"]) == 1
 
+    def test_a_retried_link_rejects_changed_semantic_arguments(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter(
+            "adv-1", combatants=[BRAWLER, RUFFIAN], seed=72, request_id="link-1"
+        )
+
+        with pytest.raises(IdempotencyConflictError, match="different request"):
+            api.adventure_encounter(
+                "adv-1", combatants=[BRAWLER, RUFFIAN], seed=73,
+                request_id="link-1",
+            )
+        assert len(api.adventure_state("adv-1")["members"]) == 1
+
     def test_a_retried_creation_under_one_request_id_makes_one_adventure(self) -> None:
         first = api.adventure_create("The Sunless Citadel", request_id="new-1")
         again = api.adventure_create("The Sunless Citadel", request_id="new-1")
+
+        assert again["id"] == first["id"]
+        assert len(api.adventure_list("all")["adventures"]) == 1
+
+    def test_a_retried_creation_rejects_a_different_name(self) -> None:
+        api.adventure_create("The Sunless Citadel", request_id="new-1")
+
+        with pytest.raises(IdempotencyConflictError, match="different request"):
+            api.adventure_create("The Drowned Mill", request_id="new-1")
+        assert len(api.adventure_list("all")["adventures"]) == 1
+
+    def test_a_legacy_creation_record_without_a_fingerprint_still_replays(self) -> None:
+        first = api.adventure_create("The Sunless Citadel", request_id="legacy-new")
+        path = adventures.adventure_path("adv-1")
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["request_ids"]["legacy-new"].pop("idempotency_fingerprint")
+        path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+
+        again = api.adventure_create("The Sunless Citadel", request_id="legacy-new")
 
         assert again["id"] == first["id"]
         assert len(api.adventure_list("all")["adventures"]) == 1
@@ -817,7 +856,7 @@ class TestLinkingEncounters:
         api.adventure_create("The Sunless Citadel", request_id="shared-key")
 
         with pytest.raises(
-            RequestError, match="request id 'shared-key' was already used for"
+            IdempotencyConflictError, match="different request"
         ):
             api.adventure_encounter(
                 "adv-1", combatants=[BRAWLER, RUFFIAN], seed=76, request_id="shared-key"
@@ -835,12 +874,11 @@ class TestLinkingEncounters:
             "adv-1", combatants=[BRAWLER, RUFFIAN], seed=75, request_id="shared-key"
         )
 
-        started = api.adventure_create("Barrow of the Forgotten King",
-                                       request_id="shared-key")
-
-        assert started["id"] == "adv-2"
-        assert started["name"] == "Barrow of the Forgotten King"
-        assert len(api.adventure_list("all")["adventures"]) == 2
+        with pytest.raises(IdempotencyConflictError, match="different request"):
+            api.adventure_create(
+                "Barrow of the Forgotten King", request_id="shared-key"
+            )
+        assert len(api.adventure_list("all")["adventures"]) == 1
 
     def test_two_combatants_of_the_same_name_are_refused_by_the_fight_itself(self) -> None:
         api.adventure_create("The Sunless Citadel")

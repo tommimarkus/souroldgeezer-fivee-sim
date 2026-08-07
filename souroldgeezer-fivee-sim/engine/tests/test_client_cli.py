@@ -37,6 +37,7 @@ import pytest
 
 from fivee_sim.client import cli, discovery, http
 from fivee_sim.configuration import load_config
+from fivee_sim.kernel.rules import Ability
 from fivee_sim.model.encounter import ActionKind
 from fivee_sim.web.http_server import SOURCE_ID_ENV
 
@@ -820,6 +821,24 @@ class TestHelp:
             f"`fivee help encounter.act` prints no way to learn these action "
             f"kinds short of guessing one wrong: {missing}"
         )
+
+    def test_check_help_prints_exact_lowercase_abilities_but_keeps_skill_free_form(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run("help", "dice.check") == cli.EXIT_OK
+        rendered = capsys.readouterr().out
+        ability_line = next(
+            line for line in rendered.splitlines()
+            if line.strip().startswith("--ability ")
+        )
+        skill_line = next(
+            line for line in rendered.splitlines()
+            if line.strip().startswith("--skill ")
+        )
+
+        assert all(ability.value in ability_line for ability in Ability)
+        assert not any(ability.value.title() in ability_line for ability in Ability)
+        assert "one of" not in skill_line
 
     def test_an_unknown_operation_offers_the_near_misses(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]

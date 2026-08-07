@@ -60,6 +60,7 @@ FRAGMENT_EXEMPTIONS: frozenset[str] = frozenset()
 REFUSAL_ERRORS: frozenset[str] = frozenset(
     {
         "RequestError",
+        "IdempotencyConflictError",
         "NotFoundError",
         "MapError",
         "MapEditError",

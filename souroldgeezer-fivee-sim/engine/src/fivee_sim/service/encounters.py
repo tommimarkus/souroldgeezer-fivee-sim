@@ -201,7 +201,9 @@ def creation_response(
 
 
 def creation_request(
-    state: EngineState, request_id: str
+    state: EngineState,
+    request_id: str,
+    arguments: Mapping[str, Any],
 ) -> tuple[str, Session] | None:
     root = sessions.encounters_dir_of(state)
     for path in journal_service.list_journals(root):
@@ -212,6 +214,9 @@ def creation_request(
             continue
         if summary is None or summary.first.get("request_id") != request_id:
             continue
+        sessions.ensure_idempotency_identity(
+            request_id, summary.first, "encounter_create", arguments
+        )
         # Only now, and only for the one that matched: recovering a session
         # replays the fight, which is what the scan was buying for every
         # journal on the disk to read one field off each creation record.
@@ -253,8 +258,16 @@ def create(
     """
     sessions.require_run_write(state, "encounter.create")
     chosen = views.parse_view(view, views.FULL)
+    creation_arguments = {
+        "combatants": combatants,
+        "seed": seed,
+        "movement_rule": movement_rule,
+        "map_spec": map_spec,
+        "map_id": map_id,
+        "mode": mode,
+    }
     if request_id is not None:
-        existing = creation_request(state, request_id)
+        existing = creation_request(state, request_id, creation_arguments)
         if existing is not None:
             return _answered(
                 existing[1], creation_response(state, *existing), viewer, views.FULL
@@ -331,20 +344,27 @@ def create(
     except blobs.BlobError as error:
         state.sessions.pop(encounter_id, None)
         raise RequestError(f"cannot store {encounter_id!r}'s payloads: {error}") from error
+    creation_record: dict[str, Any] = {
+        "kind": "creation",
+        # Which format the whole journal is written in, stamped once and read
+        # back by ``recover_session`` before anything else in the file is
+        # believed. See ``sessions.JOURNAL_VERSION``.
+        "journal_version": sessions.JOURNAL_VERSION,
+        "timestamp": created_at,
+        "request_id": request_id,
+        "encounter_id": encounter_id,
+        "engine_version": __version__,
+    }
+    if request_id is not None:
+        creation_record["idempotency_fingerprint"] = sessions.idempotency_fingerprint(
+            "encounter_create", creation_arguments
+        )
     try:
         sessions.journal_append(
             state,
             encounter_id,
             {
-                "kind": "creation",
-                # Which format the whole journal is written in, stamped once
-                # and read back by ``recover_session`` before anything else in
-                # the file is believed. See ``sessions.JOURNAL_VERSION``.
-                "journal_version": sessions.JOURNAL_VERSION,
-                "timestamp": created_at,
-                "request_id": request_id,
-                "encounter_id": encounter_id,
-                "engine_version": __version__,
+                **creation_record,
                 # Which *build* wrote this journal, beside which release. The
                 # release number cannot tell two checkouts of one release
                 # apart, and that is exactly the case a journal outlives: the
@@ -1042,9 +1062,6 @@ def act(
     """
     chosen = views.parse_view(view, views.DELTA)
     session = sessions.session_for(state, encounter_id)
-    cached = sessions.cached_request(session, request_id)
-    if cached is not None:
-        return _answered(session, cached, viewer, views.FULL)
     # Before anything durable happens, and for the reason ``create`` refuses an
     # unknown ``viewer`` before it starts a fight: a mistyped name is a client's
     # mistake rather than a table's event, and journaling an attempt and a
@@ -1079,6 +1096,11 @@ def act(
         # field.
         "actor": actor,
     }
+    cached = sessions.cached_request(
+        session, request_id, "encounter_act", arguments
+    )
+    if cached is not None:
+        return _answered(session, cached, viewer, views.FULL)
     # Refused before the attempt is written, on the terms ``audited_primitive``
     # states: nothing was rolled, so nothing happened to record, and the journal
     # keeps ``finalized`` as its last word.
@@ -1169,10 +1191,12 @@ def advance(
     """
     chosen = views.parse_view(view, views.DELTA)
     session = sessions.session_for(state, encounter_id)
-    cached = sessions.cached_request(session, request_id)
+    arguments: dict[str, Any] = {}
+    cached = sessions.cached_request(
+        session, request_id, "encounter_advance", arguments
+    )
     if cached is not None:
         return _answered(session, cached, viewer, views.FULL)
-    arguments: dict[str, Any] = {}
     # Before the attempt is written, on ``act``'s terms and for its reasons.
     if session.finalized:
         raise RequestError(f"encounter {encounter_id!r} is finalized")

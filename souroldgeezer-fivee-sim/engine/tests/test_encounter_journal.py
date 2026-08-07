@@ -20,7 +20,7 @@ from fivee_sim.model.encounter import Action, ActionKind, ActionRecord
 from fivee_sim.paths import SOURCE_ID_ENV
 from fivee_sim.service import blobs, durable, encounter_journal, specs
 from fivee_sim.service import sessions as sessions_service
-from fivee_sim.service.errors import RequestError
+from fivee_sim.service.errors import IdempotencyConflictError, RequestError
 
 from . import api
 from .conftest import (
@@ -93,18 +93,21 @@ def test_concurrent_appends_preserve_one_verified_hash_chain() -> None:
     assert len(saved) == writers + 1
 
 
-def test_creation_request_ids_are_idempotent_even_after_memory_loss() -> None:
+def test_creation_request_ids_reject_a_changed_payload_after_memory_loss() -> None:
     first = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=102, request_id="create-duel"
     )
     api.STATE.sessions.clear()
 
-    second = api.encounter_create(
-        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=999, request_id="create-duel"
-    )
+    with pytest.raises(IdempotencyConflictError, match="different request"):
+        api.encounter_create(
+            [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=999,
+            request_id="create-duel",
+        )
 
-    assert second["encounter_id"] == first["encounter_id"]
-    assert second["seed"] == 102
+    assert api.encounter_list("all")["encounters"][0]["encounter_id"] == first[
+        "encounter_id"
+    ]
 
 
 def test_a_repeated_request_id_returns_the_original_result_without_acting_twice() -> None:
@@ -117,6 +120,56 @@ def test_a_repeated_request_id_returns_the_original_result_without_acting_twice(
 
     assert second == first
     assert api.encounter_log(encounter_id)["total_actions"] == 1
+
+
+def test_a_request_id_identifies_the_operation_and_semantic_arguments() -> None:
+    encounter_id = mapless_fight(seed=104)
+    first = api.check(
+        3, 12, seed=4, encounter_id=encounter_id, request_id="doran-check",
+        ability="intelligence", skill="Investigation",
+    )
+
+    assert api.check(
+        3, 12, seed=4, encounter_id=encounter_id, request_id="doran-check",
+        ability="intelligence", skill="Investigation",
+    ) == first
+    with pytest.raises(IdempotencyConflictError, match="different request"):
+        api.check(
+            4, 12, seed=4, encounter_id=encounter_id, request_id="doran-check",
+            ability="intelligence", skill="Investigation",
+        )
+    with pytest.raises(IdempotencyConflictError, match="different request"):
+        api.save(
+            3, 12, seed=4, encounter_id=encounter_id, request_id="doran-check",
+            ability="intelligence",
+        )
+
+
+def test_a_legacy_cached_result_without_a_fingerprint_still_replays(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=105)
+    first = api.check(
+        2, 10, seed=5, encounter_id=encounter_id, request_id="legacy-check",
+        ability="wisdom",
+    )
+    path = journal_path(root, encounter_id)
+    saved = records(path)
+    saved[-1].pop("idempotency_fingerprint", None)
+    # Rebuild the chain exactly as an older writer would have done.
+    path.unlink()
+    for record in saved:
+        record.pop("previous_sha256", None)
+        record.pop("sha256", None)
+        encounter_journal.append(encounter_id, record, root=root)
+    api.STATE.sessions.clear()
+
+    assert api.check(
+        2, 10, seed=5, encounter_id=encounter_id, request_id="legacy-check",
+        ability="wisdom",
+    ) == first
 
 
 def test_a_refused_action_is_part_of_the_audit_record() -> None:
@@ -2464,7 +2517,7 @@ def test_matching_a_creation_request_replays_only_the_journal_it_matched(
 
     monkeypatch.setattr(encounter_journal, "read", counted)
     again = api.encounter_create(
-        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=999, request_id="one-fight"
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=197, request_id="one-fight"
     )
 
     assert again["encounter_id"] == target

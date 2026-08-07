@@ -394,7 +394,10 @@ def _precondition(expected_version: str | None, read_at: str) -> str:
 
 
 def _recorded(
-    document: Mapping[str, Any], request_id: str, operation: str
+    document: Mapping[str, Any],
+    request_id: str,
+    operation: str,
+    arguments: Mapping[str, Any],
 ) -> Mapping[str, Any] | None:
     """What a previous call under this key did, if it was *this* operation.
 
@@ -408,11 +411,7 @@ def _recorded(
     found = document["request_ids"].get(request_id)
     if not isinstance(found, Mapping):
         return None
-    if found.get("operation") != operation:
-        raise RequestError(
-            f"request id {request_id!r} was already used for "
-            f"{found.get('operation')!r}; give a different one for {operation}"
-        )
+    sessions.ensure_idempotency_identity(request_id, found, operation, arguments)
     return found
 
 
@@ -454,7 +453,7 @@ def create(
             "adventure.create allocates a new run; omit --run for this operation"
         )
     if request_id is not None:
-        existing = _by_request_id(request_id, state)
+        existing = _by_request_id(request_id, {"name": titled}, state)
         if existing is not None:
             return existing
     if storage is not None:
@@ -462,7 +461,7 @@ def create(
             storage.runs_dir.mkdir(parents=True, exist_ok=True)
             with durable.file_lock(storage.runs_dir / ".allocation"):
                 if request_id is not None:
-                    existing = _by_request_id(request_id, state)
+                    existing = _by_request_id(request_id, {"name": titled}, state)
                     if existing is not None:
                         return existing
                 return _create_new(titled, request_id, state)
@@ -491,7 +490,14 @@ def _create_new(
             "status": "active",
             "members": [],
             "request_ids": (
-                {} if request_id is None else {request_id: {"operation": "adventure.create"}}
+                {} if request_id is None else {
+                    request_id: {
+                        "operation": "adventure.create",
+                        "idempotency_fingerprint": sessions.idempotency_fingerprint(
+                            "adventure.create", {"name": titled}
+                        ),
+                    }
+                }
             ),
         }
         try:
@@ -568,7 +574,9 @@ def _allocate_id(state: EngineState | None) -> tuple[str, Path | None]:
 
 
 def _by_request_id(
-    request_id: str, state: EngineState | None = None
+    request_id: str,
+    arguments: Mapping[str, Any],
+    state: EngineState | None = None,
 ) -> dict[str, Any] | None:
     """The adventure a previous call under this key created, if any.
 
@@ -591,7 +599,10 @@ def _by_request_id(
         except RequestError:
             continue
         recorded = document["request_ids"].get(request_id)
-        if isinstance(recorded, Mapping) and recorded.get("operation") == "adventure.create":
+        if isinstance(recorded, Mapping):
+            sessions.ensure_idempotency_identity(
+                request_id, recorded, "adventure.create", arguments
+            )
             return _response(document, sha256_of(text))
     return None
 
@@ -941,9 +952,26 @@ def link_encounter(
     orphaning it.
     """
     sessions.require_run_write(state, "adventure.encounter")
+    idempotency_arguments = {
+        "combatants": combatants,
+        "carry": carry,
+        "recovery": recovery,
+        "seed": seed,
+        "movement_rule": movement_rule,
+        "map_spec": map_spec,
+        "map_id": map_id,
+        "mode": mode,
+        "carry_map": carry_map,
+        "recovery_note": recovery_note,
+    }
     document, version = _load(adventure_id, state)
     if request_id is not None:
-        recorded = _recorded(document, request_id, "adventure.encounter")
+        recorded = _recorded(
+            document,
+            request_id,
+            "adventure.encounter",
+            idempotency_arguments,
+        )
         if recorded is not None:
             return _link_response(state, document, version, recorded)
     if document["status"] != "active":
@@ -998,7 +1026,13 @@ def link_encounter(
     if request_id is not None:
         document["request_ids"] = {
             **document["request_ids"],
-            request_id: {"operation": "adventure.encounter", **member},
+            request_id: {
+                "operation": "adventure.encounter",
+                "idempotency_fingerprint": sessions.idempotency_fingerprint(
+                    "adventure.encounter", idempotency_arguments
+                ),
+                **member,
+            },
         }
     written = _write(
         adventure_id,

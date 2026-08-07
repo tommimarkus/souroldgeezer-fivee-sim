@@ -87,6 +87,7 @@ from ..service import rulings as rulings_ops
 from ..service import scenes as scene_service
 from ..service.common import slugify
 from ..service.errors import (
+    IdempotencyConflictError,
     MapEditError,
     MapError,
     NotFoundError,
@@ -197,11 +198,13 @@ class _Problem(Exception):
         detail: str,
         diagnostics: list[dict[str, Any]] | None = None,
         headers: Mapping[str, str] | None = None,
+        problem_type: str | None = None,
     ) -> None:
         self.status = status
         self.detail = detail
         self.diagnostics = diagnostics
         self.headers = dict(headers or {})
+        self.problem_type = problem_type
         super().__init__(detail)
 
 
@@ -441,6 +444,14 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_problem(problem)
         except NotFoundError as error:
             self._send_problem(_Problem(HTTPStatus.NOT_FOUND, str(error)))
+        except IdempotencyConflictError as error:
+            self._send_problem(
+                _Problem(
+                    HTTPStatus.CONFLICT,
+                    str(error),
+                    problem_type=routes.problem_type("idempotency-conflict"),
+                )
+            )
         except StaleWriteError as error:
             self._send_problem(_Problem(HTTPStatus.CONFLICT, str(error)))
         except adventure_service.NoCurrentChapterError as error:
@@ -730,7 +741,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _send_problem(self, problem: _Problem) -> None:
         payload: dict[str, Any] = {
-            "type": routes.error_type(int(problem.status)),
+            "type": problem.problem_type or routes.error_type(int(problem.status)),
             "title": problem.status.phrase,
             "status": int(problem.status),
             "detail": _shortened(problem.detail, MAX_PROBLEM_DETAIL),

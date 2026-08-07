@@ -50,7 +50,7 @@ from . import blobs, specs
 from . import encounter_journal as journal_service
 from . import maps as map_service
 from .common import sha256_of
-from .errors import NotFoundError, RequestError
+from .errors import IdempotencyConflictError, NotFoundError, RequestError
 from .replay import canonical_sha256
 
 __all__ = [
@@ -71,6 +71,8 @@ __all__ = [
     "blobs_dir_of",
     "encounters_dir_of",
     "initial_creatures",
+    "idempotency_fingerprint",
+    "ensure_idempotency_identity",
     "journal_append",
     "map_source_of",
     "maps_dir_of",
@@ -650,12 +652,54 @@ def journal_append(
     return record
 
 
-def cached_request(session: Session, request_id: str | None) -> dict[str, Any] | None:
+def idempotency_fingerprint(operation: str, arguments: Mapping[str, Any]) -> str:
+    """Stable identity for the operation and caller-visible semantic inputs."""
+    return canonical_sha256(
+        {"operation": operation, "arguments": supplied_arguments(arguments)}
+    )
+
+
+def ensure_idempotency_identity(
+    request_id: str,
+    recorded: Mapping[str, Any],
+    operation: str,
+    arguments: Mapping[str, Any],
+) -> None:
+    """Refuse reuse unless the stored request has the same semantic identity.
+
+    New records carry the digest directly. Older attempt/result records already
+    carry operation and arguments, so their identity can be reconstructed. The
+    oldest creation records carry neither complete original arguments nor a
+    digest; those retain their historical replay behaviour because guessing an
+    identity would turn a compatible retry into a false conflict.
+    """
+    expected = idempotency_fingerprint(operation, arguments)
+    found = recorded.get("idempotency_fingerprint")
+    if isinstance(found, str):
+        if found != expected:
+            raise IdempotencyConflictError(request_id)
+        return
+    recorded_operation = recorded.get("operation")
+    if isinstance(recorded_operation, str) and recorded_operation != operation:
+        raise IdempotencyConflictError(request_id)
+    recorded_arguments = recorded.get("arguments")
+    if isinstance(recorded_operation, str) and isinstance(recorded_arguments, Mapping):
+        if idempotency_fingerprint(recorded_operation, recorded_arguments) != expected:
+            raise IdempotencyConflictError(request_id)
+
+
+def cached_request(
+    session: Session,
+    request_id: str | None,
+    operation: str,
+    arguments: Mapping[str, Any],
+) -> dict[str, Any] | None:
     if request_id is None:
         return None
     cached = session.request_results.get(request_id)
     if cached is None:
         return None
+    ensure_idempotency_identity(request_id, cached, operation, arguments)
     if cached["status"] == "refused":
         raise RequestError(str(cached["error"]))
     result = cached.get("result")
@@ -702,17 +746,22 @@ def attempt_started(
 ) -> tuple[int, str]:
     timestamp = utc_now()
     index = len(session.attempts)
+    payload: dict[str, Any] = {
+        "kind": "attempt",
+        "timestamp": timestamp,
+        "index": index,
+        "operation": operation,
+        "request_id": request_id,
+        "arguments": supplied_arguments(arguments),
+    }
+    if request_id is not None:
+        payload["idempotency_fingerprint"] = idempotency_fingerprint(
+            operation, arguments
+        )
     journal_append(
         state,
         encounter_id,
-        {
-            "kind": "attempt",
-            "timestamp": timestamp,
-            "index": index,
-            "operation": operation,
-            "request_id": request_id,
-            "arguments": supplied_arguments(arguments),
-        },
+        payload,
         session,
     )
     return index, timestamp
@@ -758,6 +807,10 @@ def attempt_finished(
         # recovered fight can be held against the one that was recorded.
         "state_sha256": canonical_sha256(session.encounter.state()),
     }
+    if request_id is not None:
+        audit["idempotency_fingerprint"] = idempotency_fingerprint(
+            operation, arguments
+        )
     # A result is kept whole when either clause holds, and the two clauses are
     # different claims with different reasons.
     #

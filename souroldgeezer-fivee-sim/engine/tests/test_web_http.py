@@ -31,6 +31,7 @@ from fivee_sim import __version__
 from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
+from fivee_sim.kernel.rules import Ability
 from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
 from fivee_sim.paths import storage_layout
 from fivee_sim.service import adventures as adventure_service
@@ -1459,18 +1460,19 @@ class TestTheContract:
                     assert answer["content"]
 
     def test_the_document_publishes_the_error_type_registry(self, editor: Editor) -> None:
-        schemas = editor.request("GET", "/api/v1/openapi.json").json()["components"][
-            "schemas"
-        ]
+        document = editor.request("GET", "/api/v1/openapi.json").json()
+        schemas = document["components"]["schemas"]
         assert schemas["Problem"]["required"] == [
             "type", "title", "status", "detail", "instance"
         ]
         published = set(schemas["ErrorType"]["enum"])
         assert published == {
-            routes.error_type(status) for status in routes.ERROR_TYPES
+            routes.problem_type(name) for name in routes.ERROR_TYPE_NAMES
         }
         assert "urn:fivee-sim:error:stale-write" in published
+        assert "urn:fivee-sim:error:idempotency-conflict" in published
         assert not any(name.startswith("http") for name in published)
+        assert "409" in document["paths"]["/api/v1/dice/checks"]["post"]["responses"]
 
     def test_the_document_declares_the_launch_token_as_the_scheme(
         self, editor: Editor
@@ -1873,7 +1875,9 @@ class TestDeclaredEnums:
             "content.configure.builtin": builtins,
             "dice.roll.advantage": advantages,
             "dice.check.advantage": advantages,
+            "dice.check.ability": {ability.value for ability in Ability} | {None},
             "dice.save.advantage": advantages,
+            "dice.save.ability": {ability.value for ability in Ability} | {None},
             "map.generate.kind": set(map_service._PARAM_TYPES),
             "map.query.query": set(map_service._QUERIES),
             "encounter.create.view": set(views_service.VIEWS),
@@ -3964,6 +3968,47 @@ class TestIdempotencyKey:
         # No seed was given, so a re-roll would pick a new one; equality here is
         # the recorded result coming back rather than a coincidence.
         assert again == first
+
+    def test_a_bad_ability_does_not_spend_the_key_and_a_changed_payload_is_409(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor).json()["encounter_id"]
+        headers = {"Idempotency-Key": "doran-check"}
+        wrong = editor.request(
+            "POST", "/api/v1/dice/checks",
+            json_body={
+                "modifier": 3, "dc": 12, "seed": 4,
+                "encounter_id": encounter_id, "ability": "Intelligence",
+                "skill": "Investigation",
+            },
+            headers=headers,
+        )
+        assert_problem(wrong, 400, "'ability' must be one of")
+
+        corrected = editor.request(
+            "POST", "/api/v1/dice/checks",
+            json_body={
+                "modifier": 3, "dc": 12, "seed": 4,
+                "encounter_id": encounter_id, "ability": "intelligence",
+                "skill": "Investigation",
+            },
+            headers=headers,
+        )
+        assert corrected.status == 200
+
+        conflict = editor.request(
+            "POST", "/api/v1/dice/checks",
+            json_body={
+                "modifier": 4, "dc": 12, "seed": 4,
+                "encounter_id": encounter_id, "ability": "intelligence",
+                "skill": "Investigation",
+            },
+            headers=headers,
+        )
+        problem = conflict.json()
+        assert conflict.status == 409
+        assert problem["type"] == routes.problem_type("idempotency-conflict")
+        assert "different request" in problem["detail"]
 
 
 class TestAdventuresOverHttp:

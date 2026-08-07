@@ -69,11 +69,13 @@ from typing import Any
 
 from ..content import BuiltinMode
 from ..kernel.grid import DiagonalRule, MovementMode
+from ..kernel.rules import Ability
 from ..model.encounter import ActionKind, EncounterMode
 
 __all__ = [
     "API_PREFIX",
     "ERROR_TYPES",
+    "ERROR_TYPE_NAMES",
     "PAGES",
     "ROUTES",
     "Param",
@@ -84,6 +86,7 @@ __all__ = [
     "error_type",
     "find",
     "operation_id",
+    "problem_type",
 ]
 
 #: Everything this contract answers lives under one version prefix. The served
@@ -109,6 +112,20 @@ ERROR_TYPES: Mapping[int, str] = {
     500: "internal",
 }
 
+#: Stable problem names are a registry independent of status. Most statuses
+#: have one general type, while 409 distinguishes a stale durable write from a
+#: replay key whose request identity changed.
+ERROR_TYPE_NAMES: frozenset[str] = frozenset(
+    {*ERROR_TYPES.values(), "idempotency-conflict"}
+)
+
+
+def problem_type(name: str) -> str:
+    """The registered RFC 9457 URI for one named problem family."""
+    if name not in ERROR_TYPE_NAMES:
+        raise ValueError(f"unregistered problem type {name!r}")
+    return f"urn:fivee-sim:error:{name}"
+
 
 def error_type(status: int) -> str:
     """The ``urn:fivee-sim:error:*`` URI for a status.
@@ -120,7 +137,8 @@ def error_type(status: int) -> str:
     name = ERROR_TYPES.get(status)
     if name is None:
         name = HTTPStatus(status).phrase.casefold().replace(" ", "-")
-    return f"urn:fivee-sim:error:{name}"
+        return f"urn:fivee-sim:error:{name}"
+    return problem_type(name)
 
 
 @dataclass(frozen=True, eq=False)
@@ -311,6 +329,11 @@ def _limit(default: int) -> Param:
 _SEED: Mapping[str, Any] = {"type": ["integer", "null"], "default": None}
 _ADVANTAGE: Mapping[str, Any] = {
     "type": "string", "enum": ["none", "advantage", "disadvantage"], "default": "none"
+}
+_ABILITY: Mapping[str, Any] = {
+    "type": ["string", "null"],
+    "enum": [*(ability.value for ability in Ability), None],
+    "default": None,
 }
 _COMBATANTS: Mapping[str, Any] = {"type": "array", "items": {"type": "object"}}
 _POINT: Mapping[str, Any] = {"type": ["array", "integer", "null"], "default": None}
@@ -547,7 +570,7 @@ ROUTES: tuple[Route, ...] = (
                 "advantage": _ADVANTAGE,
                 "seed": _SEED,
                 "encounter_id": {"type": ["string", "null"], "default": None},
-                "ability": {"type": ["string", "null"], "default": None},
+                "ability": _ABILITY,
                 "skill": {"type": ["string", "null"], "default": None},
             },
             "required": ["modifier", "dc"],
@@ -567,7 +590,7 @@ ROUTES: tuple[Route, ...] = (
                 "auto_fail": {"type": "boolean", "default": False},
                 "seed": _SEED,
                 "encounter_id": {"type": ["string", "null"], "default": None},
-                "ability": {"type": ["string", "null"], "default": None},
+                "ability": _ABILITY,
             },
             "required": ["modifier", "dc"],
         },

@@ -24,7 +24,13 @@ from http import HTTPStatus
 from typing import Any
 
 from .. import __version__
-from .routes import API_PREFIX, ERROR_TYPES, Route, api_routes, error_type
+from .routes import (
+    API_PREFIX,
+    ERROR_TYPE_NAMES,
+    Route,
+    api_routes,
+    problem_type,
+)
 
 __all__ = ["OPENAPI_VERSION", "document", "operations_index"]
 
@@ -97,6 +103,8 @@ def _statuses(route: Route) -> tuple[int, ...]:
     for param in route.params:
         if param.name == "If-Match":
             found.update((409, 428) if param.required else (409,))
+        if param.name == "Idempotency-Key":
+            found.add(409)
     return (route.success, *sorted(found))
 
 
@@ -186,7 +194,7 @@ def document(routes: Sequence[Route] | None = None) -> dict[str, Any]:
                 "ErrorType": {
                     "type": "string",
                     "description": "the registry of problem type URIs this engine emits",
-                    "enum": [error_type(status) for status in sorted(ERROR_TYPES)],
+                    "enum": [problem_type(name) for name in sorted(ERROR_TYPE_NAMES)],
                 },
             },
         },
