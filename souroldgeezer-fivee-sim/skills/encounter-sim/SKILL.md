@@ -1,6 +1,6 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, linking fights and the non-combat scenes between them into an adventure that carries the party's hit points, conditions, slots, items and squares from one chapter into the next, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, linking fights and the non-combat scenes between them into an adventure that carries the party's hit points, conditions, slots, items and squares from one chapter into the next, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation. The spawned play-mechanics role is self-contained and not an encounter-sim trigger.
 ---
 
 # Encounter Simulation

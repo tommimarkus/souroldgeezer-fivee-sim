@@ -106,6 +106,21 @@ def test_live_play_routes_one_beat_to_play_mechanics_not_encounter_sim() -> None
     assert "encounter-sim" in _section(skill, "## 4. Carry the adventuring day")
 
 
+def test_skill_descriptions_exclude_the_self_contained_mechanics_child() -> None:
+    for relative_path in ("skills/play/SKILL.md", "skills/encounter-sim/SKILL.md"):
+        skill = _text(relative_path)
+        frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", skill, flags=re.DOTALL)
+
+        assert frontmatter is not None
+        description = frontmatter.group("body")
+        assert "play-mechanics" in description
+        assert re.search(
+            r"play-mechanics.{0,160}(?:self-contained|do not load|not for)",
+            description,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
+
 def test_each_host_dispatches_canonical_roles_without_copying_role_bodies() -> None:
     claude = _text("skills/play/references/dispatch-claude-code.md")
     for role in ("adventure-prep", "game-master", "typical-player", "play-mechanics"):

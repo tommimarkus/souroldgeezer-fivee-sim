@@ -1,6 +1,6 @@
 ---
 name: play
-description: "Use when playing or playtesting a written 5E-compatible adventure as a real table: a game master holds the module, uninformed player seats make their own choices, and the engine owns every roll. Ordinary play is the default; explicit test or playtest requests add an author-facing evaluation. Supports agent and human seats, unattended runs, pause, and resume."
+description: "Use when playing or playtesting a written 5E-compatible adventure as a real table: a game master holds the module, uninformed player seats make their own choices, and the engine owns every roll. Ordinary play is the default; explicit test or playtest requests add an author-facing evaluation. Supports agent and human seats, unattended runs, pause, and resume. The spawned play-mechanics role is self-contained; do not load this coordinator skill inside it."
 ---
 
 # Play
