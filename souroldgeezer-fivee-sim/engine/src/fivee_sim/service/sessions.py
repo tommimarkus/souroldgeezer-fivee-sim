@@ -68,6 +68,8 @@ __all__ = [
     "attempt_started",
     "cached_request",
     "capture_checkpoint",
+    "blobs_dir_of",
+    "encounters_dir_of",
     "initial_creatures",
     "journal_append",
     "map_source_of",
@@ -76,6 +78,7 @@ __all__ = [
     "new_encounter_id",
     "recover_session",
     "resolve_battle_map",
+    "require_run_write",
     "session_for",
     "supplied_arguments",
     "utc_now",
@@ -222,6 +225,33 @@ def active_registry(state: EngineState) -> ContentRegistry:
     return active_content(state).registry
 
 
+def encounters_dir_of(state: EngineState) -> Path | None:
+    """The selected persistence root, or ``None`` for legacy direct callers."""
+    return None if state.storage is None else state.storage.encounters_dir
+
+
+def blobs_dir_of(state: EngineState) -> Path | None:
+    """The selected blob root, or ``None`` for legacy direct callers."""
+    return None if state.storage is None else state.storage.blobs_dir
+
+
+def require_run_write(state: EngineState, operation: str) -> None:
+    """Refuse mutable persistence outside an explicitly selected run.
+
+    A ``None`` layout is retained only for direct service tests and embedders
+    written before launch storage became explicit. Every real adapter supplies
+    a layout, so control and legacy processes cannot mutate the old roots.
+    """
+    if state.storage is None:
+        return
+    if state.storage.run_id is None:
+        raise RequestError(
+            f"{operation} requires you to select an adventure run with --run <adv-id>"
+        )
+    if state.storage.run_id == "legacy":
+        raise RequestError(f"{operation} cannot write: legacy storage is read-only")
+
+
 # --- identity --------------------------------------------------------------
 def _seed_from_disk(state: EngineState) -> None:
     """Start a fresh engine past whatever the directory already holds.
@@ -240,7 +270,8 @@ def _seed_from_disk(state: EngineState) -> None:
     id that comes out.
     """
     highest = 0
-    for path in journal_service.list_journals():
+    root = encounters_dir_of(state)
+    for path in journal_service.list_journals(root):
         suffix = path.parent.name[len("enc-"):]
         if suffix.isdigit():
             highest = max(highest, int(suffix))
@@ -262,7 +293,13 @@ def new_encounter_id(state: EngineState) -> str:
         candidate = f"enc-{state.next_id}"
         if candidate in state.sessions:
             continue
-        if journal_service.claim(candidate):
+        root = encounters_dir_of(state)
+        claimed = (
+            journal_service.claim(candidate)
+            if root is None
+            else journal_service.claim(candidate, root)
+        )
+        if claimed:
             return candidate
 
 
@@ -595,11 +632,13 @@ def journal_append(
     from it would splice the two. Dropping the session forces the next call to
     recover the journal's version rather than continue from ours.
     """
+    require_run_write(state, "encounter write")
     try:
         record = journal_service.append(
             encounter_id,
             payload,
             expected_head=None if session is None else session.journal_head,
+            root=encounters_dir_of(state),
         )
     except journal_service.StaleWriteError as error:
         state.sessions.pop(encounter_id, None)
@@ -924,7 +963,9 @@ def recover_session(
     state: EngineState, encounter_id: str
 ) -> tuple[Session, dict[str, str] | None]:
     try:
-        records, warning = journal_service.read(encounter_id, repair_partial=True)
+        records, warning = journal_service.read(
+            encounter_id, repair_partial=True, root=encounters_dir_of(state)
+        )
     except journal_service.JournalError as error:
         known = ", ".join(sorted(state.sessions)) or "none"
         if "unknown encounter" in str(error):
@@ -952,7 +993,9 @@ def recover_session(
     if not isinstance(content_ref, str):
         raise RequestError(f"encounter journal {encounter_id!r} has no content snapshot")
     try:
-        captured_content: Mapping[str, Any] = blobs.get(content_ref)
+        captured_content: Mapping[str, Any] = blobs.get(
+            content_ref, root=blobs_dir_of(state)
+        )
     except blobs.BlobError as error:
         raise RequestError(f"cannot recover {encounter_id!r}'s content: {error}") from error
     try:
@@ -966,7 +1009,7 @@ def recover_session(
     captured_map: Mapping[str, Any] | None = None
     if isinstance(map_ref, str):
         try:
-            captured_map = blobs.get(map_ref)
+            captured_map = blobs.get(map_ref, root=blobs_dir_of(state))
         except blobs.BlobError as error:
             raise RequestError(f"cannot recover {encounter_id!r}'s map: {error}") from error
     map_document: MapDocument | None = None

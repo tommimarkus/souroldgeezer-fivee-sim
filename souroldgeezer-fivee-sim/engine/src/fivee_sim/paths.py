@@ -402,14 +402,25 @@ def storage_layout(
         legacy_encounters = encounters_root(env)
         legacy_adventures = adventures_root(env)
         legacy_blobs = blobs_root(env)
-        runs = runs_root(env)
+        environ = os.environ if env is None else env
+        if maps_dir is not None and not environ.get(RUNS_ENV, "").strip():
+            runs = Path(maps_dir).expanduser().parent / "runs"
+        else:
+            runs = runs_root(env)
         runtime_base = runs.parent / "runtime"
 
     if run_id is not None and run_id != "legacy":
         if _SAFE_RUN_ID.fullmatch(run_id) is None:
             raise RunSelectionError(f"run {run_id!r} is not a safe adventure id")
-        if not (runs / run_id).is_dir():
+        run = runs / run_id
+        if not run.is_dir():
             raise RunSelectionError(f"run {run_id!r} does not exist under {runs}")
+        required = {"maps", "scenes", "replays", "encounters", "adventures", "blobs"}
+        missing = sorted(name for name in required if not (run / name).is_dir())
+        document = run / "adventures" / f"{run_id}.json"
+        if missing or not document.is_file():
+            detail = f"missing {', '.join(missing)}" if missing else "missing adventure document"
+            raise RunSelectionError(f"run {run_id!r} is incomplete: {detail}")
 
     selector = run_id if run_id is not None else "control"
     return StorageLayout(

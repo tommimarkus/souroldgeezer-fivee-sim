@@ -79,14 +79,14 @@ class BlobError(ValueError):
     """A blob cannot be named, found, or trusted."""
 
 
-def blob_path(reference: str) -> Path:
+def blob_path(reference: str, root: Path | None = None) -> Path:
     """Where the blob ``reference`` names lives, or a refusal that it is not one."""
     if not _REFERENCE.fullmatch(reference):
         raise BlobError(f"not a blob reference: {reference!r}")
-    return blobs_root() / f"{reference}.json"
+    return (blobs_root() if root is None else root) / f"{reference}.json"
 
 
-def put(payload: Mapping[str, Any]) -> str:
+def put(payload: Mapping[str, Any], *, root: Path | None = None) -> str:
     """Store ``payload`` and return the reference that names it.
 
     Idempotent by construction rather than by check: the same payload always
@@ -105,7 +105,7 @@ def put(payload: Mapping[str, Any]) -> str:
         # escape this module rather than being refused by it.
         raise BlobError(f"cannot render a blob from this payload: {error}") from error
     reference = sha256_of(text)
-    path = blobs_root() / f"{reference}.json"
+    path = (blobs_root() if root is None else root) / f"{reference}.json"
     if path.exists():
         return reference
     try:
@@ -115,7 +115,7 @@ def put(payload: Mapping[str, Any]) -> str:
     return reference
 
 
-def get(reference: str) -> dict[str, Any]:
+def get(reference: str, *, root: Path | None = None) -> dict[str, Any]:
     """The payload ``reference`` names, checked against the name it came under.
 
     The verification is what a hash chain is to a journal and a version
@@ -124,7 +124,7 @@ def get(reference: str) -> dict[str, Any]:
     this process; a swapped or truncated snapshot is then a named refusal
     rather than a fight quietly recovered under content nobody chose.
     """
-    path = blob_path(reference)
+    path = blob_path(reference, root)
     try:
         size = path.stat().st_size
     except FileNotFoundError:

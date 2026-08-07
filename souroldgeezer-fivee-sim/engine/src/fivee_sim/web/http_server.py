@@ -1009,7 +1009,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _h_encounter_prune(self, request: _Request) -> None:
         self._send_json(
-            HTTPStatus.OK, encounter_service.prune(request.body["apply"])
+            HTTPStatus.OK,
+            encounter_service.prune(request.body["apply"], state=self.state),
         )
 
     def _h_encounter_create(self, request: _Request) -> None:
@@ -1183,11 +1184,14 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _h_adventure_list(self, request: _Request) -> None:
         self._send_json(
-            HTTPStatus.OK, adventure_service.list_adventures(request.query["status"])
+            HTTPStatus.OK,
+            adventure_service.list_adventures(request.query["status"], state=self.state),
         )
 
     def _h_adventure_create(self, request: _Request) -> None:
-        result = adventure_service.create(request.body["name"], self._idempotency_key())
+        result = adventure_service.create(
+            request.body["name"], self._idempotency_key(), state=self.state
+        )
         adventure_id = str(result["id"])
         self._send_json(
             HTTPStatus.CREATED,
@@ -1199,7 +1203,7 @@ class _Handler(BaseHTTPRequestHandler):
         )
 
     def _h_adventure_state(self, request: _Request) -> None:
-        result = adventure_service.state_of(request.id)
+        result = adventure_service.state_of(request.id, state=self.state)
         self._send_json(
             HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["version"]))}
         )
@@ -1253,7 +1257,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _h_adventure_finalize(self, request: _Request) -> None:
         expected = self._adventure_precondition()
-        result = adventure_service.finalize(request.id, expected)
+        result = adventure_service.finalize(request.id, expected, state=self.state)
         self._send_json(
             HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["version"]))}
         )
@@ -1264,7 +1268,9 @@ class _Handler(BaseHTTPRequestHandler):
         # served replay listing can find, so a link would name a 404.
         self._send_json(
             HTTPStatus.OK,
-            adventure_service.compose_replay(request.id, request.body["path"]),
+            adventure_service.compose_replay(
+                request.id, request.body["path"], state=self.state
+            ),
         )
 
     # -- maps: files, addressed by id ----------------------------------------

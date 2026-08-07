@@ -265,16 +265,16 @@ def encounter_finalize(encounter_id: str) -> dict[str, Any]:
 
 
 def encounter_prune(apply: bool = False) -> dict[str, Any]:
-    return _encounters.prune(apply)
+    return _encounters.prune(apply, state=STATE)
 
 
 # --- adventures ---------------------------------------------------------------
 def adventure_create(name: str, request_id: str | None = None) -> dict[str, Any]:
-    return _adventures.create(name, request_id)
+    return _adventures.create(name, request_id, state=STATE)
 
 
 def adventure_state(adventure_id: str) -> dict[str, Any]:
-    return _adventures.state_of(adventure_id)
+    return _adventures.state_of(adventure_id, state=STATE)
 
 
 def adventure_brief(
@@ -284,7 +284,7 @@ def adventure_brief(
 
 
 def adventure_list(status: str = "active") -> dict[str, Any]:
-    return _adventures.list_adventures(status)
+    return _adventures.list_adventures(status, state=STATE)
 
 
 def adventure_encounter(
@@ -323,11 +323,11 @@ def adventure_encounter(
 def adventure_finalize(
     adventure_id: str, expected_version: str | None = None
 ) -> dict[str, Any]:
-    return _adventures.finalize(adventure_id, expected_version)
+    return _adventures.finalize(adventure_id, expected_version, state=STATE)
 
 
 def adventure_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]:
-    return _adventures.compose_replay(adventure_id, path)
+    return _adventures.compose_replay(adventure_id, path, state=STATE)
 
 
 # --- maps and replays ---------------------------------------------------------

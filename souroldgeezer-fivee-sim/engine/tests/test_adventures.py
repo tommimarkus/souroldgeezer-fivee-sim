@@ -20,12 +20,21 @@ stale version is refused rather than merged, and a retried link under one
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier, Lock
 from typing import Any
 
 import pytest
 
-from fivee_sim.paths import adventures_root, encounters_root
+from fivee_sim.paths import (
+    RUNS_ENV,
+    RunSelectionError,
+    StorageLayout,
+    adventures_root,
+    encounters_root,
+    storage_layout,
+)
 from fivee_sim.service import adventures, specs
 from fivee_sim.service.errors import NotFoundError, RequestError, StaleWriteError
 
@@ -71,6 +80,111 @@ RUFFIAN: dict[str, Any] = {
         }
     ],
 }
+
+
+def _run_storage(tmp_path: Path, run_id: str | None) -> StorageLayout:
+    return StorageLayout(
+        run_id=run_id,
+        runs_dir=tmp_path / "runs",
+        runtime_dir=tmp_path / "runtime" / (run_id or "control"),
+        shared_map_paths=(tmp_path / "maps",),
+        shared_replay_paths=(tmp_path / "replays",),
+        shared_scenes_dir=tmp_path / "scenes",
+        legacy_encounters_dir=tmp_path / "legacy-encounters",
+        legacy_adventures_dir=tmp_path / "legacy-adventures",
+        legacy_blobs_dir=tmp_path / "legacy-blobs",
+    )
+
+
+class TestAdventureRunIsolation:
+    def test_create_allocates_the_whole_workspace_and_retries_idempotently(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        storage = _run_storage(tmp_path, None)
+        monkeypatch.setattr(api.STATE, "storage", storage)
+        storage.legacy_adventures_dir.mkdir(parents=True)
+        (storage.legacy_adventures_dir / "adv-1.json").write_text("{}", encoding="utf-8")
+        (storage.runs_dir / "adv-2").mkdir(parents=True)
+
+        created = api.adventure_create("The Isolated Mill", request_id="create-run")
+        retried = api.adventure_create("The Isolated Mill", request_id="create-run")
+
+        assert created["id"] == "adv-3"
+        assert retried == created
+        run = storage.runs_dir / "adv-3"
+        assert {path.name for path in run.iterdir()} == {
+            "maps", "scenes", "replays", "encounters", "adventures", "blobs"
+        }
+        assert json.loads(
+            (run / "adventures" / "adv-3.json").read_text(encoding="utf-8")
+        )["id"] == "adv-3"
+        assert (storage.runs_dir / "adv-2").is_dir(), "a stranded allocation stays visible"
+        with pytest.raises(RunSelectionError, match="incomplete"):
+            storage_layout(run_id="adv-2", env={RUNS_ENV: str(storage.runs_dir)})
+
+    def test_concurrent_retries_under_one_request_id_allocate_one_run(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        storage = _run_storage(tmp_path, None)
+        monkeypatch.setattr(api.STATE, "storage", storage)
+        arrived = Barrier(2)
+        calls_lock = Lock()
+        calls = 0
+        real_lookup = adventures._by_request_id
+
+        def synchronized_lookup(
+            request_id: str, state: Any = None
+        ) -> dict[str, Any] | None:
+            nonlocal calls
+            with calls_lock:
+                calls += 1
+                call = calls
+            if call <= 2:
+                arrived.wait(timeout=5)
+            return real_lookup(request_id, state)
+
+        monkeypatch.setattr(adventures, "_by_request_id", synchronized_lookup)
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            results = list(
+                workers.map(
+                    lambda _: api.adventure_create("The Isolated Mill", "same-create"),
+                    range(2),
+                )
+            )
+
+        assert results[0] == results[1]
+        assert [path.name for path in storage.runs_dir.glob("adv-*")] == ["adv-1"]
+
+    def test_selected_run_owns_adventure_encounter_journal_and_blob_writes(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        control = _run_storage(tmp_path, None)
+        monkeypatch.setattr(api.STATE, "storage", control)
+        created = api.adventure_create("The Isolated Mill")
+        run_id = str(created["id"])
+        monkeypatch.setattr(api.STATE, "storage", _run_storage(tmp_path, run_id))
+
+        linked = api.adventure_encounter(
+            run_id, combatants=[BRAWLER, RUFFIAN], seed=801
+        )
+
+        run = control.runs_dir / run_id
+        encounter_id = str(linked["encounter_id"])
+        assert (run / "encounters" / encounter_id / "journal.jsonl").is_file()
+        assert list((run / "blobs").glob("*.json"))
+        assert not control.legacy_encounters_dir.exists()
+        assert not control.legacy_blobs_dir.exists()
+
+    def test_control_and_legacy_processes_refuse_mutable_fight_storage(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(api.STATE, "storage", _run_storage(tmp_path, None))
+        with pytest.raises(RequestError, match="select an adventure run"):
+            api.encounter_create([BRAWLER, RUFFIAN], seed=802)
+
+        monkeypatch.setattr(api.STATE, "storage", _run_storage(tmp_path, "legacy"))
+        with pytest.raises(RequestError, match="legacy storage is read-only"):
+            api.encounter_create([BRAWLER, RUFFIAN], seed=803)
 
 #: Keys a spec accepts *and* the state payload reports, that are deliberately
 #: not carried. Written out so shrinking ``CARRIED_STATE_KEYS`` is a decision

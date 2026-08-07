@@ -166,7 +166,7 @@ def _rebaselined(
     return payload
 
 
-def replay_path(encounter_id: str) -> Path:
+def replay_path(encounter_id: str, state: EngineState | None = None) -> Path:
     """Where :func:`finalize` freezes this fight's replay bundle.
 
     One declaration because there are now two readers. ``finalize`` writes it,
@@ -180,7 +180,8 @@ def replay_path(encounter_id: str) -> Path:
     beside it now — the fight's own directory holds both — so the id lives in
     the directory name and the file is just ``replay.json``.
     """
-    return journal_service.encounter_dir(encounter_id) / "replay.json"
+    root = None if state is None else sessions.encounters_dir_of(state)
+    return journal_service.encounter_dir(encounter_id, root) / "replay.json"
 
 
 def creation_response(
@@ -202,10 +203,11 @@ def creation_response(
 def creation_request(
     state: EngineState, request_id: str
 ) -> tuple[str, Session] | None:
-    for path in journal_service.list_journals():
+    root = sessions.encounters_dir_of(state)
+    for path in journal_service.list_journals(root):
         encounter_id = path.parent.name
         try:
-            summary = journal_service.head_and_tail(encounter_id)
+            summary = journal_service.head_and_tail(encounter_id, root)
         except journal_service.JournalError:
             continue
         if summary is None or summary.first.get("request_id") != request_id:
@@ -249,6 +251,7 @@ def create(
     It is parsed before anything else runs, so a mistyped view is refused instead
     of starting a fight and then failing to describe it.
     """
+    sessions.require_run_write(state, "encounter.create")
     chosen = views.parse_view(view, views.FULL)
     if request_id is not None:
         existing = creation_request(state, request_id)
@@ -319,8 +322,12 @@ def create(
     # cannot recover, while a blob nobody names is a file, retained like every
     # other. The failure directions are not symmetric, so neither is the order.
     try:
-        content_ref = blobs.put(session.content_snapshot)
-        map_ref = blobs.put(captured_map) if captured_map is not None else None
+        blob_root = sessions.blobs_dir_of(state)
+        content_ref = blobs.put(session.content_snapshot, root=blob_root)
+        map_ref = (
+            blobs.put(captured_map, root=blob_root)
+            if captured_map is not None else None
+        )
     except blobs.BlobError as error:
         state.sessions.pop(encounter_id, None)
         raise RequestError(f"cannot store {encounter_id!r}'s payloads: {error}") from error
@@ -1266,10 +1273,11 @@ def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any
     if status not in {"active", "finalized", "all"}:
         raise RequestError("status must be active, finalized, or all")
     entries: list[dict[str, Any]] = []
-    for path in journal_service.list_journals():
+    root = sessions.encounters_dir_of(state)
+    for path in journal_service.list_journals(root):
         encounter_id = path.parent.name
         try:
-            summary = journal_service.head_and_tail(encounter_id)
+            summary = journal_service.head_and_tail(encounter_id, root)
         except journal_service.JournalError as error:
             if status == "all":
                 entries.append(
@@ -1300,7 +1308,7 @@ def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any
     return {"status": status, "encounters": entries}
 
 
-def prune(apply: bool = False) -> dict[str, Any]:
+def prune(apply: bool = False, *, state: EngineState | None = None) -> dict[str, Any]:
     """Reclaim the ids a fight was claimed for and never written into.
 
     ``encounter.create`` claims its id by creating the journal, and every path
@@ -1332,8 +1340,14 @@ def prune(apply: bool = False) -> dict[str, Any]:
     puts them for exactly this reason; the ``reaped`` attribute stays available
     to a caller holding the journal module directly.
     """
+    if apply and state is not None:
+        sessions.require_run_write(state, "encounter.prune")
+    root = None if state is None else sessions.encounters_dir_of(state)
     try:
-        return {"applied": apply, "encounters": journal_service.prune(apply=apply)}
+        return {
+            "applied": apply,
+            "encounters": journal_service.prune(apply=apply, root=root),
+        }
     except journal_service.JournalError as error:
         raise RequestError(str(error)) from error
 
@@ -1343,10 +1357,11 @@ def finalize(
     encounter_id: str,
     viewer_link: Callable[[Path], str | None] | None = None,
 ) -> dict[str, Any]:
+    sessions.require_run_write(state, "encounter.finalize")
     session = sessions.session_for(state, encounter_id)
     if session.finalization_result is not None:
         return deepcopy(session.finalization_result)
-    target = replay_path(encounter_id)
+    target = replay_path(encounter_id, state)
     exported = map_ops.replay_export(
         state,
         encounter_id,
@@ -1360,7 +1375,9 @@ def finalize(
         "replay_path": str(target),
         "bytes": exported["bytes"],
         "sha256": exported["sha256"],
-        "journal_path": str(journal_service.journal_path(encounter_id)),
+        "journal_path": str(
+            journal_service.journal_path(encounter_id, sessions.encounters_dir_of(state))
+        ),
     }
     sessions.journal_append(
         state,

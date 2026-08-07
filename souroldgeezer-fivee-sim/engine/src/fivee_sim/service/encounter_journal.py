@@ -75,18 +75,18 @@ class JournalError(ValueError):
         self.reaped: list[str] = list(reaped)
 
 
-def encounter_dir(encounter_id: str) -> Path:
+def encounter_dir(encounter_id: str, root: Path | None = None) -> Path:
     """Where everything belonging to ``encounter_id`` lives, existing or not."""
     if not _SAFE_ID.fullmatch(encounter_id):
         raise JournalError(f"invalid encounter id {encounter_id!r}")
-    return encounters_root() / encounter_id
+    return (encounters_root() if root is None else root) / encounter_id
 
 
-def journal_path(encounter_id: str) -> Path:
-    return encounter_dir(encounter_id) / JOURNAL_FILENAME
+def journal_path(encounter_id: str, root: Path | None = None) -> Path:
+    return encounter_dir(encounter_id, root) / JOURNAL_FILENAME
 
 
-def claim(encounter_id: str) -> bool:
+def claim(encounter_id: str, root: Path | None = None) -> bool:
     """Take this id by creating its journal, or report that someone else has.
 
     Allocation cannot be a look followed by a decision. Every engine server on a
@@ -106,7 +106,7 @@ def claim(encounter_id: str) -> bool:
     read path already tolerates it — ``read`` returns no records, ``list_journals``
     and ``creation_request`` skip it, and ``recover_session`` refuses it by name.
     """
-    path = journal_path(encounter_id)
+    path = journal_path(encounter_id, root)
     # Its own ``try``, and deliberately not the one below. ``mkdir`` raises
     # ``FileExistsError`` when the path is taken by something that is not a
     # directory, and that is a different fact from the one ``O_EXCL`` reports:
@@ -237,7 +237,7 @@ class JournalSummary:
     records: int
 
 
-def head_and_tail(encounter_id: str) -> JournalSummary | None:
+def head_and_tail(encounter_id: str, root: Path | None = None) -> JournalSummary | None:
     """The first record, the last record, and the count — nothing else read.
 
     ``read`` parses and hash-verifies every line to answer anything at all,
@@ -259,7 +259,7 @@ def head_and_tail(encounter_id: str) -> JournalSummary | None:
     listing.
     """
     with _JOURNAL_LOCK:
-        path = journal_path(encounter_id)
+        path = journal_path(encounter_id, root)
         try:
             raw = path.read_bytes()
         except FileNotFoundError:
@@ -283,17 +283,17 @@ def head_and_tail(encounter_id: str) -> JournalSummary | None:
 
 
 def read(
-    encounter_id: str, *, repair_partial: bool = False
+    encounter_id: str, *, repair_partial: bool = False, root: Path | None = None
 ) -> tuple[list[dict[str, Any]], dict[str, str] | None]:
     """Read and verify a journal, optionally preserving a partial crash tail."""
     with _JOURNAL_LOCK:
-        return _read_unlocked(encounter_id, repair_partial=repair_partial)
+        return _read_unlocked(encounter_id, repair_partial=repair_partial, root=root)
 
 
 def _read_unlocked(
-    encounter_id: str, *, repair_partial: bool = False
+    encounter_id: str, *, repair_partial: bool = False, root: Path | None = None
 ) -> tuple[list[dict[str, Any]], dict[str, str] | None]:
-    path = journal_path(encounter_id)
+    path = journal_path(encounter_id, root)
     try:
         raw = path.read_bytes()
     except FileNotFoundError:
@@ -346,6 +346,7 @@ def append(
     payload: Mapping[str, Any],
     *,
     expected_head: str | None = None,
+    root: Path | None = None,
 ) -> dict[str, Any]:
     """Append and fsync one hash-chained record.
 
@@ -360,20 +361,21 @@ def append(
     keeps this process's own threads from interleaving, and keeps ``read``
     reentrant inside the critical section.
     """
-    path = journal_path(encounter_id)
+    path = journal_path(encounter_id, root)
     path.parent.mkdir(parents=True, exist_ok=True)
     with _JOURNAL_LOCK, _locked(path):
-        return _append_unlocked(encounter_id, payload, expected_head=expected_head)
+        return _append_unlocked(encounter_id, payload, expected_head=expected_head, root=root)
 
 
 def _append_unlocked(
-    encounter_id: str, payload: Mapping[str, Any], *, expected_head: str | None = None
+    encounter_id: str, payload: Mapping[str, Any], *,
+    expected_head: str | None = None, root: Path | None = None,
 ) -> dict[str, Any]:
-    path = journal_path(encounter_id)
+    path = journal_path(encounter_id, root)
     path.parent.mkdir(parents=True, exist_ok=True)
     previous = ""
     if path.exists():
-        records, _ = read(encounter_id)
+        records, _ = read(encounter_id, root=root)
         if records:
             previous = str(records[-1]["sha256"])
     if expected_head is not None and expected_head != previous:
@@ -396,14 +398,14 @@ def _append_unlocked(
     return record
 
 
-def list_journals() -> list[Path]:
+def list_journals(root: Path | None = None) -> list[Path]:
     """Every fight's journal here, as ``<root>/enc-<n>/journal.jsonl``.
 
     Callers want the id, and it is ``path.parent.name`` rather than
     ``path.stem`` — every journal is named ``journal.jsonl`` now, and the
     directory is what carries the identity.
     """
-    root = encounters_root()
+    root = encounters_root() if root is None else root
     if not root.is_dir():
         return []
     return sorted(root.glob(f"enc-*/{JOURNAL_FILENAME}"))
@@ -416,7 +418,7 @@ def list_journals() -> list[Path]:
 _RECLAIMABLE_NAMES = frozenset({JOURNAL_FILENAME, f"{JOURNAL_FILENAME}.lock"})
 
 
-def prune(*, apply: bool) -> list[str]:
+def prune(*, apply: bool, root: Path | None = None) -> list[str]:
     """Ids that were claimed and never written into, optionally removed.
 
     ``claim`` takes an id by creating its journal with ``O_EXCL``, and the empty
@@ -444,7 +446,7 @@ def prune(*, apply: bool) -> list[str]:
     background reaper for exactly that reason, and it is a dry run unless asked
     otherwise.
     """
-    root = encounters_root()
+    root = encounters_root() if root is None else root
     if not root.is_dir():
         return []
     reaped: list[str] = []

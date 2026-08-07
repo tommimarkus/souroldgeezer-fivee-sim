@@ -8,7 +8,7 @@ import pytest
 from fivee_sim.client import discovery
 from fivee_sim.client.cli import EXIT_USAGE
 from fivee_sim.client.cli import main as client_main
-from fivee_sim.configuration import load_config
+from fivee_sim.configuration import Configuration, load_config
 from fivee_sim.paths import RunSelectionError, StorageLayout, storage_layout
 from fivee_sim.web import http_server
 from fivee_sim.web.http_server import EngineServer
@@ -34,9 +34,16 @@ runs = "runs"
     return load_config(config)
 
 
+def _complete_run(configuration: Configuration, run_id: str) -> None:
+    root = configuration.runs_dir / run_id
+    for name in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
+        (root / name).mkdir(parents=True, exist_ok=True)
+    (root / "adventures" / f"{run_id}.json").write_text("{}", encoding="utf-8")
+
+
 def test_an_adventure_run_layout_is_an_immutable_overlay_workspace(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    (configuration.runs_dir / "adv-7").mkdir(parents=True)
+    _complete_run(configuration, "adv-7")
 
     layout = storage_layout(configuration=configuration, run_id="adv-7")
 
@@ -99,7 +106,7 @@ def test_the_server_composition_root_owns_the_selected_layout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     configuration = _configuration(tmp_path)
-    (configuration.runs_dir / "adv-7").mkdir(parents=True)
+    _complete_run(configuration, "adv-7")
 
     class BoundServer:
         server_address = ("127.0.0.1", 4312)
@@ -124,7 +131,7 @@ def test_the_server_composition_root_owns_the_selected_layout(
 
 def test_discovery_uses_a_separate_state_file_for_every_selector(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    (configuration.runs_dir / "adv-7").mkdir(parents=True)
+    _complete_run(configuration, "adv-7")
 
     assert discovery.state_path_for(configuration=configuration) == (
         configuration.path.parent / "runtime" / "control" / "fivee-sim-server.json"

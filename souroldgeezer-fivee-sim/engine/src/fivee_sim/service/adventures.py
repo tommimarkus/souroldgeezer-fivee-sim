@@ -220,7 +220,13 @@ def carry_forward(
 
 
 # --- the document -----------------------------------------------------------
-def adventure_path(adventure_id: str) -> Path:
+def _adventures_dir(state: EngineState | None) -> Path:
+    if state is not None and state.storage is not None:
+        return state.storage.adventures_dir
+    return adventures_root()
+
+
+def adventure_path(adventure_id: str, state: EngineState | None = None) -> Path:
     """Where ``adventure_id``'s document lives, whether or not it exists yet.
 
     An id outside the grammar is *not found* rather than malformed, which is the
@@ -229,10 +235,23 @@ def adventure_path(adventure_id: str) -> Path:
     """
     if _SAFE_ID.fullmatch(adventure_id) is None:
         raise NotFoundError(f"no adventure {adventure_id!r}")
-    return adventures_root() / f"{adventure_id}.json"
+    if (
+        state is not None
+        and state.storage is not None
+        and state.storage.run_id not in (None, "legacy", adventure_id)
+    ):
+        raise NotFoundError(f"no adventure {adventure_id!r} in run {state.storage.run_id!r}")
+    if state is not None and state.storage is not None and state.storage.run_id is None:
+        return (
+            state.storage.runs_dir
+            / adventure_id
+            / "adventures"
+            / f"{adventure_id}.json"
+        )
+    return _adventures_dir(state) / f"{adventure_id}.json"
 
 
-def _files() -> list[Path]:
+def _files(state: EngineState | None = None) -> list[Path]:
     """Every adventure document here, and nothing that merely looks like one.
 
     ``adv-*.json`` is a wider net than an adventure id: ``adv-1.replay.json`` is
@@ -250,7 +269,14 @@ def _files() -> list[Path]:
     is only that a *journal* can no longer be mistaken for an adventure, because
     the two kinds are no longer in reach of one listing.
     """
-    root = adventures_root()
+    if state is not None and state.storage is not None and state.storage.run_id is None:
+        return sorted(
+            path
+            for path in state.storage.runs_dir.glob("adv-*/adventures/adv-*.json")
+            if _SAFE_ID.fullmatch(path.stem) is not None
+            and path.parent.parent.name == path.stem
+        )
+    root = _adventures_dir(state)
     if not root.is_dir():
         return []
     return sorted(
@@ -279,18 +305,20 @@ def _current_version(path: Path) -> str:
         return "unreadable"
 
 
-def _known() -> str:
-    return ", ".join(sorted(path.stem for path in _files())) or "none"
+def _known(state: EngineState | None = None) -> str:
+    return ", ".join(sorted(path.stem for path in _files(state))) or "none"
 
 
-def _load(adventure_id: str) -> tuple[dict[str, Any], str]:
+def _load(
+    adventure_id: str, state: EngineState | None = None
+) -> tuple[dict[str, Any], str]:
     """One adventure document and the version a write must match."""
-    path = adventure_path(adventure_id)
+    path = adventure_path(adventure_id, state)
     try:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         raise NotFoundError(
-            f"no adventure {adventure_id!r}; adventures here: {_known()}"
+            f"no adventure {adventure_id!r}; adventures here: {_known(state)}"
         ) from None
     except (OSError, UnicodeDecodeError) as error:
         raise RequestError(f"cannot read {path}: {error}") from error
@@ -330,9 +358,15 @@ def _parsed(text: str, path: Path) -> dict[str, Any]:
     return payload
 
 
-def _write(adventure_id: str, document: Mapping[str, Any], *, expected: str) -> str:
+def _write(
+    adventure_id: str,
+    document: Mapping[str, Any],
+    *,
+    expected: str,
+    state: EngineState | None = None,
+) -> str:
     """Publish the document, refusing a version somebody else has moved past."""
-    path = adventure_path(adventure_id)
+    path = adventure_path(adventure_id, state)
     text = _render(document)
     durable.guarded_write(
         path,
@@ -382,11 +416,15 @@ def _recorded(
     return found
 
 
-def _refuse_if_stale(adventure_id: str, expected_version: str | None) -> None:
+def _refuse_if_stale(
+    adventure_id: str,
+    expected_version: str | None,
+    state: EngineState | None = None,
+) -> None:
     """Refuse a caller's version early, before anything durable is written."""
     if expected_version is None or expected_version == "*":
         return
-    current = _current_version(adventure_path(adventure_id))
+    current = _current_version(adventure_path(adventure_id, state))
     if expected_version != current:
         raise durable.StaleWriteError(
             f"the adventure {adventure_id!r}", expected=expected_version, current=current
@@ -398,20 +436,52 @@ def _response(document: Mapping[str, Any], version: str) -> dict[str, Any]:
 
 
 # --- operations --------------------------------------------------------------
-def create(name: str, request_id: str | None = None) -> dict[str, Any]:
+def create(
+    name: str,
+    request_id: str | None = None,
+    *,
+    state: EngineState | None = None,
+) -> dict[str, Any]:
     """Start an adventure: a named, empty, ordered run of encounters."""
     titled = name.strip()
     if not titled:
         raise RequestError("adventure name must not be blank")
+    storage = None if state is None else state.storage
+    if storage is not None and storage.run_id is not None:
+        if storage.run_id == "legacy":
+            raise RequestError("adventure.create cannot write: legacy storage is read-only")
+        raise RequestError(
+            "adventure.create allocates a new run; omit --run for this operation"
+        )
     if request_id is not None:
-        existing = _by_request_id(request_id)
+        existing = _by_request_id(request_id, state)
         if existing is not None:
             return existing
+    if storage is not None:
+        try:
+            storage.runs_dir.mkdir(parents=True, exist_ok=True)
+            with durable.file_lock(storage.runs_dir / ".allocation"):
+                if request_id is not None:
+                    existing = _by_request_id(request_id, state)
+                    if existing is not None:
+                        return existing
+                return _create_new(titled, request_id, state)
+        except OSError as error:
+            raise RequestError(
+                f"cannot allocate an adventure run under {storage.runs_dir}: {error}"
+            ) from error
+    return _create_new(titled, request_id, state)
+
+
+def _create_new(
+    titled: str, request_id: str | None, state: EngineState | None
+) -> dict[str, Any]:
+    """Allocate and initialize one run while the allocation lock is held."""
     # Allocate by trying: the id is only free until somebody else takes it, and
     # a write guarded on "nothing is there" is what turns that race into a retry
     # instead of an overwrite. The bound is a defect guard, not a policy.
     for _attempt in range(64):
-        adventure_id = _next_free_id()
+        adventure_id, run_root = _allocate_id(state)
         document: dict[str, Any] = {
             "format": FORMAT,
             "format_version": FORMAT_VERSION,
@@ -425,22 +495,74 @@ def create(name: str, request_id: str | None = None) -> dict[str, Any]:
             ),
         }
         try:
-            version = _write(adventure_id, document, expected=_ABSENT)
+            if run_root is None:
+                version = _write(adventure_id, document, expected=_ABSENT, state=state)
+            else:
+                for name_part in (
+                    "maps", "scenes", "replays", "encounters", "adventures", "blobs"
+                ):
+                    (run_root / name_part).mkdir()
+                path = run_root / "adventures" / f"{adventure_id}.json"
+                text = _render(document)
+                durable.guarded_write(
+                    path,
+                    lambda text=text: text,
+                    expected=_ABSENT,
+                    current=lambda path=path: _current_version(path),
+                    subject=f"the adventure {adventure_id!r}",
+                )
+                version = sha256_of(text)
         except durable.StaleWriteError:
             continue
+        except OSError as error:
+            raise RequestError(
+                f"could not initialize adventure run {adventure_id!r}: {error}"
+            ) from error
         return _response(document, version)
     raise RequestError("could not allocate an adventure id; too many exist here")
 
 
-def _next_free_id() -> str:
-    used = {path.stem for path in _files()}
+def _next_free_id(state: EngineState | None = None) -> str:
+    used = {path.stem for path in _files(state)}
+    if state is not None and state.storage is not None:
+        used.update(path.name for path in state.storage.runs_dir.glob("adv-*") if path.is_dir())
+        legacy = state.storage.legacy_adventures_dir
+        if legacy.is_dir():
+            used.update(
+                path.stem for path in legacy.glob("adv-*.json")
+                if _SAFE_ID.fullmatch(path.stem) is not None
+            )
     index = 1
     while f"adv-{index}" in used:
         index += 1
     return f"adv-{index}"
 
 
-def _by_request_id(request_id: str) -> dict[str, Any] | None:
+def _allocate_id(state: EngineState | None) -> tuple[str, Path | None]:
+    """Claim a run directory, or retain the legacy document claim for tests."""
+    if state is None or state.storage is None:
+        return _next_free_id(state), None
+    runs = state.storage.runs_dir
+    try:
+        runs.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise RequestError(f"cannot create adventure runs root {runs}: {error}") from error
+    for _attempt in range(10_000):
+        adventure_id = _next_free_id(state)
+        root = runs / adventure_id
+        try:
+            root.mkdir()
+        except FileExistsError:
+            continue
+        except OSError as error:
+            raise RequestError(f"cannot allocate adventure run {root}: {error}") from error
+        return adventure_id, root
+    raise RequestError("could not allocate an adventure id; too many exist here")
+
+
+def _by_request_id(
+    request_id: str, state: EngineState | None = None
+) -> dict[str, Any] | None:
     """The adventure a previous call under this key created, if any.
 
     The same scan ``encounters.creation_request`` does over journals, and for
@@ -452,7 +574,7 @@ def _by_request_id(request_id: str) -> dict[str, Any] | None:
     a bare key match would let a retried creation answer with the adventure some
     earlier link happened to record under the same string.
     """
-    for path in _files():
+    for path in _files(state):
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
@@ -467,14 +589,16 @@ def _by_request_id(request_id: str) -> dict[str, Any] | None:
     return None
 
 
-def state_of(adventure_id: str) -> dict[str, Any]:
+def state_of(
+    adventure_id: str, *, state: EngineState | None = None
+) -> dict[str, Any]:
     """One adventure, whole, with the version a write must match.
 
     Deliberately no journal reads: an adventure names its members, and what each
     of those fights is currently doing is ``encounter.state``'s answer about
     that fight rather than a summary this operation would have to keep fresh.
     """
-    document, version = _load(adventure_id)
+    document, version = _load(adventure_id, state)
     return _response(document, version)
 
 
@@ -493,7 +617,7 @@ def brief_for(
     client therefore wakes for a visible chapter or encounter change without
     gaining a timing oracle for hidden journal activity.
     """
-    document, _adventure_version = _load(adventure_id)
+    document, _adventure_version = _load(adventure_id, state)
     members = document["members"]
     if not members:
         raise NoCurrentChapterError(
@@ -523,12 +647,14 @@ def brief_for(
     return payload, version
 
 
-def list_adventures(status: str = "active") -> dict[str, Any]:
+def list_adventures(
+    status: str = "active", *, state: EngineState | None = None
+) -> dict[str, Any]:
     """Every adventure on disk, without loading the fights they name."""
     if status not in LIST_STATUSES:
         raise RequestError("status must be active, finalized, or all")
     entries: list[dict[str, Any]] = []
-    for path in _files():
+    for path in _files(state):
         try:
             document = _parsed(path.read_text(encoding="utf-8"), path)
         except (OSError, UnicodeDecodeError, RequestError) as error:
@@ -558,10 +684,34 @@ def list_adventures(status: str = "active") -> dict[str, Any]:
                 "path": str(path),
             }
         )
+    if (
+        status == "all"
+        and state is not None
+        and state.storage is not None
+        and state.storage.run_id is None
+        and state.storage.runs_dir.is_dir()
+    ):
+        complete = {str(entry["adventure_id"]) for entry in entries}
+        for run in sorted(state.storage.runs_dir.glob("adv-*")):
+            if not run.is_dir() or run.name in complete:
+                continue
+            entries.append(
+                {
+                    "adventure_id": run.name,
+                    "status": "incomplete",
+                    "problem": "run allocation has no complete adventure document",
+                    "path": str(run),
+                }
+            )
     return {"status": status, "adventures": entries}
 
 
-def finalize(adventure_id: str, expected_version: str | None = None) -> dict[str, Any]:
+def finalize(
+    adventure_id: str,
+    expected_version: str | None = None,
+    *,
+    state: EngineState | None = None,
+) -> dict[str, Any]:
     """Close the run: no further encounter may be linked to it.
 
     Idempotent by reading the field rather than by keeping a key: an adventure
@@ -569,17 +719,27 @@ def finalize(adventure_id: str, expected_version: str | None = None) -> dict[str
     nothing is rewritten — a second call must not move the version a caller is
     holding.
     """
-    document, version = _load(adventure_id)
+    if state is not None:
+        sessions.require_run_write(state, "adventure.finalize")
+    document, version = _load(adventure_id, state)
     if document["status"] == "finalized":
         return _response(document, version)
     document["status"] = "finalized"
     written = _write(
-        adventure_id, document, expected=_precondition(expected_version, version)
+        adventure_id,
+        document,
+        expected=_precondition(expected_version, version),
+        state=state,
     )
     return _response(document, written)
 
 
-def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]:
+def compose_replay(
+    adventure_id: str,
+    path: str | None = None,
+    *,
+    state: EngineState | None = None,
+) -> dict[str, Any]:
     """The whole run as one replay: every member's frozen bundle, in order.
 
     Pure file work. Each chapter is the artifact ``encounter.finalize`` wrote,
@@ -601,14 +761,16 @@ def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]
     dispatch: a member artifact somebody corrupted on disk is refused with the
     diagnostics naming the chapter, rather than published inside a run's replay.
     """
-    document, _version = _load(adventure_id)
+    if state is not None:
+        sessions.require_run_write(state, "adventure.replay")
+    document, _version = _load(adventure_id, state)
     members = [dict(member) for member in document["members"]]
     if not members:
         raise RequestError(
             f"adventure {adventure_id!r} has no encounters to compose; "
             f"link one and finalize it first"
         )
-    chapters = [_chapter(adventure_id, member) for member in members]
+    chapters = [_chapter(adventure_id, member, state) for member in members]
     bundle = replay_service.adventure_replay_bundle(
         engine_version=__version__,
         adventure={key: document[key] for key in DOCUMENT_FIELDS},
@@ -622,11 +784,15 @@ def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]
             diagnostics,
         )
     serialized = replay_service.serialize_bundle(bundle)
+    replay_root = (
+        state.storage.replays_dir
+        if state is not None and state.storage is not None
+        else replay_service.replays_root()
+    )
     target = (
         Path(path).expanduser()
         if path is not None
-        else replay_service.replays_root()
-        / f"{slugify(str(document['name']))}-{adventure_id}.json"
+        else replay_root / f"{slugify(str(document['name']))}-{adventure_id}.json"
     )
     try:
         replay_service.atomic_write_text(target, serialized)
@@ -644,7 +810,11 @@ def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]
     }
 
 
-def _chapter(adventure_id: str, member: Mapping[str, Any]) -> dict[str, Any]:
+def _chapter(
+    adventure_id: str,
+    member: Mapping[str, Any],
+    state: EngineState | None = None,
+) -> dict[str, Any]:
     """One chapter: the run's record of a link, wearing the fight it froze.
 
     ``mode`` is taken from the **bundle** and not from the member record beside
@@ -655,7 +825,7 @@ def _chapter(adventure_id: str, member: Mapping[str, Any]) -> dict[str, Any]:
     artifacts do — and where the artifact is silent too, every fight frozen
     before there was a second kind was a fight.
     """
-    bundle = _frozen_bundle(adventure_id, member)
+    bundle = _frozen_bundle(adventure_id, member, state)
     encounter = bundle.get("encounter")
     frozen_mode = encounter.get("mode") if isinstance(encounter, Mapping) else None
     return {
@@ -669,7 +839,11 @@ def _chapter(adventure_id: str, member: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _frozen_bundle(adventure_id: str, member: Mapping[str, Any]) -> dict[str, Any]:
+def _frozen_bundle(
+    adventure_id: str,
+    member: Mapping[str, Any],
+    state: EngineState | None = None,
+) -> dict[str, Any]:
     """One member's replay artifact, exactly as ``finalize`` left it.
 
     An absent file is one refusal rather than two, and deliberately so: the
@@ -681,7 +855,7 @@ def _frozen_bundle(adventure_id: str, member: Mapping[str, Any]) -> dict[str, An
     fight and the file it looked for.
     """
     encounter_id = str(member["encounter_id"])
-    path = encounters.replay_path(encounter_id)
+    path = encounters.replay_path(encounter_id, state)
     try:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -759,7 +933,8 @@ def link_encounter(
     two writes re-finds the encounter that was already made rather than
     orphaning it.
     """
-    document, version = _load(adventure_id)
+    sessions.require_run_write(state, "adventure.encounter")
+    document, version = _load(adventure_id, state)
     if request_id is not None:
         recorded = _recorded(document, request_id, "adventure.encounter")
         if recorded is not None:
@@ -778,13 +953,13 @@ def link_encounter(
     # before anything durable happens. The window a concurrent writer can still
     # slip into stays open, and an orphan encounter is the cost: it is a whole,
     # replayable fight that simply belongs to no adventure, not lost data.
-    _refuse_if_stale(adventure_id, expected_version)
+    _refuse_if_stale(adventure_id, expected_version, state)
     members: list[dict[str, Any]] = list(document["members"])
     if carry_map:
         # Resolved before the fight is created, like every other refusal above
         # it: a link that started its encounter and only then found there was no
         # map to carry would leave a whole journal belonging to no run at all.
-        map_id = _carried_map_id(adventure_id, members, map_spec, map_id)
+        map_id = _carried_map_id(state, adventure_id, members, map_spec, map_id)
     carried, checked_recovery = _carried_specs(
         state, adventure_id, members, carry, recovery
     )
@@ -819,7 +994,10 @@ def link_encounter(
             request_id: {"operation": "adventure.encounter", **member},
         }
     written = _write(
-        adventure_id, document, expected=_precondition(expected_version, version)
+        adventure_id,
+        document,
+        expected=_precondition(expected_version, version),
+        state=state,
     )
     return {
         "adventure_id": adventure_id,
@@ -859,7 +1037,9 @@ def _link_response(
     }
 
 
-def _creation_record(encounter_id: str) -> Mapping[str, Any]:
+def _creation_record(
+    state: EngineState, encounter_id: str
+) -> Mapping[str, Any]:
     """The record an encounter was *started* under, read off its journal.
 
     Not a live session, and for :func:`compose_replay`'s reason: what a chapter
@@ -869,7 +1049,9 @@ def _creation_record(encounter_id: str) -> Mapping[str, Any]:
     may not even be in memory.
     """
     try:
-        records, _warning = journal_service.read(encounter_id)
+        records, _warning = journal_service.read(
+            encounter_id, root=sessions.encounters_dir_of(state)
+        )
     except journal_service.JournalError as error:
         raise RequestError(
             f"cannot read encounter {encounter_id!r}: {error}"
@@ -882,6 +1064,7 @@ def _creation_record(encounter_id: str) -> Mapping[str, Any]:
 
 
 def _carried_map_id(
+    state: EngineState,
     adventure_id: str,
     members: Sequence[Mapping[str, Any]],
     map_spec: Mapping[str, Any] | None,
@@ -909,7 +1092,7 @@ def _carried_map_id(
             f"give 'map_id' or 'map' for the first one"
         )
     previous = str(members[-1]["encounter_id"])
-    created = _creation_record(previous)
+    created = _creation_record(state, previous)
     kind = created.get("map_kind")
     if kind == "inline":
         raise RequestError(
