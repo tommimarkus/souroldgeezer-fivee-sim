@@ -2573,6 +2573,13 @@ await suite("viewer.html: recovery at an adventure boundary",
       show([continuous.element("chapter-select").value,
         continuous.element("readout").textContent,
         continuous.element("btn-play").textContent]));
+    continuous.frame(1001);
+    continuous.frame(1501);
+    check("continuous playback leaves recovery and begins the next event",
+      continuous.element("chapter-select").value === "1"
+        && continuous.element("readout").textContent.indexOf("event 1/1") !== -1,
+      show([continuous.element("chapter-select").value,
+        continuous.element("readout").textContent]));
 
     /* 3. Presence, not truthiness: an empty delta still records a real rest
      * boundary and gets the honest default label. */

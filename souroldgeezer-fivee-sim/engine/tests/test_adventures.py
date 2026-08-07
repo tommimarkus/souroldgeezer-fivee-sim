@@ -601,6 +601,17 @@ class TestLinkingEncounters:
 
         assert len(api.adventure_state("adv-1")["members"]) == 1
 
+    def test_a_recovery_note_at_the_declared_maximum_is_preserved(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=72)
+        note = "x" * adventures.RECOVERY_NOTE_MAX
+
+        api.adventure_encounter(
+            "adv-1", recovery={}, recovery_note=note, seed=73
+        )
+
+        assert api.adventure_state("adv-1")["members"][1]["recovery_note"] == note
+
     def test_even_an_empty_recovery_is_refused_on_the_first_chapter(self) -> None:
         api.adventure_create("The Sunless Citadel")
 

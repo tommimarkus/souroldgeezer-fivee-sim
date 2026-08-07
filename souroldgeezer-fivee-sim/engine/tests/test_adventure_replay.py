@@ -470,18 +470,21 @@ class TestTheEnvelopeValidator:
         assert "at least one" in problems["chapters"]
 
     @pytest.mark.parametrize(
-        ("field", "value", "path"),
+        ("changes", "path"),
         [
-            ("recovery", [], "chapters.1.recovery"),
-            ("recovery", {"Thora": []}, "chapters.1.recovery.Thora"),
-            ("recovery_note", "", "chapters.1.recovery_note"),
+            ({"recovery": []}, "chapters.1.recovery"),
+            ({"recovery": {"Thora": []}}, "chapters.1.recovery.Thora"),
+            ({"recovery": {}, "recovery_note": ""}, "chapters.1.recovery_note"),
+            ({"recovery": {}, "recovery_note": "   "}, "chapters.1.recovery_note"),
+            ({"recovery": {}, "recovery_note": 7}, "chapters.1.recovery_note"),
+            ({"recovery": {"": {}}}, "chapters.1.recovery"),
         ],
     )
     def test_malformed_recovery_metadata_is_named_at_its_chapter(
-        self, field: str, value: object, path: str
+        self, changes: dict[str, object], path: str
     ) -> None:
         envelope = composed(run_of(2))
-        envelope["chapters"][1][field] = value
+        envelope["chapters"][1].update(changes)
 
         paths = {
             one["path"] for one in replay_service.validate_adventure_replay(envelope)
