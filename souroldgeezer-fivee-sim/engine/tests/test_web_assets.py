@@ -1334,18 +1334,6 @@ class TestEditorModes:
 
 
 class TestPlayDriver:
-    def test_the_browser_only_displays_the_d20_face_the_engine_returns(self) -> None:
-        source = play_driver_source()
-        for removed in (
-            "body.natural",
-            "play-roll-own",
-            "play-face",
-            "Math.random",
-            "requestAnimationFrame",
-        ):
-            assert removed not in source, removed
-        assert "each.data.natural" in source
-
     """``static/play.js``: the live loop, extracted, and what it may know.
 
     Decision 3 put the fight's driver beside ``FiveeRenderer`` rather than
@@ -1359,6 +1347,18 @@ class TestPlayDriver:
     targeting, the die whose face is the engine's result — is behaviour, and
     ``scripts/check-editor-behaviour.mjs`` owns every word of it.
     """
+
+    def test_the_browser_only_displays_the_d20_face_the_engine_returns(self) -> None:
+        source = play_driver_source()
+        for removed in (
+            "body.natural",
+            "play-roll-own",
+            "play-face",
+            "Math.random",
+            "requestAnimationFrame",
+        ):
+            assert removed not in source, removed
+        assert "each.data.natural" in source
 
     def test_the_driver_defines_its_single_namespace(self) -> None:
         assert "var FiveePlay" in read("play.js")
