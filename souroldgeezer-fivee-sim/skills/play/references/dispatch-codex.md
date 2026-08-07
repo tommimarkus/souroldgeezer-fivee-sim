@@ -2,29 +2,43 @@
 
 Load this file only when Codex is the active host.
 
-Codex packaging does not activate Claude agent files as named agents. Read
-`../../agents/game-master.md`, `../../agents/typical-player.md`, and
-`../../agents/encounter-sim.md`; remove or ignore leading YAML frontmatter and
-inject the remaining role body into the matching child prompt.
+Codex packaging does not activate Claude agent files as named agents. Use a
+minimal bootstrap that tells each child to read its own canonical role file,
+ignore the leading YAML frontmatter, follow the remaining role, and then handle
+the bounded assignment. Do not read, copy, or inject a role body into the child
+prompt. Resolve these packaged paths to absolute paths:
 
-Spawn `game-master` with `fork_turns="none"` and let model and reasoning effort
-inherit. Spawn each `typical-player` with `fork_turns="none"`,
+- `../../agents/adventure-prep.md`
+- `../../agents/game-master.md`
+- `../../agents/typical-player.md`
+- `../../agents/play-mechanics.md`
+
+Spawn the disposable `adventure-prep` with `fork_turns="none"`,
+`model="gpt-5.6-terra"`, and `reasoning_effort="medium"`. Spawn `game-master`
+with `fork_turns="none"` and let model and reasoning effort inherit. Spawn each
+`typical-player` with `fork_turns="none"`,
 `model="gpt-5.6-terra"`, and `reasoning_effort="medium"`. Spawn each resettable
-`encounter-sim` mechanical context with `fork_turns="none"`,
+`play-mechanics` child with `fork_turns="none"`,
 `model="gpt-5.6-terra"`, and `reasoning_effort="medium"`.
 
-The game-master prompt may add the adventure path, party, active mode, and its
-bounded checkpoint. A player prompt may add **only** its character sheet,
+The prep prompt may add only the adventure path, source digest and format,
+active mode, and bounded frame contract. It receives no player or seat private
+memory. The game-master prompt may add the source path and digest, module-index
+pointer and digest, current entries and locators, party summary, active mode,
+and bounded checkpoint. A player prompt may add **only** its character sheet,
 temperament, voice, and permitted private rehydration state. Never include the
 adventure's path, module text, run sheet, other roster entries, or full
-transcript. A mechanical prompt may add only encounter id, exact adjudicated
-request, participant labels, and baseline/delta needs.
+transcript. A play-mechanics prompt may add only the compact mechanical brief:
+encounter id, exact adjudicated request, participant labels, baseline/delta
+needs, and recovery note when applicable. It receives no adventure or module
+material and no player or seat private memory.
 
 Fresh context and allowlisted prompts minimise disclosure; they do not restrict
 Codex filesystem or tools. Record player tool inventory before the first scene
 or brief and after re-spawn. Report tools as honour-system without pausing.
 
-At every live checkpoint—encounter finalization, chapter boundary, or the
-six-decision-beat cadence—end and re-spawn the game-master child through this
-same role-body path. End each mechanical child after its bounded return. Keep
-player children live unless rehydration is required.
+End `adventure-prep` after its complete manifest and end `play-mechanics` after
+its one-beat return. At every live checkpoint—encounter finalization, chapter
+boundary, or the six-decision-beat cadence—end and re-spawn the game-master
+child through this same canonical-role path. Keep player children live unless
+rehydration is required.

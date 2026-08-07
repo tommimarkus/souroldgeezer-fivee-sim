@@ -6,7 +6,8 @@ protocol for both play and playtest.
 ## Mechanical context and briefs
 
 The coordinator owns a **resettable mechanical context** separate from the
-persistent narrative game master. Use the packaged `encounter-sim` role for it.
+persistent narrative game master. Use the packaged `play-mechanics` role for one decision beat,
+then end it immediately after its bounded return.
 Give it encounter ids and exact adjudicated operation requests, never the module,
 run sheet, transcript, or player memories. Reset it after each decision beat and
 at every encounter or chapter checkpoint so raw engine traffic does not
@@ -37,7 +38,8 @@ full baseline and relay it once. Never retry for a delta, never substitute
 another chair's baseline, and never send a full brief or full baseline again on
 each council pass or response when state is unchanged.
 
-The coordinator owns `.fivee-sim/plays/<id>/brief-cursors.json`. For each seat,
+The coordinator owns `.fivee-sim/plays/<id>/brief-cursors.json`. The
+play-mechanics child never writes this or any other table artifact. For each seat,
 record the encounter id, player-context generation, delivered `state_sha256`,
 and delivery status **only after a successful relay**. This cursor records what
 the recipient actually holds; never infer ownership from the engine server's
@@ -64,7 +66,10 @@ NEXT: one requested mechanical action or none
 ```
 
 Do not combine chair payloads into one `BRIEF`, re-read state between chair
-frames, or keep the context alive for the next beat.
+frames, or keep the context alive for the next beat. Terminate the child after
+the return. If it reports a malformed or unsupported call, give it one bounded
+correction naming that call; a second failure is `blocked`, not a reason to load
+the full encounter skill into the beat.
 
 Raw state, logs, and reasoning stay in that resettable context. The exact `BRIEF`
 exception is immediately relayed only to its named seat and is never sent to the
@@ -125,7 +130,7 @@ are loaded only when a human participates.
 
 Hold only that seat's choice. The coordinator relays its exact question to the
 game master. The game master owns the query and adjudication; the resettable
-mechanical context executes `fivee catalog.search --query …`, then one
+mechanical context (`play-mechanics`) executes `fivee catalog.search --query …`, then one
 `fivee catalog.get <id>` or `fivee catalog.table <id>`. The player gets only the
 requested player-facing answer before the seat chooses—never adventure material, hidden state, monster
 statistics, unrevealed identities, search-result neighbors, or machine paths.

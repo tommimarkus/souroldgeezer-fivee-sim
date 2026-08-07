@@ -59,11 +59,18 @@ first encounter is linked. Do not load it for an uninterrupted all-agent run.
 
 ## 2. Brief the seats
 
-The packaged [game-master](../../agents/game-master.md) and
-[typical-player](../../agents/typical-player.md) files are the canonical role
+The packaged [adventure-prep](../../agents/adventure-prep.md),
+[game-master](../../agents/game-master.md),
+[typical-player](../../agents/typical-player.md), and
+[play-mechanics](../../agents/play-mechanics.md) files are the canonical role
 profiles for both hosts. Identify the active host and load exactly one dispatch
 reference: [Claude Code](references/dispatch-claude-code.md) or
 [Codex](references/dispatch-codex.md). Never load both.
+
+Before spawning the game master, load [module preparation](references/module-prep.md).
+Run its disposable prep child, validate and publish the private module index,
+then end that child. The opening game master receives only current index entries
+and locators, not a full-module briefing.
 
 Keep player children alive so their private experience persists. Keep the game
 master alive only within one checkpoint interval; reset it at encounter or
@@ -88,7 +95,7 @@ coordinator relays narration and runs the bounded party council
   ↓
 the acting seat sends its own COMMIT
   ↓
-game master adjudicates; the resettable mechanical context drives fivee
+game master adjudicates; the one-beat play-mechanics child drives fivee
   ↓
 coordinator relays the result and records the chronology out of band
 ```
@@ -97,7 +104,7 @@ Every seat owns its movement, action, bonus action, target, spell and slot,
 items, and retreat. Return an engine-refused declaration and exact reason to the
 seat instead of substituting a legal move.
 
-Read whose turn it is through the resettable mechanical context backed by
+Read whose turn it is through the one-beat mechanical context backed by
 `fivee encounter.state`; the engine owns initiative and mechanical state outside
 the explicit unattended degradation.
 
@@ -141,6 +148,7 @@ Keep these files under `.fivee-sim/plays/<id>/` in both modes:
 | `seats/<name>.md` | only what that seat witnessed, in its voice |
 | `brief-cursors.json` | acknowledged chair baseline/delta ownership |
 | `council.json` | current bounded council state, never raw discussion |
+| `module-index.json` | private source digest and structural entry locators |
 | `checkpoint.json` | bounded live coordinator and game-master checkpoint |
 
 At every encounter finalization, every chapter boundary, and after **six
@@ -148,12 +156,16 @@ resolved decision beats** without either boundary, checkpoint both the
 coordinator and game master into `checkpoint.json`, capped at **600 tokens**
 total. Reset the six-beat counter after each checkpoint. Its summary schema
 contains the objective, current run position, material decisions, blockers or
-open choices, compact obligation and evidence pointers, and the next action. The
-game master supplies its private fields; the coordinator adds table progress and
-artifact pointers.
+open choices, compact obligation and evidence pointers, and the next action. It
+also carries the `module-index.json` pointer, digest, source digest, and current
+entry IDs; in playtest it carries the existing run-sheet pointer, digest, and
+current IDs. The game master supplies its private fields; the coordinator adds
+table progress and artifact pointers.
 
 After writing it, compact the coordinator's live working set to that schema and
-re-spawn the game master from the adventure path plus its checkpoint component.
+re-spawn the game master from the source path and digest, index pointer and
+digest, only the current entries with their line or page locators, and its
+checkpoint component.
 Read authoritative mechanics anew through the resettable mechanical context
 backed by `fivee encounter.state` or `fivee adventure.state`. Never use the full
 transcript, raw council, raw engine output, or worker reasoning as checkpoint or

@@ -14,16 +14,25 @@ Before stopping:
 5. `council.json` has participants, pass, rolling plan, open questions, and
    readiness without raw discussion.
 6. `checkpoint.json` has the live coordinator/GM schema from the main skill.
+7. `module-index.json` is complete and its pointer, digest, source hash, and
+   current IDs are in the checkpoint.
 
 The engine journal already owns the fight. These files save the table: who knows
 what and what happens next.
 
 ## Resume
 
-1. Read `roster.json`, `checkpoint.json`, and `council.json` when open.
-2. Re-spawn the game master through current-host dispatch with the adventure
-   path, mode, its bounded checkpoint component, and current run position. In
-   playtest mode include the run-sheet position, not the whole run sheet.
+1. Read `roster.json`, `checkpoint.json`, `module-index.json`, and `council.json`
+   when open. Recompute the adventure source hash and compare it with both the
+   index and checkpoint before reading a scene. On a source hash mismatch,
+   refuse to mix saved state with changed source text. Require an explicit
+   restart-or-resume decision: restart preparation against the changed source,
+   or restore the original source and resume. Do not narrate meanwhile.
+2. Validate the module-index pointer and digest, then re-spawn the game master
+   through current-host dispatch with the source path and hash, mode, bounded
+   checkpoint component, current run position, and only the current IDs and
+   entries with their line or page locators. In playtest mode include the
+   run-sheet pointer, digest, and current position, not the whole run sheet.
 3. Re-spawn each agent player with only its sheet, temperament, voice, and
    `seats/<name>.md`; when participating in an open council, add only the bounded
    `current_plan`, `open_questions`, pass, decision owners, and readiness. Never

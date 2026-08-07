@@ -5,13 +5,15 @@ not collect findings, run evaluation batches, or write an author-facing report.
 
 ## Establish the test inventory
 
-Ask the game-master seat for a private run sheet before the first scene: scenes,
-encounters, NPCs, treasure, stated DCs, and assumed route. Keep it from players.
-Measure unused content and pacing against it.
+Use the disposable adventure-prep child's full semantic inventory before the
+first scene to establish the private run sheet: scenes, encounters, NPCs,
+treasure, stated DCs, assumed route, and material omissions. Keep it from
+players. Measure unused content and pacing against it.
 
 Persist it immediately as the private durable
-`.fivee-sim/plays/<id>/run-sheet.json`, with stable entry ids and per-entry
-status/pacing fields. Never send it to a player. At every encounter or chapter
+`.fivee-sim/plays/<id>/run-sheet.json`, with stable entry IDs, a
+`module_index_id` that references the corresponding `module-index.json` entry,
+and per-entry status/pacing fields. Never send it to a player. At every encounter or chapter
 checkpoint, update the artifact and put only its pointer, digest, current entry
 ids, and run position in `checkpoint.json`. On game-master re-spawn, supply the
 pointer and only the relevant current entries, never the whole run sheet. A
