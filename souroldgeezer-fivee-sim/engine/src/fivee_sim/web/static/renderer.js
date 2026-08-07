@@ -535,6 +535,11 @@ var FiveeRenderer = (function () {
     var cx = px + size / 2;
     var cy = py + size / 2;
     var r = size * 0.36;
+    /* The outer edge of the health stroke, whether or not this token happens
+       to draw one. Status furniture sits beyond this boundary rather than
+       hiding the very state the ring exists to show. */
+    var healthRingWidth = Math.max(1.5, size * 0.07);
+    var furnitureEdge = r + healthRingWidth * 1.5;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = token.down || token.dead
@@ -548,11 +553,11 @@ var FiveeRenderer = (function () {
     if (typeof fraction === "number" && !token.dead) {
       var clamped = Math.max(0, Math.min(1, fraction));
       ctx.beginPath();
-      ctx.arc(cx, cy, r + Math.max(1.5, size * 0.07), -Math.PI / 2,
+      ctx.arc(cx, cy, r + healthRingWidth, -Math.PI / 2,
         -Math.PI / 2 + clamped * Math.PI * 2);
       ctx.strokeStyle = "hsl(" + Math.round(120 * clamped) + ", 65%, "
         + (dark ? "50%" : "40%") + ")";
-      ctx.lineWidth = Math.max(1.5, size * 0.07);
+      ctx.lineWidth = healthRingWidth;
       ctx.stroke();
     }
     /* A creature's facing is not drawn here. It is a sight cone now, and a cone
@@ -577,10 +582,56 @@ var FiveeRenderer = (function () {
       ctx.lineTo(cx - r * 0.7, cy + r * 0.7);
       ctx.stroke();
     } else if (token.stable) {
+      var stableRadius = Math.max(2, size * 0.09);
+      var stableReach = (furnitureEdge + stableRadius + Math.max(1, size * 0.02))
+        / Math.sqrt(2);
       ctx.fillStyle = dark ? "#9ecb9e" : "#2f7a2f";
       ctx.beginPath();
-      ctx.arc(cx + r * 0.8, cy - r * 0.8, Math.max(2, size * 0.09), 0, Math.PI * 2);
+      ctx.arc(cx + stableReach, cy - stableReach, stableRadius, 0, Math.PI * 2);
       ctx.fill();
+    }
+    if (!token.dead && Number.isInteger(token.initiativeRank) && token.initiativeRank > 0) {
+      /* A compact turn-order badge beyond the upper-left edge of the health
+         ring. The viewer decides the rank; this shared renderer only presents
+         the optional number it was handed. A dead creature has left initiative
+         and therefore wears no rank even if a stale caller supplies one.
+
+         A capsule rather than a fixed circle keeps a double-digit encounter
+         legible without shrinking its number below the token's own initial. */
+      var rank = "\u2191" + token.initiativeRank;
+      var fontSize = Math.max(7, Math.min(13, Math.round(size * 0.22)));
+      var badgeHeight = Math.max(9, Math.round(size * 0.26));
+      ctx.save();
+      ctx.font = "bold " + fontSize + "px ui-sans-serif, system-ui, sans-serif";
+      var badgeWidth = Math.max(
+        badgeHeight, Math.ceil(ctx.measureText(rank).width + Math.max(4, size * 0.12))
+      );
+      var badgeGap = Math.max(1, size * 0.02);
+      var badgeTangent = furnitureEdge / Math.sqrt(2);
+      var badgeX = cx - badgeTangent - badgeGap - badgeWidth;
+      var badgeY = cy - badgeTangent - badgeGap - badgeHeight;
+      var badgeRadius = badgeHeight / 2;
+      ctx.beginPath();
+      ctx.arc(
+        badgeX + badgeRadius, badgeY + badgeRadius, badgeRadius,
+        Math.PI / 2, Math.PI * 1.5
+      );
+      ctx.lineTo(badgeX + badgeWidth - badgeRadius, badgeY);
+      ctx.arc(
+        badgeX + badgeWidth - badgeRadius, badgeY + badgeRadius, badgeRadius,
+        -Math.PI / 2, Math.PI / 2
+      );
+      ctx.closePath();
+      ctx.fillStyle = dark ? "rgba(24,26,30,0.94)" : "rgba(250,248,242,0.96)";
+      ctx.fill();
+      ctx.strokeStyle = dark ? "#c9a86a" : "#7a5c2e";
+      ctx.lineWidth = Math.max(1, size * 0.035);
+      ctx.stroke();
+      ctx.fillStyle = dark ? "#f0cf8b" : "#5e431c";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(rank, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
+      ctx.restore();
     }
   }
 
@@ -655,9 +706,11 @@ var FiveeRenderer = (function () {
          // glyph — the channel a fixture's effect arrives through. Squares
          // and kinds only: the renderer never learns what decided them
        tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable,
-         facing}],  // facing is one of the eight names, or absent for a
+         facing, initiativeRank}],  // facing is one of the eight names, or absent for a
          // creature whose direction nobody is tracking. A facing draws a sight
          // cone under the tokens — orientation only, occluded by nothing
+         // initiativeRank is an optional positive turn-order position; callers
+         // decide its meaning and the renderer draws it without sorting
        sightCones: bool  // false suppresses those cones. Default on: absent
          // and true both draw them, so every caller written before the switch
          // keeps the picture it had

@@ -432,6 +432,24 @@ if (typeof FiveeRenderer === "undefined") {
     return Object.keys(overrides).length ? overrides : undefined;
   }
 
+  /* Initiative rank is presentation state derived from the authoritative cast,
+     whose order is the engine's initiative order in combat. Dead combatants no
+     longer hold a place, so the surviving ranks compact around them. An
+     interlude reports null initiative for every combatant and therefore grows
+     no initiative furniture at all. */
+  function applyInitiativeRanks(tokens, combatants) {
+    Object.keys(tokens).forEach(function (name) {
+      delete tokens[name].initiativeRank;
+    });
+    var rank = 0;
+    (combatants || []).forEach(function (creature) {
+      var token = tokens[creature.name];
+      if (!token || creature.dead || typeof creature.initiative !== "number") { return; }
+      rank += 1;
+      token.initiativeRank = rank;
+    });
+  }
+
   function initialState() {
     var tokens = Object.create(null);
     var enveloped = ENVELOPED_FORMAT_VERSIONS.indexOf(bundle.format_version) !== -1;
@@ -463,6 +481,7 @@ if (typeof FiveeRenderer === "undefined") {
         stable: !!creature.stable
       };
     });
+    applyInitiativeRanks(tokens, authoritative);
     var featureStates = Object.create(null);
     if (bundle.map) {
       var openList = bundle.initial.map_open_features || [];
@@ -527,6 +546,7 @@ if (typeof FiveeRenderer === "undefined") {
       token.dead = !!creature.dead;
       token.stable = !!creature.stable;
     });
+    applyInitiativeRanks(current.tokens, authoritative.combatants);
     if (authoritative.map && authoritative.map.features) {
       Object.keys(authoritative.map.features).forEach(function (id) {
         current.featureStates[id] = !!authoritative.map.features[id].open;
@@ -857,7 +877,8 @@ if (typeof FiveeRenderer === "undefined") {
         down: token.down,
         dead: token.dead,
         stable: token.stable,
-        facing: token.facing
+        facing: token.facing,
+        initiativeRank: token.initiativeRank
       });
     });
     R.render(ctx, mapDoc, view, {

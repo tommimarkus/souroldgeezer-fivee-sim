@@ -335,7 +335,7 @@ function makeElementClass(contextOf) {
   };
 }
 
-/* The fake 2D context. Two observation channels, and the split matters.
+/* The fake 2D context. Three observation channels, and the split matters.
  *
  * `fills` records fillRect: the colour a square was painted, and the alpha it
  * was painted at. Alpha is recorded because the context outlives the frame. A
@@ -353,10 +353,14 @@ function makeElementClass(contextOf) {
  * the moment of commit, because a path stroked in the wrong ink or at a
  * borrowed alpha is as wrong as one never drawn.
  *
- * What this still does not see: geometry. Nothing here rasterises, so a chevron
- * pointing the wrong way is a path whose *coordinates* a case must judge for
- * itself. The recorder hands over the numbers; it does not know what they mean. */
-function makeContext(fills, paths) {
+ * `texts` records fillText: the string, its anchor, and the alignment and ink
+ * that decide how it is placed. It exists for token furniture whose meaning is
+ * the number it writes, not merely the capsule path behind it.
+ *
+ * What this still does not see is rasterised geometry. A chevron pointing the
+ * wrong way is a path whose *coordinates* a case must judge for itself. The
+ * recorder hands over the numbers; it does not know what they mean. */
+function makeContext(fills, paths, texts) {
   const state = {
     fillStyle: "", strokeStyle: "", lineWidth: 1, font: "",
     textAlign: "", textBaseline: "", globalAlpha: 1, lineCap: "", lineJoin: "",
@@ -405,6 +409,12 @@ function makeContext(fills, paths) {
         };
       }
       if (prop === "measureText") { return () => ({ width: 4 }); }
+      if (prop === "fillText") {
+        return (text, x, y) => texts.push({
+          text: String(text), x, y, ink: target.fillStyle,
+          align: target.textAlign, baseline: target.textBaseline,
+        });
+      }
       if (prop in target) { return target[prop]; }
       /* Every other context method is drawing this harness does not read.
        * A no-op here is a deliberate blind spot, not an oversight: see the
@@ -420,7 +430,8 @@ function makeContext(fills, paths) {
 function makePage(options) {
   const fills = [];
   const paths = [];
-  const context = makeContext(fills, paths);
+  const texts = [];
+  const context = makeContext(fills, paths, texts);
   const El = makeElementClass(() => context);
   const elements = new Map();
   const canvasIds = new Set(options.canvasIds || []);
@@ -477,7 +488,7 @@ function makePage(options) {
   let nextTimer = 1;
   let immediateFrameTime = 0;
   const page = {
-    fills, paths, context, element, elements, documentStub, requests, blobs, alerts,
+    fills, paths, texts, context, element, elements, documentStub, requests, blobs, alerts,
     history: history_,
     renders: [],
     reply: () => ({ status: 200, body: {} }),
@@ -574,14 +585,15 @@ function makePage(options) {
   }
   /* Wrapped before the page captures the namespace: `R` is this same object, so
    * the call site finds the wrapper either way. Every frame is recorded with
-   * the fills it produced, which is the whole observation channel. */
+   * the fills, paths and text it produced. */
   const realRender = renderer.render;
   renderer.render = function (ctx, doc, view, overlays) {
     fills.length = 0;
     paths.length = 0;
+    texts.length = 0;
     realRender(ctx, doc, view, overlays);
     page.renders.push({
-      doc, view, overlays, fills: fills.slice(), paths: paths.slice(),
+      doc, view, overlays, fills: fills.slice(), paths: paths.slice(), texts: texts.slice(),
     });
   };
   page.renderer = renderer;
@@ -1387,6 +1399,57 @@ await suite("renderer.js: the document's compass", "the renderer sandbox", async
     faint.length === 0, "painted under a borrowed alpha: " + show(faint.slice(0, 3)));
 });
 
+await suite("renderer.js: token status furniture", "the renderer sandbox", async () => {
+  const page = makePage({ canvasIds: ["map"] });
+  const R = page.renderer;
+  const s = FACING_VIEW.scale;
+  const cx = FACING_AT[0] * s + s / 2;
+  const cy = FACING_AT[1] * s + s / 2;
+  const ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
+  const draw = (token) => {
+    R.render(page.context, facingDoc({ bare: true }), FACING_VIEW, {
+      tokens: [Object.assign({
+        at: FACING_AT, label: "H", team: "party", hpFraction: 0.5,
+      }, token)],
+    });
+    return page.last();
+  };
+  const ranksIn = (frame) => frame.texts.filter((entry) => entry.text.startsWith("↑"));
+
+  const ranked = draw({ initiativeRank: 12 });
+  const ranks = ranksIn(ranked);
+  const capsules = ranked.paths.filter(
+    (path) => path.kind === "fill" && path.ink === "rgba(250,248,242,0.96)");
+  const capsuleOps = capsules.length === 1 ? capsules[0].ops : [];
+  const capsuleRight = Math.max(...capsuleOps.filter(
+    (op) => op[0] === "arc" || op[0] === "lineTo").map(
+    (op) => op[1] + (op[0] === "arc" ? op[3] : 0)));
+  const capsuleBottom = Math.max(...capsuleOps.filter(
+    (op) => op[0] === "arc" || op[0] === "lineTo").map(
+    (op) => op[2] + (op[0] === "arc" ? op[3] : 0)));
+  check("a ranked creature wears the replay order supplied by its caller",
+    ranks.length === 1 && ranks[0].text === "↑12", show(ranked.texts));
+  check("and corrected v1 keeps the whole capsule beyond the health ring at upper-left",
+    ranks.length === 1 && capsules.length === 1
+      && capsuleRight < cx && capsuleBottom < cy
+      && Math.hypot(capsuleRight - cx, capsuleBottom - cy) > ringEdge,
+    show([ranks, capsules, { cx, cy, ringEdge, capsuleRight, capsuleBottom }]));
+
+  check("an unranked creature gets no initiative furniture",
+    ranksIn(draw({})).length === 0, show(page.last().texts));
+  check("and a dead creature gets none even when handed a stale rank",
+    ranksIn(draw({ initiativeRank: 1, hpFraction: 0, dead: true })).length === 0,
+    show(page.last().texts));
+
+  const stable = draw({ stable: true });
+  const dots = stable.paths.filter((path) => path.kind === "fill" && path.ink === "#2f7a2f"
+    && path.ops.length === 1 && path.ops[0][0] === "arc");
+  const clear = dots.length === 1 && Math.hypot(
+    dots[0].ops[0][1] - cx, dots[0].ops[0][2] - cy) - dots[0].ops[0][3] > ringEdge;
+  check("the existing Stable effect dot also clears the health ring completely",
+    clear, show([dots, { cx, cy, ringEdge }]));
+});
+
 /* --- viewer.html ---------------------------------------------------------- */
 
 function replayMap() {
@@ -1983,6 +2046,53 @@ await suite("viewer.html: replay v3's checkpoint chain", "the page sandbox in ma
       page.alerts.length === before + 1
         && page.alerts[page.alerts.length - 1].indexOf("latest_state") !== -1,
       show(page.alerts.slice(before)));
+  });
+
+await suite("viewer.html: initiative ranks on replay tokens", "the page sandbox in makePage()",
+  async () => {
+    const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    page.element("follow-level").checked = true;
+    const bundle = replayV2();
+    const initialHero = bundle.initial.state.combatants[0];
+    initialHero.initiative = 20;
+    const finalHero = bundle.checkpoints[0].state.combatants[0];
+    finalHero.initiative = 20;
+    const corpse = copy(finalHero);
+    Object.assign(corpse, {
+      name: "Corpse", position: [25, 10], hp: 0, conscious: false, dead: true,
+      initiative: 15,
+    });
+    const foe = copy(finalHero);
+    Object.assign(foe, { name: "Foe", position: [30, 10], initiative: 10 });
+    bundle.initial.state.order = ["Hero", "Corpse", "Foe"];
+    bundle.initial.state.combatants = [initialHero, copy(corpse), copy(foe)];
+    bundle.initial.combatants = bundle.initial.state.combatants.map(copy);
+    bundle.checkpoints[0].state.order = ["Hero", "Corpse", "Foe"];
+    bundle.checkpoints[0].state.combatants = [finalHero, corpse, foe];
+    bundle.latest_state = copy(bundle.checkpoints[0].state);
+    sealReplayV2(bundle);
+
+    await page.drop(bundle, "initiative-ranks.json");
+    page.element("scrub").value = "1";
+    page.element("scrub").dispatch("input");
+    const tokens = page.last().overlays.tokens;
+    const byLabel = Object.fromEntries(tokens.map((token) => [token.label, token]));
+    check("combat replay tokens carry compact positions from authoritative initiative order",
+      byLabel.H.initiativeRank === 1 && byLabel.F.initiativeRank === 2,
+      show(tokens));
+    check("a dead combatant is omitted from that order rather than wearing a stale position",
+      byLabel.C.initiativeRank === undefined, show(tokens));
+
+    const interlude = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" },
+    });
+    interlude.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await interlude.drop(interludeV2(), "interlude.json");
+    check("an interlude whose combatants rolled no initiative draws no ranks",
+      interlude.last().overlays.tokens.every(
+        (token) => token.initiativeRank === undefined),
+      show(interlude.last().overlays.tokens));
   });
 
 /* The viewer builds its token model twice — once from the bundle's initial
