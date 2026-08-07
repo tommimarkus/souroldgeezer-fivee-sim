@@ -231,14 +231,24 @@ def test_play_skill_points_at_both_packaged_role_profiles() -> None:
 
 def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
     skill = _text("skills/play/SKILL.md")
+    dispatch = _markdown_section(skill, "## 2. Brief the seats")
 
-    claude = _markdown_section(skill, "### Claude Code")
+    assert re.search(
+        r"active host.{0,300}(?:exactly|only) one",
+        dispatch,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    claude = _packaged_reference(
+        "skills/play/SKILL.md", dispatch, "references/dispatch-claude-code.md"
+    )
     assert "named agent" in claude.lower()
     assert "`game-master`" in claude
     assert "`typical-player`" in claude
     assert "gpt-5.6-terra" not in claude
 
-    codex = _markdown_section(skill, "### Codex")
+    codex = _packaged_reference(
+        "skills/play/SKILL.md", dispatch, "references/dispatch-codex.md"
+    )
     assert "../../agents/game-master.md" in codex
     assert "../../agents/typical-player.md" in codex
     assert 'fork_turns="none"' in codex
@@ -274,7 +284,13 @@ def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
 
 def test_play_skill_has_a_bounded_participant_scoped_party_council() -> None:
     skill = _text("skills/play/SKILL.md")
-    council = _markdown_section(skill, "### Party council")
+    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    council = _markdown_section(
+        _packaged_reference(
+            "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
+        ),
+        "## Party council",
+    )
 
     for message_kind in ("`TABLE`", "`SAY`", "`COMMIT`"):
         assert message_kind in council
@@ -313,7 +329,13 @@ def test_play_skill_has_a_bounded_participant_scoped_party_council() -> None:
 
 def test_party_council_keeps_table_talk_out_of_world_state_and_gm_bulk_context() -> None:
     skill = _text("skills/play/SKILL.md")
-    council = _markdown_section(skill, "### Party council")
+    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    council = _markdown_section(
+        _packaged_reference(
+            "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
+        ),
+        "## Party council",
+    )
     game_master = _markdown_section(_text("agents/game-master.md"), "## Party council")
     player = _markdown_section(_text("agents/typical-player.md"), "## Party council")
 
@@ -351,16 +373,36 @@ def test_party_council_keeps_table_talk_out_of_world_state_and_gm_bulk_context()
 
 
 def test_party_council_is_resumable_for_mixed_human_and_agent_seats() -> None:
-    seating = _text("skills/play/references/seating-and-pauses.md")
-    council = _markdown_section(seating, "## Party council")
-    resume = _markdown_section(seating, "## Resume")
+    skill = _text("skills/play/SKILL.md")
+    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    council = _markdown_section(
+        _packaged_reference(
+            "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
+        ),
+        "## Party council",
+    )
+    human = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 1. Seat the table"),
+        "references/human-seats.md",
+    )
+    resume = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 6. Checkpoint, pause, and resume"),
+        "references/resume.md",
+    )
+    seating = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 1. Seat the table"),
+        "references/seating-and-pauses.md",
+    )
 
     assert "council.json" in council
     for field in ("participants", "pass", "current_plan", "open_questions"):
-        assert f'"{field}"' in council
+        assert f'"{field}"' in seating
     assert re.search(
-        r"agent.{0,300}(?:human|user-input).{0,300}\brelay",
-        council,
+        r"user-input.{0,300}\bTABLE\b",
+        human,
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert re.search(
@@ -413,13 +455,19 @@ def test_player_tool_inventory_reports_weaker_boundaries_without_pausing() -> No
 
 def test_player_tool_inventory_makes_no_capability_claim() -> None:
     skill = _text("skills/play/SKILL.md")
+    seating = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 1. Seat the table"),
+        "references/seating-and-pauses.md",
+    )
+    guidance = skill + seating
 
-    assert "`require-none`" not in skill
-    assert "`allow-reported`" not in skill
-    assert re.search(r"reported tools.{0,200}honour-system", skill, flags=re.I | re.S)
-    assert "Under `require-none`, agent seats hold no engine access" not in skill
-    assert "tools: []" not in skill
-    assert "Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)" in skill
+    assert "`require-none`" not in guidance
+    assert "`allow-reported`" not in guidance
+    assert re.search(r"reported tools.{0,200}honour-system", guidance, flags=re.I | re.S)
+    assert "Under `require-none`, agent seats hold no engine access" not in guidance
+    assert "tools: []" not in guidance
+    assert "Read (player-visible/**" in seating
 
 
 def test_unattended_play_improvises_through_failures_without_confirmation() -> None:
@@ -436,10 +484,11 @@ def test_unattended_play_improvises_through_failures_without_confirmation() -> N
     assert "improvised ruling" in failure_plain
     assert "continue" in failure_plain
     assert "explicit unattended exception" in failure_plain
-    assert "references/seating-and-pauses.md#unattended-operation-failures" in failure
+    assert "references/unattended-failures.md" in failure
 
-    seating = _text("skills/play/references/seating-and-pauses.md")
-    policy = _markdown_section(seating, "## Unattended operation failures")
+    policy = _packaged_reference(
+        "skills/play/SKILL.md", failure, "references/unattended-failures.md"
+    )
     policy_plain = " ".join(policy.lower().split())
     for obligation in (
         "correct the call and retry",
@@ -511,18 +560,208 @@ def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:
     )
 
     test_only = _markdown_section(skill, "## Playtest only")
+    assert re.search(
+        r"load.{0,100}only.{0,100}playtest",
+        test_only,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:do not|never) load.{0,200}(?:ordinary|plain) play",
+        test_only,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    guidance = _packaged_reference(
+        "skills/play/SKILL.md", test_only, "references/playtest.md"
+    )
     for obligation in (
         "findings.jsonl",
         "report.md",
         "references/report-format.md",
         "fivee analytics.rounds",
     ):
-        assert obligation in test_only
+        assert obligation in guidance
+
+
+def test_play_skill_uses_one_brief_baseline_then_chair_scoped_deltas() -> None:
+    skill = _text("skills/play/SKILL.md")
+    beat_loop = _markdown_section(skill, "## 3. Run the beat loop")
+    table_loop = _packaged_reference(
+        "skills/play/SKILL.md", beat_loop, "references/table-loop.md"
+    )
+    delivery = _markdown_section(table_loop, "## Mechanical context and briefs")
+    delivery_plain = " ".join(delivery.lower().split())
+
+    for obligation in (
+        "resettable mechanical context",
+        "one full baseline",
+        "per-seat delta",
+        "exactly one mechanical-context invocation",
+        "not one invocation per chair",
+        "encounter.resume",
+        '--view delta',
+        'view` is `full',
+    ):
+        assert obligation in delivery_plain
+    assert re.search(r"--as.{0,300}\bengine.{0,200}\bredact", delivery, flags=re.I | re.S)
     assert re.search(
-        r"\bdo not\b.{0,200}\b(?:ordinary|plain) play\b",
-        test_only,
+        r"(?:never|do not).{0,200}(?:derive|project).{0,200}encounter\.state",
+        delivery,
         flags=re.IGNORECASE | re.DOTALL,
     )
+    assert re.search(
+        r"one snapshot.{0,300}(?:one named chair|one chair)",
+        delivery,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:never|do not).{0,200}(?:full brief|full baseline).{0,200}(?:pass|response)",
+        delivery,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def test_brief_delivery_cursor_forces_safe_rebaseline_after_lost_ownership() -> None:
+    skill = _text("skills/play/SKILL.md")
+    table_loop = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 3. Run the beat loop"),
+        "references/table-loop.md",
+    )
+    resume = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 6. Checkpoint, pause, and resume"),
+        "references/resume.md",
+    )
+    guidance = " ".join((table_loop + resume).lower().split())
+
+    assert "brief-cursors.json" in guidance
+    assert "state_sha256" in guidance
+    assert re.search(r"only after.{0,100}successful.{0,100}relay", guidance)
+    assert re.search(r"(?:unknown|missing).{0,160}(?:ack|acknowledg)", guidance)
+    assert re.search(r"re-spawn.{0,200}encounter\.brief.{0,120}--as", guidance)
+    assert re.search(
+        r"(?:never|do not).{0,180}(?:delta|--view delta).{0,180}(?:re-baseline|baseline)",
+        guidance,
+    )
+    assert re.search(r"recovery exception.{0,180}(?:pass|response|council)", guidance)
+
+
+def test_player_council_returns_are_bounded_and_chronology_is_out_of_band() -> None:
+    player = _markdown_section(_text("agents/typical-player.md"), "## Party council")
+    player_plain = " ".join(player.lower().split())
+
+    for field in ("`TABLE`", "`SAY`", "`GM QUESTION`", "`READY`"):
+        assert field in player
+    assert re.search(r"\b120\s+words\b", player_plain)
+    assert re.search(r"SAY.{0,120}(?:optional|omit)", player, flags=re.I | re.S)
+    assert re.search(r"(?:at most|only) one.{0,120}GM QUESTION", player, flags=re.I | re.S)
+    assert re.search(r"COMMIT.{0,200}(?:separate|after the council)", player, flags=re.I | re.S)
+    assert re.search(
+        r"(?:never|do not).{0,200}(?:transcript|history|chronology)",
+        player,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    skill = _text("skills/play/SKILL.md")
+    table_loop = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 3. Run the beat loop"),
+        "references/table-loop.md",
+    )
+    assert re.search(
+        r"coordinator.{0,300}(?:append|write).{0,300}(?:chronology|transcript)"
+        r".{0,300}(?:after|then).{0,300}(?:relay|discard|drop)",
+        table_loop,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def test_live_run_checkpoints_bound_the_coordinator_and_game_master() -> None:
+    skill = _text("skills/play/SKILL.md")
+    checkpoint = _markdown_section(skill, "## 6. Checkpoint, pause, and resume")
+    game_master = _markdown_section(
+        _text("agents/game-master.md"), "## Live checkpoint"
+    )
+    combined = " ".join((checkpoint + game_master).lower().split())
+
+    assert re.search(r"encounter.{0,120}chapter.{0,120}boundar", combined)
+    assert re.search(r"six.{0,160}resolved decision beats", combined)
+    assert "checkpoint.json" in combined
+    assert re.search(r"(?:600\s+tokens|token cap.{0,80}600)", combined)
+    for field in (
+        "objective",
+        "run position",
+        "material decisions",
+        "blockers",
+        "evidence pointers",
+        "next action",
+    ):
+        assert field in combined
+    assert re.search(r"authoritative.{0,120}(?:encounter|adventure).state", combined)
+    assert re.search(r"(?:never|do not).{0,120}full transcript", combined)
+
+
+def test_playtest_run_sheet_is_private_durable_checkpoint_evidence() -> None:
+    skill = _text("skills/play/SKILL.md")
+    playtest = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## Playtest only"),
+        "references/playtest.md",
+    )
+    checkpoint = _markdown_section(skill, "## 6. Checkpoint, pause, and resume")
+    resume = _packaged_reference(
+        "skills/play/SKILL.md", checkpoint, "references/resume.md"
+    )
+    guidance = " ".join((playtest + checkpoint + resume).lower().split())
+
+    assert "run-sheet.json" in guidance
+    assert re.search(r"private.{0,160}durable", guidance)
+    assert re.search(r"run-sheet\.json.{0,200}(?:pointer|digest).{0,200}position", guidance)
+    assert re.search(r"(?:never|do not).{0,160}player", guidance)
+    assert re.search(r"re-spawn.{0,240}(?:relevant|current).{0,160}(?:entry|entries)", guidance)
+    assert re.search(r"(?:do not|never).{0,200}(?:whole|full) run sheet", guidance)
+
+    initial = _markdown_section(
+        _text("agents/game-master.md"), "## Initial spawn only"
+    )
+    assert re.search(r"initial spawn.{0,240}run sheet", initial, flags=re.I | re.S)
+    assert re.search(
+        r"checkpoint re-spawn.{0,240}(?:do not|never).{0,240}"
+        r"(?:repeat|reread|re-emit)",
+        initial,
+        flags=re.I | re.S,
+    )
+
+
+def test_human_council_extensions_checkpoint_every_two_extra_passes() -> None:
+    skill = _text("skills/play/SKILL.md")
+    human = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 1. Seat the table"),
+        "references/human-seats.md",
+    )
+
+    assert re.search(r"two.{0,160}(?:extra|extension).{0,160}pass", human, flags=re.I | re.S)
+    assert re.search(
+        r"checkpoint.{0,300}before.{0,300}(?:another|further)",
+        human,
+        flags=re.I | re.S,
+    )
+    assert "council.json" in human
+    for field in ("current_plan", "open_questions", "ready"):
+        assert field in human
+    assert re.search(r"one pass at a time", human, flags=re.I)
+    assert re.search(r"(?:never|do not).{0,160}raw discussion", human, flags=re.I | re.S)
+
+
+def test_play_entry_stays_within_its_line_budget() -> None:
+    skill = _text("skills/play/SKILL.md")
+    body = re.split(r"^---\s*$", skill, maxsplit=2, flags=re.MULTILINE)[-1]
+
+    assert len(body.splitlines()) <= 250
+    assert "### Claude Code" not in skill
+    assert "### Codex" not in skill
+    assert "### Establish the test inventory" not in skill
 
 
 def test_packaged_player_profile_has_only_the_inert_read_scope() -> None:
@@ -602,7 +841,7 @@ def test_packaged_player_profile_has_only_the_inert_read_scope() -> None:
 
 # The shared disallowed-tools universe pinned by `typical-player`'s own test,
 # minus `Read` (which every profile here grants) and `Skill` and `Bash` (which
-# `game-master` and `encounter-sim` grant, scoped to the launcher).
+# only `encounter-sim` grants, scoped to the launcher).
 _LAUNCHER_BASH_PATTERN = "Bash(python3 /${CLAUDE_PLUGIN_ROOT}/scripts/fivee.py:*)"
 
 _LAUNCHER_PROFILE_DISALLOWED_TOOLS = {
@@ -650,11 +889,8 @@ _LAUNCHER_PROFILE_DISALLOWED_TOOLS = {
 }
 
 
-@pytest.mark.parametrize("agent_path", ["agents/game-master.md", "agents/encounter-sim.md"])
-def test_gm_and_encounter_sim_profiles_hold_only_the_launcher_bash_scope(
-    agent_path: str,
-) -> None:
-    agent = _text(agent_path)
+def test_encounter_sim_profile_holds_only_the_launcher_bash_scope() -> None:
+    agent = _text("agents/encounter-sim.md")
     frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", agent, flags=re.DOTALL)
 
     assert frontmatter is not None
@@ -679,10 +915,38 @@ def test_gm_and_encounter_sim_profiles_hold_only_the_launcher_bash_scope(
     )
 
 
+def test_game_master_profile_cannot_retain_engine_traffic() -> None:
+    agent = _text("agents/game-master.md")
+    frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", agent, flags=re.DOTALL)
+
+    assert frontmatter is not None
+    metadata = frontmatter.group("body")
+    tools = re.search(r"^tools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE)
+    disallowed = re.search(
+        r"^disallowedTools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE
+    )
+
+    assert tools is not None and tools.group("value") == "Read"
+    assert disallowed is not None
+    denied = {tool.strip() for tool in disallowed.group("value").split(",")}
+    assert {"Bash", "Skill", "SendMessage", "mcp__*"} <= denied
+    body = agent[frontmatter.end() :]
+    assert "resettable mechanical context" in body
+    assert re.search(
+        r"never invoke.{0,160}(?:fivee|encounter skill|map skill)",
+        body,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"never.{0,160}(?:retrieve|fan out|retain).{0,160}brief",
+        body,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 @pytest.mark.parametrize(
     "doc_path",
     [
-        "agents/game-master.md",
         "agents/encounter-sim.md",
         "skills/encounter-sim/SKILL.md",
         "skills/map-forge/SKILL.md",
@@ -735,8 +999,14 @@ def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> No
     for withheld in ("adventure", "hidden state", "monster statistics"):
         assert withheld in reference_plain
 
+    skill = _text("skills/play/SKILL.md")
     protocol = _markdown_section(
-        _text("skills/play/SKILL.md"), "### Rules questions from a player"
+        _packaged_reference(
+            "skills/play/SKILL.md",
+            _markdown_section(skill, "## 3. Run the beat loop"),
+            "references/table-loop.md",
+        ),
+        "## Rules questions from a player",
     )
     for command in (
         "fivee catalog.search",
@@ -794,6 +1064,14 @@ def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> N
     ):
         assert command in lookup
     lookup_plain = " ".join(lookup.lower().split())
+    assert re.search(
+        r"game master.{0,180}(?:owns|chooses|forms).{0,180}(?:query|question)",
+        lookup_plain,
+    )
+    assert re.search(
+        r"mechanical context.{0,180}(?:executes|runs).{0,180}catalog",
+        lookup_plain,
+    )
     for evidence_field in ("provenance", "pages", "fact_status"):
         assert evidence_field in lookup_plain
     assert "no_structured_facts" in lookup
@@ -814,8 +1092,14 @@ def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> N
         flags=re.IGNORECASE | re.DOTALL,
     )
 
+    skill = _text("skills/play/SKILL.md")
     protocol = _markdown_section(
-        _text("skills/play/SKILL.md"), "### Rules questions from a player"
+        _packaged_reference(
+            "skills/play/SKILL.md",
+            _markdown_section(skill, "## 3. Run the beat loop"),
+            "references/table-loop.md",
+        ),
+        "## Rules questions from a player",
     )
     assert re.search(
         r"coordinator.{0,300}\brelay\w*\b.{0,300}\bgame master\b",
@@ -823,7 +1107,12 @@ def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> N
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert re.search(
-        r"game master.{0,400}\b(?:owns?|performs?)\b.{0,300}\blookup\b",
+        r"game master.{0,300}\bowns\b.{0,160}\bquery\b.{0,160}\badjudication\b",
+        protocol,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"mechanical context.{0,200}\bexecutes\b.{0,200}\bcatalog\.search\b",
         protocol,
         flags=re.IGNORECASE | re.DOTALL,
     )

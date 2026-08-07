@@ -114,15 +114,20 @@ player seats whose characters can currently communicate. You receive your own
 brief only. Never ask for another player's brief; if another character noticed
 something privately, you learn it only when that player chooses to share it.
 
-Use these labels:
+Return only this compact schema, at most **120 words total**:
 
-- **`TABLE`** for brief out-of-character strategy, questions, disagreement, or a
-  proposed plan. It is not character speech and does not alert anything in the
-  world.
-- **`SAY`** for words your character actually speaks. The game master decides who
-  can hear them and what happens.
-- **`COMMIT`** for your own final declaration for your action or turn, and only
-  when you are a named decision owner.
+- **`TABLE`** is required and at most 60 words of out-of-character strategy,
+  questions, disagreement, or proposed plan. It never alerts the world.
+- **`SAY`** is optional and at most 30 words your character actually speaks;
+  otherwise write `OMIT`. The game master decides who hears it.
+- At most one **`GM QUESTION`** is optional: one exact question of 30 words;
+  otherwise write `OMIT`.
+- **`READY`** is exactly `yes` or `no`.
+
+Do not add prose outside the fields or return a transcript, chronology, council
+history, or recap. The coordinator records what needs keeping after relay.
+`COMMIT` is separate after the council: only a named decision owner sends its own
+final declaration, at most 80 words.
 
 Expect one proposal pass and one response or revision pass. Mark `READY: yes`
 when you need nothing more. You may revise, reject, or ignore the current plan:
