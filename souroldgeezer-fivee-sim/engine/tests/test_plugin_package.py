@@ -1247,54 +1247,66 @@ def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> N
     )
 
 
-def test_both_engine_facing_roles_keep_the_turn_order_the_dice_rolled() -> None:
+@pytest.mark.parametrize(
+    ("doc_path", "heading"),
+    [
+        ("agents/game-master.md", "## Whose decision is whose"),
+        ("agents/encounter-sim.md", "## Why your Bash is scoped"),
+    ],
+)
+def test_both_engine_facing_roles_keep_the_turn_order_the_dice_rolled(
+    doc_path: str, heading: str
+) -> None:
     """A fight names no actor, so nothing refuses a request aimed at the wrong seat.
 
     ``Encounter.act`` rejects an ``actor`` outside an interlude and resolves as
     ``self.current``, so a declaration invited from a seat that is not up is
     performed by whichever creature *is* up rather than refused. Neither role can
     lean on the engine for this, so both are held to reading the turn first.
-    """
-    turn_order = _markdown_section(
-        _text("agents/game-master.md"), "## Whose decision is whose"
-    )
-    mechanical = _text("agents/encounter-sim.md")
 
-    for guidance in (turn_order, mechanical):
-        # The turn is read, never remembered.
-        assert re.search(
-            r"`fivee encounter\.state[^`]*`",
-            guidance,
-        )
-        # Why the engine cannot catch a misdirected request: a fight takes no
-        # actor, so an act carries no name to check.
-        assert re.search(
-            r"(?:refuses|rejects|carries no|names no)\b.{0,160}\bactor\b|"
-            r"\bactor\b.{0,200}(?:refused|rejected|carries no name|no name)",
-            guidance,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        # And what happens instead — the creature that is up acts.
-        assert re.search(
-            r"(?:whoever|whichever)\b.{0,60}\bup\b|wrong (?:one|creature)",
-            guidance,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        # A seat that is not up is handed back, not played.
-        assert re.search(
-            r"(?:not up|is not (?:its|their) turn|another (?:seat|creature))"
-            r".{0,400}(?:not adjudicated|refused|hold|hand)",
-            guidance,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        # The turn only moves on advance, so one turn can hold several acts.
-        assert re.search(
-            r"`fivee encounter\.advance[^`]*`|`encounter\.advance`",
-            guidance,
-        )
-        # The interlude carve-out, so the rule is not over-applied.
-        assert re.search(
-            r"interlude.{0,300}no initiative.{0,300}(?:actor|any)",
-            guidance,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
+    Scoped to the section that carries the rule rather than the whole file, and
+    parametrized rather than looped, because both shortcuts cost this test its
+    meaning: searching ``encounter-sim.md`` whole let rule 4's intact
+    ``fivee encounter.state`` span satisfy an assertion written for rule 5, whose
+    own span was line-wrapped and unmatchable — the control passed while the
+    thing it was written to require was absent.
+    """
+    guidance = _markdown_section(_text(doc_path), heading)
+
+    # The turn is read, never remembered.
+    assert re.search(
+        r"`fivee encounter\.state[^`]*`",
+        guidance,
+    )
+    # Why the engine cannot catch a misdirected request: a fight takes no
+    # actor, so an act carries no name to check.
+    assert re.search(
+        r"(?:refuses|rejects|carries no|names no)\b.{0,160}\bactor\b|"
+        r"\bactor\b.{0,200}(?:refused|rejected|carries no name|no name)",
+        guidance,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    # And what happens instead — the creature that is up acts.
+    assert re.search(
+        r"(?:whoever|whichever)\b.{0,60}\bup\b|wrong (?:one|creature)",
+        guidance,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    # A seat that is not up is handed back, not played.
+    assert re.search(
+        r"(?:not up|is not (?:its|their) turn|another (?:seat|creature))"
+        r".{0,400}(?:not adjudicated|refused|hold|hand)",
+        guidance,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    # The turn only moves on advance, so one turn can hold several acts.
+    assert re.search(
+        r"`fivee encounter\.advance[^`]*`|`encounter\.advance`",
+        guidance,
+    )
+    # The interlude carve-out, so the rule is not over-applied.
+    assert re.search(
+        r"interlude.{0,300}no initiative.{0,300}(?:actor|any)",
+        guidance,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
