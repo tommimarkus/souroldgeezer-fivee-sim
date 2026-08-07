@@ -203,9 +203,15 @@ def attack_from_spec(spec: dict[str, Any]) -> AttackOption:
 #: before the constructor is reached and so reads none of the description keys —
 #: folding them into one set would accept ``{"monster": "...", "ac": 22}`` and
 #: silently ignore the AC, which is the very failure this guard exists to stop.
+#:
+#: So the rule this set is held to is not "it never grows" but **a name here is
+#: a name the branch reads**. ``hp`` is the worked example: the branch applies
+#: it after :func:`~fivee_sim.content.make_creature` returns, exactly as it
+#: applies ``facing``, and a key added here without a line down there is the
+#: silent drop above by another route.
 LOOKUP_SPEC_KEYS = frozenset({
     "creature", "monster", "label", "team", "position", "level", "arrival_round",
-    "facing",
+    "facing", "hp",
 })
 DESCRIBED_SPEC_KEYS = frozenset({
     "name", "team", "ac", "max_hp", "hp", "temp_hp", "speed", "climb_speed", "swim_speed",
@@ -234,6 +240,13 @@ DESCRIBED_SPEC_KEYS = frozenset({
 #: The two counters a ``death_saves`` object carries, as ``Encounter.state()``
 #: spells them.
 _DEATH_SAVE_KEYS = frozenset({"successes", "failures"})
+
+#: What :func:`_hp_from_spec` answers when a spec states no ``hp`` at all.
+#: Any negative would do — ``Creature.__post_init__`` fills every one of them to
+#: ``max_hp`` — and it is named here so the described branch's constructor call
+#: says *why* it is passing a negative rather than looking like one more
+#: defaulted number.
+_HP_UNSET = -1
 
 
 #: The eight names a facing may take, as plain strings — the model keeps facing
@@ -403,6 +416,33 @@ def _conditions_from_spec(spec: dict[str, Any]) -> dict[str, int]:
     return conditions
 
 
+def _hp_from_spec(spec: Mapping[str, Any], name: str, max_hp: int) -> int:
+    """The starting hit points a spec states, or the "unset" sentinel.
+
+    One helper for both spec shapes, so the two bounds are stated once and a
+    caller reads the same sentence whether they named a stat block or described
+    one. ``max_hp`` is supplied rather than read off the spec because the lookup
+    branch has no ``max_hp`` key at all — the maximum it checks against is the
+    stat block's, on the creature already built.
+
+    **Absence is what means unset, never a value.** ``Creature.__post_init__``
+    fills any negative to the maximum, so a stated ``hp: -5`` would come back at
+    full health — a caller who asked for a wounded combatant handed an untouched
+    one, silently. It is refused here instead, and only a missing key yields the
+    sentinel that fill is for.
+    """
+    if "hp" not in spec:
+        return _HP_UNSET
+    stated = int(spec["hp"])
+    if stated < 0:
+        raise RequestError(f"combatant {name}: hp {stated} cannot be negative")
+    if stated > max_hp:
+        raise RequestError(
+            f"combatant {name}: hp {stated} cannot exceed max_hp {max_hp}"
+        )
+    return stated
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -432,6 +472,13 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
         # carries, and content.py builds creatures for callers who have no
         # scenario at all.
         looked_up.facing = parse_facing(spec.get("facing"))
+        # hp is the same kind of fact, and applied the same way. A stat block
+        # prints a *maximum*; how hurt this instance is belongs to the scenario,
+        # which is why the bound is checked against the creature just built
+        # rather than against a spec key that does not exist on this branch.
+        stated_hp = _hp_from_spec(spec, looked_up.name, looked_up.max_hp)
+        if stated_hp != _HP_UNSET:
+            looked_up.hp = stated_hp
         return looked_up
     bonus_actions = frozenset(str(value) for value in spec.get("bonus_actions", []))
     unsupported_bonus_actions = sorted(bonus_actions - {"dash", "disengage"})
@@ -444,11 +491,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
     try:
         name_str = str(spec["name"])
         max_hp_value = int(spec["max_hp"])
-        hp_value = int(spec.get("hp", -1))
-        if hp_value > max_hp_value:
-            raise RequestError(
-                f"combatant {name_str}: hp {hp_value} cannot exceed max_hp {max_hp_value}"
-            )
+        hp_value = _hp_from_spec(spec, name_str, max_hp_value)
         return Creature(
             name=name_str,
             team=str(spec["team"]),

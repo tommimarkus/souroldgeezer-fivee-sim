@@ -151,6 +151,25 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
         ):
             api.encounter_create([{**HERO, "hp": 31}, dict(GOBLIN)])
 
+    def test_negative_hp_is_refused_rather_than_read_as_full_health(self) -> None:
+        # ``Creature.__post_init__`` treats any negative as "unset" and fills to
+        # the maximum, so this spec used to build Thora at 30 — a caller asking
+        # for a wounded combatant got an untouched one, silently. The refusal is
+        # the only way that mistake is ever visible.
+        with pytest.raises(
+            RequestError,
+            match="combatant Thora: hp -5 cannot be negative",
+        ):
+            api.encounter_create([{**HERO, "hp": -5}, dict(GOBLIN)])
+
+    def test_an_absent_hp_still_means_full_health(self) -> None:
+        # The pair for the guard above: absence is what means "unset", so the
+        # commonest spec shape in the repo — no ``hp`` at all — must not be
+        # caught by a check written for a stated negative.
+        created = api.encounter_create([dict(HERO), dict(GOBLIN)], seed=7)
+
+        assert _combatant(created, "Thora")["hp"] == 30
+
 
 class TestTheModeDecidesWhatARosterMustBe:
     """Two rules the wire edge applies differently for a chapter than for a fight.
@@ -587,19 +606,88 @@ class TestCarriedOverCombatantState:
 
 
 class TestTheLookupSpecStaysNarrow:
-    """The description keys grew; the lookup keys must not have grown with them.
+    """A key on the lookup set is a key the lookup branch reads.
 
-    The lookup branch returns before the constructor is reached and reads none of
-    the description keys, so a key accepted there is a key ignored there.
+    The branch returns before the constructor is reached and reads none of the
+    description keys, so a key *accepted* there that nothing consumes is a key
+    silently ignored — ``{"monster": "...", "ac": 22}`` must not quietly discard
+    the AC. That is the rule, rather than "this set never grows". ``hp`` below
+    is the worked example of growing it correctly, consumed after
+    ``make_creature`` returns exactly as ``facing`` is; ``stable`` is the
+    counter-example the set still refuses.
     """
 
-    def test_a_looked_up_combatant_still_refuses_hp(
+    @staticmethod
+    def _printed_max_hp(registry: ContentRegistry) -> int:
+        """The stat block's own maximum, read rather than restated.
+
+        A literal here would pin the bound against a number this file made up,
+        so a content edit that changed the Goblin Warrior would leave the cases
+        below asserting against a maximum no creature has.
+        """
+        return int(registry.creatures["Goblin Warrior"]["max_hp"])
+
+    def test_a_looked_up_combatant_starts_at_the_hp_it_states(
         self, registry: ContentRegistry
     ) -> None:
-        # ``make_creature`` takes no ``hp``: folding the two sets together would
-        # accept this spec and hand back a Goblin Warrior at full health.
-        with pytest.raises(RequestError, match="unknown combatant key 'hp'"):
-            creature_from_spec({"monster": "Goblin Warrior", "hp": 3}, registry)
+        # The goblin the party wounded last session, placed as they left it —
+        # without hand-writing its whole stat block out as a described spec,
+        # which was the only way to express this before.
+        built = creature_from_spec({"monster": "Goblin Warrior", "hp": 3}, registry)
+
+        assert built.hp == 3
+        # The maximum is still the stat block's. ``hp`` says how hurt this
+        # instance is; it never says what the creature could hold.
+        assert built.max_hp == self._printed_max_hp(registry)
+
+    def test_a_looked_up_combatant_without_hp_is_still_at_full_health(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The pair that makes the case above mean something. Absence is what the
+        # branch reads as "unset"; a check that fired on a missing key would
+        # start every ordinary lookup spec at zero.
+        built = creature_from_spec({"monster": "Goblin Warrior"}, registry)
+
+        assert built.hp == built.max_hp == self._printed_max_hp(registry)
+
+    def test_a_looked_up_combatant_refuses_hp_above_the_stat_block(
+        self, registry: ContentRegistry
+    ) -> None:
+        # Named against the *looked-up* maximum, which is what proves the bound
+        # reads the built creature: there is no ``max_hp`` key on this branch to
+        # read it from, and the label is what identifies the combatant to the
+        # caller rather than the stat block's own name.
+        printed = self._printed_max_hp(registry)
+        with pytest.raises(
+            RequestError,
+            match=f"combatant Goblin A: hp {printed + 1} cannot exceed max_hp {printed}",
+        ):
+            creature_from_spec(
+                {"monster": "Goblin Warrior", "label": "Goblin A", "hp": printed + 1},
+                registry,
+            )
+
+    def test_a_looked_up_combatant_at_zero_hit_points_is_down(
+        self, registry: ContentRegistry
+    ) -> None:
+        # Honoured rather than clamped to at least one: a fight can open on a
+        # body already on the floor, and ``conscious`` is what the rest of the
+        # engine reads that off.
+        built = creature_from_spec({"monster": "Goblin Warrior", "hp": 0}, registry)
+
+        assert built.hp == 0
+        assert built.conscious is False
+
+    def test_a_looked_up_combatant_refuses_negative_hp(
+        self, registry: ContentRegistry
+    ) -> None:
+        # Refused rather than inverted. ``Creature.__post_init__`` reads any
+        # negative as "unset" and fills to the maximum, so an unguarded -5 comes
+        # back at full health — the exact opposite of what was asked for.
+        with pytest.raises(
+            RequestError, match="combatant Goblin Warrior: hp -5 cannot be negative"
+        ):
+            creature_from_spec({"monster": "Goblin Warrior", "hp": -5}, registry)
 
     def test_a_looked_up_combatant_still_refuses_a_carried_flag(
         self, registry: ContentRegistry
@@ -607,6 +695,40 @@ class TestTheLookupSpecStaysNarrow:
         # The same guard aimed at the four names this change added.
         with pytest.raises(RequestError, match="unknown combatant key 'stable'"):
             creature_from_spec({"monster": "Goblin Warrior", "stable": True}, registry)
+
+
+class TestAWoundedLookupReachesTheWire:
+    """The same key, through the operation a caller actually calls."""
+
+    def test_a_wounded_stat_block_arrives_wounded(self) -> None:
+        created = api.encounter_create(
+            [dict(HERO), {"monster": "Goblin Warrior", "label": "Goblin A",
+                          "team": "monsters", "hp": 3}],
+            seed=7,
+        )
+
+        goblin = _combatant(created, "Goblin A")
+        assert goblin["hp"] == 3
+        assert goblin["max_hp"] > 3
+
+    def test_a_wounded_stat_block_survives_the_journal(self) -> None:
+        # ``normalized_combatant_payload`` captures the *built* creature, so a
+        # recovered fight opens on the hit points the caller stated rather than
+        # on the stat block's maximum. Nothing else asserts that for a value
+        # that only ever entered through the lookup branch.
+        created = api.encounter_create(
+            [dict(HERO), {"monster": "Goblin Warrior", "label": "Goblin A",
+                          "team": "monsters", "hp": 3}],
+            seed=7,
+        )
+        encounter_id = str(created["encounter_id"])
+        before = api.encounter_state(encounter_id)
+        api.STATE.sessions.clear()
+
+        recovered = api.encounter_resume(encounter_id)
+
+        assert recovered["recovered"] is True
+        assert recovered["state"] == before
 
 
 class TestAReportedStateStartsTheNextFight:

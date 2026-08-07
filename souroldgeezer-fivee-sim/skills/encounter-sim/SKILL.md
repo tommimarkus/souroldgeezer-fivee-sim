@@ -67,7 +67,10 @@ narrating from memory puts it straight back.
    bundled stat block — `{"monster": "Goblin Warrior", "label": "Goblin A",
    "team": "monsters", "position": [15, 0]}` — or an explicit build with at least
    `name`, `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they
-   identify combatants in every later call. `arrival_round` schedules a
+   identify combatants in every later call. `hp` starts a combatant below full
+   health — the goblin the party wounded last session, placed as they left it —
+   and works on either shape: on a stat block it is checked against the printed
+   maximum, which it never changes. `arrival_round` schedules a
    reinforcement: before that round it is absent, untargetable, and unable to act,
    but its side still keeps the encounter open. A position is `[x, y]` in feet on
    a flat plane (a bare number still means feet along the x-axis), and
