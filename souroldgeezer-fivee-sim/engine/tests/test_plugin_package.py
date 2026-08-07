@@ -229,6 +229,70 @@ def test_play_skill_points_at_both_packaged_role_profiles() -> None:
         assert (skill_path.parent / target).is_file(), target
 
 
+def test_play_guidance_never_asks_a_seat_to_supply_dice() -> None:
+    game_master = _text("agents/game-master.md")
+    game_master_rolls = _markdown_section(
+        game_master, "## Rolls, and who makes them"
+    )
+    mechanics = _markdown_section(
+        _text("agents/play-mechanics.md"), "## Rolls, and who makes them"
+    )
+    player = _markdown_section(_text("agents/typical-player.md"), "## Rolling")
+    human = _text("skills/play/references/human-seats.md")
+    table_loop = _markdown_section(
+        _text("skills/play/references/table-loop.md"), "## Reactions to dice"
+    )
+    report = _markdown_section(
+        _text("skills/play/references/report-format.md"), "### Reproducibility"
+    )
+    playtest = _text("skills/play/references/playtest.md")
+    guidance = "\n".join(
+        (game_master, mechanics, player, human, table_loop, report, playtest)
+    )
+
+    assert "--natural" not in guidance
+    for retired_instruction in (
+        "roll their own dice",
+        "roll your own dice",
+        "human-reported faces",
+        "reported faces",
+        "A human saw the die",
+        'answer "you roll it"',
+        "A human supplies only requested",
+        "A human seat may supply only",
+        "Pass them unchanged",
+    ):
+        assert retired_instruction not in guidance
+
+    assert re.search(
+        r"engine.{0,100}rolls every die.{0,160}human.{0,160}agent",
+        game_master_rolls,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"engine.{0,100}rolls every die.{0,160}human.{0,160}agent",
+        mechanics,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(r"engine rolls every die for you", player, flags=re.IGNORECASE)
+    assert re.search(
+        r"do not ask.{0,100}human.{0,100}(?:roll|report).{0,200}engine",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"every.{0,80}human.{0,80}agent.{0,160}engine.{0,80}(?:face|natural)",
+        table_loop,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    for reproducibility in (report, playtest):
+        assert re.search(
+            r"master seed.{0,160}fixes every roll.{0,160}engine",
+            reproducibility,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
+
 def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
     skill = _text("skills/play/SKILL.md")
     dispatch = _markdown_section(skill, "## 2. Brief the seats")

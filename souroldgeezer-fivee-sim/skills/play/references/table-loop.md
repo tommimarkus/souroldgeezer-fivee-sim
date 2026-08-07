@@ -147,6 +147,6 @@ as needed; do not fill the gap from model recollection.
 ## Reactions to dice
 
 Tell each seat its own natural roll and invite one brief in-character reaction.
-A human saw the die; an agent receives the engine's face. Give a natural 1 or 20,
-a drop, or a death save its own beat; fold an ordinary result into the next
-prompt. The player never narrates the outcome.
+Every human and agent seat receives the engine's natural face. Give a natural 1
+or 20, a drop, or a death save its own beat; fold an ordinary result into the
+next prompt. The player never narrates the outcome.

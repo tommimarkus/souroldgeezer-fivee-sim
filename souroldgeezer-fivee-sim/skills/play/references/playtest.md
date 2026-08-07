@@ -57,8 +57,8 @@ fact, procedure, DC, consequence, or route assumption, or an engine/catalog
 limit materially affected play. Reserve divergence for a materially different
 route or approach that challenges authored assumptions.
 
-The master seed plus human-reported faces fixes what the engine did, not what
-people or language models chose to try.
+The master seed fixes every roll the engine made, not what people or language
+models chose to try.
 
 ## State the test limits
 

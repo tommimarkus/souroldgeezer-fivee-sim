@@ -103,12 +103,12 @@ or not?" is direct evidence about the prose, and it is free.
 
 ### Reproducibility
 The master seed, the plugin version, the adventure file's own hash if you have
-one, and every face a human reported.
+one.
 
 Be exact rather than flattering: **the dice reproduce; the agents' choices do
-not.** Seed plus reported faces fixes everything the engine did, and fixes
-nothing about what four language models decided to try. A re-run at the same seed
-is still the right way to check a fix — it just is not the same run.
+not.** The master seed fixes every roll the engine made, and fixes nothing about
+what four language models decided to try. A re-run at the same seed is still the
+right way to check a fix — it just is not the same run.
 
 ## Closing the report
 

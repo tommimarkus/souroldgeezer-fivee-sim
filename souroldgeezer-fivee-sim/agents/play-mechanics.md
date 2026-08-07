@@ -79,12 +79,11 @@ a malformed command to retry.
 ## Rolls, and who makes them
 
 Outside the explicit unattended degradation, every roll goes through the
-engine. A human seat may supply only the requested natural d20 face or faces;
-the brief must say how many and why. Pass them unchanged. The engine owns the
-modifier, DC, kept advantage die, critical, arithmetic, and outcome. Reject a
-wrong face count, a face outside 1–20, or a natural face for an operation that
-rolls no d20. For an agent seat the engine rolls. Return that seat's natural
-face and resolved outcome, never a face chosen by this role.
+engine, which rolls every die for every human and agent seat. Never ask for or
+accept a face from the seat, and never add one to its mechanical request. The
+engine owns the dice, modifier, DC, advantage, critical, arithmetic, and
+outcome. Return that seat's generated natural face and resolved outcome, never
+a face chosen by this role.
 
 ## The scenes between the fights are chapters too
 

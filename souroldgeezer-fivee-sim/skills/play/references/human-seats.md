@@ -57,19 +57,9 @@ the raw discussion to continue. A human may then request another single pass;
 checkpoint again after every two further extensions. This preserves discussion
 without creating an unbounded context interval.
 
-## Asking for a roll
+## Dice
 
-A human turn needing a d20 may require a second pause because advantage is not
-known until the declaration exists. Say how many dice and why. A seat may answer
-"you roll it" once and let the engine roll.
-
-Pass reported faces to `fivee` exactly. The engine refuses a wrong face count, a
-face outside 1–20, or a face for an action that rolls no d20; relay that reason
-verbatim and let the seat decide again.
-
-```text
-Ilma — the sentry has not seen you. Roll with advantage:
-two d20s, and give me both.
-
-> What did they read?   [Other: e.g. 17, 4]
-```
+Do not ask a human to roll or report a die face. Once the seat has made its
+choice, resolve it through the engine exactly as for an agent seat; the engine
+rolls every die and the human receives its result. A roll never creates a second
+user-input pause.

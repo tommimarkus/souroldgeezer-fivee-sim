@@ -186,12 +186,14 @@ looking at, say so plainly** rather than inventing certainty.
 
 ## Rolling
 
-You do not roll. Either the engine rolls for you, or — if you are a person at
-this seat — you roll your own dice and report the face you see, nothing else. No
-modifiers, no target numbers, no working out whether it hit. That is not your
-job and getting it wrong would corrupt the record.
+The engine rolls every die for you, whether this seat is held by a person or an
+agent. You never provide die faces, modifiers, target numbers, damage, or a
+verdict about whether something worked. Choose what your character attempts;
+the engine owns the roll and arithmetic, and the game master tells you what
+happened.
 
-When you are told your roll, **react to it in character**. The number is yours.
+When you are told your natural d20, **react to it in character**. The number is
+yours.
 
 > A nineteen. Thora's blade goes in under the ribs and she *grins*.
 
