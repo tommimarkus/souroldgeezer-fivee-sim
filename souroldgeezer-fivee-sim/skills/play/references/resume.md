@@ -52,10 +52,11 @@ frame to the root.
    inventory before new player-facing material.
 5. Restore an open council at its recorded pass with the same transports. Give
    the game master only its table-only plan and exact addressed questions.
-6. Read authoritative mechanics from `fivee encounter.state` or
-   `fivee adventure.state` through a fresh one-beat mechanics child; never
+6. Read authoritative mechanics from `fivee --run <adv-id> encounter.state` or
+   `fivee --run <adv-id> adventure.state` through a fresh one-beat mechanics child; never
    reconstruct state from chronology.
-7. If the roster has a human player seat, ask mechanics to run `fivee serve`.
+7. If the roster has a human player seat, ask mechanics to run
+   `fivee --run <adv-id> serve`.
    Read its fresh `viewer_url` and reconstruct each fresh seat URL using the human-seats
    procedure and send it to the root only as that seat's ephemeral human prompt.
    Do this after a server replacement too: launch tokens change, so a URL from
@@ -65,7 +66,7 @@ frame to the root.
 
 `brief-cursors.json` records acknowledged recipient ownership, not merely what
 the server last produced. Every fresh player is a new context generation: before
-its next decision, force `encounter.brief <id> --as "<seat>"`, relay the fresh
+its next decision, force `fivee --run <adv-id> encounter.brief <id> --as "<seat>"`, relay the fresh
 chair-safe baseline, and update `state_sha256` only after successful delivery. A
 missing or unknown acknowledgement takes the same recovery path. Do not use
 `--view delta` until re-baseline succeeds; this recovery exception never permits

@@ -63,13 +63,20 @@ scenes = "scenes"
 encounters = "encounters"
 adventures = "adventures"
 blobs = "blobs"
+runs = "runs"
 ```
 
 Relative paths resolve against the directory containing `config.toml` — normally
 `.fivee-sim/`. `maps` and `replays` may each be a string or an array of strings;
-`scenes`, `encounters`, `adventures` and `blobs` take one string each. When
-omitted, all six default to the sibling `maps/`, `replays/`, `scenes/`,
-`encounters/`, `adventures/` and `blobs/` directories. `encounters` holds one
+`scenes`, `encounters`, `adventures`, `blobs`, and `runs` take one string each.
+When omitted, they default to the sibling `maps/`, `replays/`, `scenes/`,
+`encounters/`, `adventures/`, `blobs/`, and `runs/` directories. The first three
+are shared project inputs. Start a mutable workspace with `fivee adventure.create`,
+then select its returned id on every later command as `fivee --run <adv-id> ...`.
+The run overlays maps, scenes, and replays; a run-local id wins, and a guarded
+edit of a shared map copies it into the run without changing shared bytes.
+
+The old `encounters` root holds one
 directory per fight, named for it, carrying that fight's journal, its lock and
 its frozen replay; `adventures` is a root of its own rather than a corner of
 that one, so no listing can mistake either kind for the other. `blobs` holds the content and map payloads an encounter
@@ -77,17 +84,19 @@ journal names rather than carries; it is a sibling of `encounters` because one
 blob is shared by every journal that names it, so moving a journal without it
 leaves that fight unable to recover.
 
-The first configured maps root is where `map.put` and
-`map.generate --save-as` write (`<id>.json`); reads and `map.list` cover all map
-roots. Replay writes use the first configured replays root, independently of the
-maps roots.
+Those old mutable roots are readable only through `--run legacy`. Ordinary
+writes require an adventure run and land under
+`runs/<adv-id>/{maps,scenes,replays,encounters,adventures,blobs}`. There is no
+engine publish or promotion operation; artifacts stay run-local unless an
+explicit export names another path.
 
 A selected file owns these project-facing settings. For compatibility, and only
 when no file is selected, the deprecated `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_MAPS`,
 `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, `FIVEE_SIM_ENCOUNTERS`,
-`FIVEE_SIM_ADVENTURES`, and `FIVEE_SIM_BLOBS` retain their previous meanings. `fivee content.status` names
+`FIVEE_SIM_ADVENTURES`, `FIVEE_SIM_BLOBS`, and `FIVEE_SIM_RUNS` retain their previous meanings. `fivee content.status` names
 the configuration source and path; `fivee serve` and `fivee server.ping` report
-the resolved storage roots.
+the selected run, overlay roots, and config-stable rendezvous under
+`.fivee-sim/runtime/control/` or `.fivee-sim/runtime/<adv-id>/`.
 
 ## The document, field by field
 

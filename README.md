@@ -157,9 +157,9 @@ reported as `null` without changing a successful operation's exit code, and
 `--raw` prints one selected scalar without JSON quotes:
 
 ```bash
-fivee encounter.state enc-1 --select turn=/turn --select over=/over
-fivee encounter.state enc-1 --select turn=/turn --raw
-fivee encounter.act enc-1 --kind dodge --select events=/events
+fivee --run adv-1 encounter.state enc-1 --select turn=/turn --select over=/over
+fivee --run adv-1 encounter.state enc-1 --select turn=/turn --raw
+fivee --run adv-1 encounter.act enc-1 --kind dodge --select events=/events
 ```
 
 Selection is local output projection after the server answers. It never adds a
@@ -172,7 +172,8 @@ answered.
 ### A fight, end to end
 
 ```bash
-fivee encounter.create --seed 41 --json '{"combatants": [
+fivee adventure.create --name "The Sunken Bell"              # returns adv-1
+fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 41 --json '{"combatants": [
   {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [0, 0],
    "attacks": [{"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3",
                 "damage_type": "slashing", "kind": "melee"}]},
@@ -182,16 +183,16 @@ fivee encounter.create --seed 41 --json '{"combatants": [
 ```
 
 Each combatant is either a bundled stat block named by `monster` or an explicit
-build. That call returns the `encounter_id` — `enc-1` on a fresh directory — the
+build. The second call returns the `encounter_id` — `enc-1` in a fresh run — the
 seed it used, and the full state including initiative order and whose turn it is.
 From there:
 
 ```bash
-fivee encounter.state enc-1                                    # the authoritative view
-fivee encounter.act enc-1 --kind move --to-position '[5, 0]'
-fivee encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
-fivee encounter.advance enc-1                                  # end the turn
-fivee encounter.finalize enc-1                                 # export replay v3 when done
+fivee --run adv-1 encounter.state enc-1                                    # authoritative
+fivee --run adv-1 encounter.act enc-1 --kind move --to-position '[5, 0]'
+fivee --run adv-1 encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
+fivee --run adv-1 encounter.advance enc-1                                  # end the turn
+fivee --run adv-1 encounter.finalize enc-1                                 # freeze replay v3
 ```
 
 The two calls a fight makes hundreds of times answer with what *changed*:
@@ -214,8 +215,9 @@ reach, no slots left, speed 0 while Grappled. Read the reason and adapt; do not
 retry hoping for a different answer.
 
 The history survives the process. Creation, every attempt, and every result are
-fsynced into a hash-chained journal, so `fivee encounter.list`,
-`fivee encounter.resume <id>`, and `fivee encounter.log <id>` recover and page a
+fsynced into a hash-chained journal, so `fivee --run <adv-id> encounter.list`,
+`fivee --run <adv-id> encounter.resume <id>`, and
+`fivee --run <adv-id> encounter.log <id>` recover and page a
 fight that outlived the server that ran it.
 
 ## The browser pages
@@ -311,6 +313,7 @@ scenes = "scenes"
 encounters = "encounters"
 adventures = "adventures"
 blobs = "blobs"
+runs = "runs"
 
 [development]
 reload = false
@@ -318,11 +321,24 @@ reload = false
 
 `content.builtin` is `include` or `exclude`. `storage.maps` and
 `storage.replays` may each be one string or an array of strings; `storage.scenes`,
-`storage.encounters`, `storage.adventures` and `storage.blobs` are one string
-each. Omitted settings default to the sibling `maps/`, `replays/`, `scenes/`,
-`encounters/`, `adventures/` and `blobs/` directories, bundled
+`storage.encounters`, `storage.adventures`, `storage.blobs`, and `storage.runs`
+are one string each. Omitted settings default to the sibling `maps/`, `replays/`,
+`scenes/`, `encounters/`, `adventures/`, `blobs/`, and `runs/` directories, bundled
 content included, development reload off, and the sibling `content/` directory
 when it exists.
+
+The mutable workspace is an **adventure run**. Start it without a selector:
+
+```bash
+fivee adventure.create --name "The Sunken Bell"   # returns adv-1
+```
+
+That returned adventure id is the global selector for every later command:
+`fivee --run <adv-id> ...`. Map-only work follows the same rule; create the
+adventure first, then save the map inside it. A command with no run may inspect
+the configured shared inputs but refuses a write. `--run legacy` exposes the old
+encounter/adventure/blob roots for explicit **read-only** inspection; it is not a
+migration or a writable compatibility mode.
 
 The resulting project layout is:
 
@@ -330,18 +346,25 @@ The resulting project layout is:
 |---|---|
 | `.fivee-sim/config.toml` | project configuration |
 | `.fivee-sim/content/` | your own content packs |
-| `.fivee-sim/maps/` | saved map documents, one file per id |
-| `.fivee-sim/replays/` | exported replay bundles |
-| `.fivee-sim/scenes/` | saved scene documents |
-| `.fivee-sim/encounters/` | one directory per fight: its journal, its lock, its frozen replay |
-| `.fivee-sim/adventures/` | saved adventure documents, one file per id |
-| `.fivee-sim/blobs/` | payloads those journals name, one file per digest |
+| `.fivee-sim/maps/`, `scenes/`, `replays/` | project inputs; shared and immutable to a run |
+| `.fivee-sim/runs/<adv-id>/` | one isolated mutable workspace, with its own `maps/`, `scenes/`, `replays/`, `encounters/`, `adventures/<adv-id>.json`, and `blobs/` |
+| `.fivee-sim/runtime/control/` | rendezvous for unscoped reads and `adventure.create` |
+| `.fivee-sim/runtime/<adv-id>/` | rendezvous for the server bound to that run |
+| `.fivee-sim/encounters/`, `adventures/`, `blobs/` | pre-run stores, readable only through `--run legacy` |
+
+Reads use an overlay: a run-local map, scene, or replay wins over the configured
+shared input with the same id, and listings label the scope. Editing a shared
+map or scene is guarded copy-on-write into the run; the shared bytes never
+change. Run artifacts remain run-local. There is no publish, promote, cleanup,
+or automatic migration operation; copy an export elsewhere explicitly when it
+needs to leave the workspace.
 
 A selected configuration file owns all project-facing settings; environment
 variables are not merged over it. For compatibility, and only when no file is
 selected, the deprecated `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, `FIVEE_SIM_BUILTIN`,
 `FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`,
-`FIVEE_SIM_ENCOUNTERS`, `FIVEE_SIM_ADVENTURES`, `FIVEE_SIM_BLOBS`, and
+`FIVEE_SIM_ENCOUNTERS`, `FIVEE_SIM_ADVENTURES`, `FIVEE_SIM_BLOBS`,
+`FIVEE_SIM_RUNS`, and
 `FIVEE_SIM_RELOAD` retain their
 previous meanings.
 Variables supplied by a plugin host for its own bootstrap are process plumbing,

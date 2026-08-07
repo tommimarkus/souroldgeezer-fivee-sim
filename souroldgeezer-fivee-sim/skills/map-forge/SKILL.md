@@ -8,11 +8,12 @@ description: Use when creating, editing, or managing battle maps for 5E-compatib
 Battle maps as first-class documents: generated under a seed, tweaked verbally or
 by hand, written to disk as JSON, fought on, and replayed.
 
-**A map is a file, and its id is its filename.** There is no session copy to keep
-in step with the disk — `fivee map.list` names every map under the maps directory,
-and every other operation takes that id and reads the file. Two servers on one
-machine therefore cannot disagree about a map. What *can* go stale is a hash you
-are holding, which is what the guarded write below is about.
+**A map is a file, and its id is its filename.** There is no in-memory session
+copy to keep in step with disk — `fivee --run <adv-id> map.list` names that
+run's overlay, and every other operation takes the id and reads the file. Two
+servers bound to the same run therefore cannot disagree about a map; servers
+bound to different runs are isolated deliberately. What *can* go stale is a
+hash you are holding, which is what the guarded write below is about.
 
 ## Running the command
 
@@ -36,9 +37,27 @@ on stdout and nothing else; prose, refusals, and the `etag` note go to stderr.
 A whole document goes in `--json '{...}'` or `--json -` from stdin. That is how a
 map is written, because no flag grammar should try to spell one.
 
+## Select the adventure run
+
+Maps are mutable run artifacts, including map-only work. Start the workspace
+without a selector, then carry the returned id on every later command:
+
+```bash
+fivee adventure.create --name "Map work"             # returns adv-1
+fivee --run adv-1 map.generate --kind dungeon --save-as first-draft
+```
+
+The general form is **`fivee --run <adv-id> ...`**. Project maps, scenes, and
+replays are shared read-only overlay inputs; a run-local id wins. A guarded edit
+of a shared document is copy-on-write into the run, so the shared bytes do not
+change. An unscoped command may inspect shared inputs but refuses a write, and
+`--run legacy` is explicit read-only access to the pre-run stores. There is no
+publish or promote operation: run artifacts stay inside the run unless an
+export explicitly names another path.
+
 ## The workflow
 
-1. **`fivee map.generate --kind dungeon`** — `--kind` is `dungeon`, `caves`, or
+1. **`fivee --run <adv-id> map.generate --kind dungeon`** — `--kind` is `dungeon`, `caves`, or
    `overland`; `--params` overrides that kind's defaults (an unknown key is refused
    with the valid list). **The seed is always reported — quote it.** The same kind,
    params, and seed reproduce the map exactly, and the document's provenance
@@ -49,10 +68,10 @@ map is written, because no flag grammar should try to spell one.
    in use is refused rather than replaced.
 
    ```bash
-   fivee map.generate --kind dungeon --seed 71203941 --params '{"width": 40, "height": 30}'
-   fivee map.generate --kind caves --save-as goblin-warren
+   fivee --run adv-1 map.generate --kind dungeon --seed 71203941 --params '{"width": 40, "height": 30}'
+   fivee --run adv-1 map.generate --kind caves --save-as goblin-warren
    ```
-2. **`fivee map.render`** to look at it — `--map-id <id>` for a saved map or
+2. **`fivee --run <adv-id> map.render`** to look at it — `--map-id <id>` for a saved map or
    `--json '{"document": {...}}'` for one you have not kept. Respect the viewport
    discipline: a render over 10 000 cells is refused, so view a large map through
    `--x`/`--y`/`--width`/`--height` or a `--downsample` factor rather than asking
@@ -60,7 +79,7 @@ map is written, because no flag grammar should try to spell one.
    stairs, `@` spawn. Pass `--show-elevation` to get the ground heights back as a
    second set of rows, lettered from the lowest ground in view upward with a legend
    giving each its feet.
-3. **Verbal tweaks are `fivee map.edit`** — the user says "wall off the north
+3. **Verbal tweaks are `fivee --run <adv-id> map.edit`** — the user says "wall off the north
    passage" and you translate it into operations: `set_terrain` (a rect), `paint`
    (cells), `line`, `carve_corridor`, `add_feature`, `set_feature`,
    `remove_feature`, `toggle_door`, `resize`, `set_legend`, `set_name`,
@@ -69,7 +88,7 @@ map is written, because no flag grammar should try to spell one.
    result back so the user sees what changed.
 
    ```bash
-   fivee map.edit goblin-warren --json '{"operations": [
+   fivee --run adv-1 map.edit goblin-warren --json '{"operations": [
      {"op": "set_terrain", "rect": [4, 2, 6, 1], "terrain": "wall"}
    ]}'
    ```
@@ -83,28 +102,28 @@ map is written, because no flag grammar should try to spell one.
    interaction contract, and toggling either moves both. `to_level` on a feature
    makes it a connector between storeys.
 4. **A guarded write is two calls: `map.get`, then `map.put --if-match`.**
-   `fivee map.get <id>` returns the document and reports its sha256 as an `etag`
-   line on stderr. `fivee map.put <id> --if-match <that etag> --json -` writes the
+   `fivee --run <adv-id> map.get <id>` returns the document and reports its sha256 as an `etag`
+   line on stderr. `fivee --run <adv-id> map.put <id> --if-match <that etag> --json -` writes the
    new bytes, and is refused with a 409 if another session or the open editor got
    there first. That is not a retry: `map.get` again, reapply your change to the
    version actually on disk, and put again.
 
    ```bash
-   fivee map.get goblin-warren > /tmp/warren.json     # etag on stderr — keep it
-   fivee map.put goblin-warren --if-match <etag> --json - < /tmp/warren-edited.json
+   fivee --run adv-1 map.get goblin-warren > /tmp/warren.json     # keep etag
+   fivee --run adv-1 map.put goblin-warren --if-match <etag> --json - < /tmp/warren-edited.json
    ```
 
    **The listing carries no hash on purpose**, so the version a write is
    preconditioned on is always one somebody actually read. `--if-match '*'` creates
    a new id, or takes an existing file over deliberately — say so when you do.
-5. **Hand-tuning: `fivee serve`** starts the engine and prints three URLs —
+5. **Hand-tuning: `fivee --run <adv-id> serve`** starts the run-bound engine and prints three URLs —
    `editor_url` for the map editor, `viewer_url` for the replay viewer (step 8),
    and `url` for the landing page that links to both. Hand the user whichever
    they asked for, and **`editor_url` when they asked for the editor**: `url` is
    the index, not the editor. **Pass the URL exactly as printed, `#` and all** —
    the fragment is this launch's access token, and it is the only way the page
    gets one. Trimmed to the path, the page opens and the engine refuses every
-   request it makes. There is nothing else to pass along. `fivee stop` shuts
+   request it makes. There is nothing else to pass along. `fivee --run <adv-id> stop` shuts
    them down. If a server is
    already up, `serve` reports it with `already_running` true rather than
    starting a second.
@@ -120,13 +139,14 @@ map is written, because no flag grammar should try to spell one.
    started after their save sees their work with nothing to reload. What is stale is
    any `etag` you were holding: `map.get` again before the next guarded write, or
    the put will be refused for a version the user has moved past.
-7. **`fivee encounter.create --map-id <id>`** puts a fight on the saved map (and
-   `analytics.rounds` accepts the same). The fight captures the document by value: a
+7. **`fivee --run <adv-id> adventure.encounter <adv-id> --map-id <id>`** puts a
+   fight on the saved map (and run-scoped `analytics.rounds` accepts the same).
+   The fight captures the document by value: a
    later `map.edit` never reaches into it, and `encounter.state`'s
    `map_source.stale` turning true means the file has moved on — re-create the
    encounter when the new layout should apply. Running the fight is the
    encounter-sim skill's ground.
-8. **After the fight, `fivee encounter.finalize <id>` or `fivee encounter.replay
+8. **After the fight, `fivee --run <adv-id> encounter.finalize <id>` or `fivee --run <adv-id> encounter.replay
    <id>`.** Finalization writes replay v3 and retains the encounter's hash-chained
    journal. A direct export defaults to the same v3 contract: the seed, normalized
    roster, captured content, the captured map (including inline maps and every
@@ -142,17 +162,17 @@ map is written, because no flag grammar should try to spell one.
    *not* at this machine, call `encounter.replay` with `--embed`: the result is a
    single self-contained HTML page that plays the fight back in any browser — no
    server, no install. Report the written path and SHA-256; small plain bundles come
-   back inline instead. Use `fivee replay.validate` before accepting a bundle from
+   back inline instead. Use `fivee --run <adv-id> replay.validate` before accepting a bundle from
    elsewhere; the viewer also checks the nested schema and hashes before rendering.
    The check is structural — glyphs, rows, and feature placement against the
    embedded map's own grid — not a full parse: a map's terrain kinds are resolved
    against loaded content when a fight loads it, not at validation.
    Integrity hashes detect alteration but do not authenticate the file's author.
-   Request `--format-version 1` only for a legacy consumer. `fivee replay.list` and
-   `fivee replay.get <id>` read what is already written. If the fight is one chapter
+   Request `--format-version 1` only for a legacy consumer. `fivee --run <adv-id> replay.list` and
+   `fivee --run <adv-id> replay.get <id>` read what is already written. If the fight is one chapter
    of an adventure, finalizing it is also the precondition for composing the whole
    run — see "A whole adventure as one replay" below.
-9. **Hand a map to another virtual tabletop with `fivee map.uvtt`.** It writes the
+9. **Hand a map to another virtual tabletop with `fivee --run <adv-id> map.uvtt`.** It writes the
    map as a Universal VTT JSON file (default `<maps root>/uvtt/<slug>.uvtt`,
    replaced on re-export) carrying wall polylines derived from the terrain, one
    portal per door, and a rendered PNG of the map — always a file, never inline;
@@ -165,7 +185,7 @@ map is written, because no flag grammar should try to spell one.
    very large maps, or pass `--include-image false` when the importer does not need
    the picture.
 
-`fivee map.validate` reports a document's errors and warnings without writing
+`fivee --run <adv-id> map.validate` reports a document's errors and warnings without writing
 anything — worth a call before a `map.put` you expect to be marginal.
 
 ## A whole adventure as one replay
@@ -206,21 +226,22 @@ export carries — and a kind need not be on the map to be colored.
 The CLI walks upward from the invocation workspace and uses the nearest
 `.fivee-sim/config.toml`; pass global `--config PATH` before the operation to
 select another one. `[storage].maps` and `[storage].replays` each take one path or
-an array of paths, while `scenes`, `encounters`, `adventures` and `blobs` take
-one path.
+an array of paths, while `scenes`, `encounters`, `adventures`, `blobs`, and
+`runs` take one path. In TOML the new workspace setting is `runs = "runs"`.
 Relative paths resolve against the `.fivee-sim/` directory containing the file.
 Omitted values default to its sibling `maps/`, `replays/`, `scenes/`,
-`encounters/`, `adventures/` and `blobs/` directories.
+`encounters/`, `adventures/`, `blobs/`, and `runs/` directories.
 
-The first maps root receives map writes and the first replays root receives
-exports. `fivee content.status` names the configuration source and path;
-`fivee serve` and `fivee server.ping` report the resolved roots — read them rather
+Configured maps, scenes, and replays are shared overlay inputs. The selected
+`runs/<adv-id>/` workspace receives writes and exports. `fivee content.status`
+names the configuration source and path;
+`fivee --run <adv-id> serve` and `fivee --run <adv-id> server.ping` report the resolved roots — read them rather
 than assuming. A selected file owns these settings. Deprecated legacy `FIVEE_SIM_PROJECT_DIR`,
 `FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, `FIVEE_SIM_ENCOUNTERS`,
-`FIVEE_SIM_ADVENTURES`, and `FIVEE_SIM_BLOBS` remain compatibility fallbacks only
+`FIVEE_SIM_ADVENTURES`, `FIVEE_SIM_BLOBS`, and `FIVEE_SIM_RUNS` remain compatibility fallbacks only
 when no configuration file is selected.
 
-`fivee map.query` answers distance, line-of-sight, and path questions over a bare
+`fivee --run <adv-id> map.query` answers distance, line-of-sight, and path questions over a bare
 map without starting a fight.
 
 ## Ground height
@@ -337,7 +358,7 @@ the half that is missing is the half a user will assume:
   otherwise. Two floods cannot share a room; combine them into one fixture's overlay
   groups instead.
 
-When the fight is running, drive a fixture with `fivee encounter.act <id> --kind
+When the fight is running, drive a fixture with `fivee --run <adv-id> encounter.act <id> --kind
 interact --feature <id> --set-open true|false`. Use `--set-open` whenever you are
 working a chain: `interact` on its own **toggles**, so telling the engine to "open
 the sluice" when it already stands open silently closes it. Running the fight is

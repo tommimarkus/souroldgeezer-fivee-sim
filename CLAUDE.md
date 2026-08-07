@@ -554,6 +554,32 @@ cost, and they are the reason this is written down: they are saved documents,
 they are simply *there* in the old root, and moving one by hand is the whole of
 the recovery.
 
+**Those roots are now the explicit `--run legacy` view, not the current write
+model.** Current mutable state is isolated by adventure under
+`<runs_root>/<adv-id>/`: maps, scenes, replays, encounter directories, the one
+`adventures/<adv-id>.json` document, and blobs all live below that run root.
+`adventure.create` is the sole unscoped write; it allocates the workspace
+atomically, and the returned `adv-*` id becomes the global `fivee --run <adv-id>`
+selector. Even map-only work starts there. Unknown selectors refuse rather than
+creating lookalike directories, and an unscoped engine may read configured
+inputs but refuses every other write.
+
+Configured maps, scenes, and replays are shared **read-only inputs** to a run.
+Reads overlay run-local ids over shared ids; a guarded edit of a shared document
+is copy-on-write into the run and must leave the shared bytes unchanged. There
+is deliberately no publish or promote API: run artifacts remain isolated unless
+an export explicitly names another path. The pre-run encounter, adventure, and
+blob roots are readable through `--run legacy` only; no startup migration,
+automatic copy, deletion, or cleanup is permitted.
+
+**A server is bound to one storage identity.** With a project config, rendezvous
+state is config-stable at `.fivee-sim/runtime/control/` for unscoped allocation
+and `.fivee-sim/runtime/<adv-id>/` for a selected run. The immutable
+`StorageLayout` is constructed at the launcher/server composition edge and owned
+by `EngineState`; services receive its explicit roots rather than resolving an
+ambient working directory. `storage.runs = "runs"` and `FIVEE_SIM_RUNS` configure
+the workspace parent without changing config format version 1.
+
 **`encounter.prune` gives an id back, and it is a dry run unless asked
 otherwise.** `create` claims its id before the durable work, so a failed blob
 write or a dead process spends a name and leaves an empty journal behind, and

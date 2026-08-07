@@ -191,10 +191,10 @@ def test_map_adventure_replay_guidance_is_conditionally_packaged() -> None:
     )
     for obligation in (
         "# A whole adventure as one replay",
-        "fivee adventure.replay <adv-id>",
+        "fivee --run <adv-id> adventure.replay <adv-id>",
         "nested verbatim, in order",
         "chapter record carries its mode",
-        "fivee adventure.list",
+        "fivee --run adv-1 adventure.list",
         "Every chapter must be finalized first",
         "adventure.finalize",
         "not a precondition",
@@ -204,10 +204,44 @@ def test_map_adventure_replay_guidance_is_conditionally_packaged() -> None:
         "replay.list will not list it",
         "no viewer_url comes back",
         "Chapter picker",
-        "fivee replay.validate",
-        "fivee replay.validate --json -",
+        "fivee --run adv-1 replay.validate",
+        "fivee --run adv-1 replay.validate --json -",
     ):
         assert obligation in guidance_plain
+
+
+def test_shipped_guidance_carries_the_adventure_run_selector() -> None:
+    """Every mutable workflow stays inside the run ``adventure.create`` opened."""
+    encounter = _text("skills/encounter-sim/SKILL.md")
+    map_forge = _text("skills/map-forge/SKILL.md")
+    play = _text("skills/play/SKILL.md")
+    table_loop = _text("skills/play/references/table-loop.md")
+    resume = _text("skills/play/references/resume.md")
+    replay = _text("skills/map-forge/references/adventure-replay.md")
+
+    for entry_skill in (encounter, map_forge, play):
+        assert "fivee adventure.create" in entry_skill
+        assert "fivee --run <adv-id>" in entry_skill
+        assert "shared" in entry_skill.lower()
+        assert "read-only" in entry_skill.lower()
+
+    for command in (
+        "fivee --run adv-1 adventure.encounter",
+        "fivee --run adv-1 encounter.act",
+        "fivee --run adv-1 encounter.finalize",
+    ):
+        assert command in encounter
+    for command in (
+        "fivee --run adv-1 map.generate",
+        "fivee --run adv-1 map.get",
+        "fivee --run adv-1 map.put",
+    ):
+        assert command in map_forge
+    assert "fivee --run adv-1 adventure.replay" in replay
+    assert "fivee --run <adv-id> encounter.brief" in table_loop
+    assert "fivee --run <adv-id> encounter.resume" in table_loop
+    assert "fivee --run <adv-id> encounter.state" in resume
+    assert "fivee --run <adv-id> adventure.state" in resume
 
 
 def test_host_manifests_identify_the_same_plugin() -> None:
@@ -497,7 +531,7 @@ def test_human_seats_receive_a_fresh_unrecorded_live_adventure_view() -> None:
 
     assert re.search(
         r"adventure.{0,200}link.{0,120}(?:first|initial).{0,120}encounter"
-        r".{0,300}fivee serve",
+        r".{0,300}fivee --run <adv-id> serve",
         human,
         flags=re.IGNORECASE | re.DOTALL,
     )
@@ -553,7 +587,7 @@ def test_human_seats_receive_a_fresh_unrecorded_live_adventure_view() -> None:
         flags=re.IGNORECASE | re.DOTALL,
     )
     assert re.search(
-        r"fivee serve.{0,200}fresh.{0,200}viewer_url",
+        r"fivee --run <adv-id> serve.{0,200}fresh.{0,200}viewer_url",
         resume,
         flags=re.IGNORECASE | re.DOTALL,
     )

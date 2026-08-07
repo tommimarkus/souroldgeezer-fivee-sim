@@ -27,14 +27,14 @@ total cover.
 Establish **one full baseline** per seat when it first joins an encounter:
 
 ```bash
-fivee encounter.brief <id> --as "<seat>"
+fivee --run <adv-id> encounter.brief <id> --as "<seat>"
 ```
 
 Relay that exact chair-safe payload once. After any resolved state change, ask
 for one **per-seat delta** for each participant before its next decision:
 
 ```bash
-fivee encounter.resume <id> --as "<seat>" --view delta
+fivee --run <adv-id> encounter.resume <id> --as "<seat>" --view delta
 ```
 
 Relay `state_delta` without paraphrasing. If the returned `view` is `full`, the
@@ -52,7 +52,7 @@ baseline. Mark delivery unknown after a dropped return or missing
 acknowledgement.
 
 On a player re-spawn, or whenever its delivery acknowledgement is unknown,
-force one fresh `encounter.brief <id> --as "<seat>"` and relay that full
+force one fresh `fivee --run <adv-id> encounter.brief <id> --as "<seat>"` and relay that full
 chair-safe baseline before asking for another delta. Do not use `--view delta`
 until this re-baseline is acknowledged and its cursor is current. This recovery
 exception is not permission to repeat full briefs on a council pass or response.

@@ -136,5 +136,5 @@ rather than from intent — one line matching the host and result:
 
 A reader cannot check this themselves, which is exactly why it is written down.
 
-Link the run's `fivee adventure.replay` bundle so a reader can watch the fights
+Link the run's `fivee --run <adv-id> adventure.replay <adv-id>` bundle so a reader can watch the fights
 rather than take the summary's word for them.

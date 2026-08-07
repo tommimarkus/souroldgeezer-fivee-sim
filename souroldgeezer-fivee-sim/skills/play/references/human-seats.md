@@ -5,7 +5,8 @@ Load this reference only when at least one seat is human.
 ## Handing over the live view
 
 After creating the adventure and linking its first encounter, the interval
-controller asks one fresh mechanics child to run `fivee serve`. The command
+controller asks one fresh mechanics child to run
+`fivee --run <adv-id> serve`. The command
 starts the local server or reuses the running one. Read the returned `viewer_url`;
 do not reuse a URL remembered from an earlier launch.
 

@@ -53,9 +53,9 @@ fields, or add **`--raw`** when exactly one selected scalar should print without
 JSON quotes:
 
 ```bash
-fivee encounter.state enc-1 --select turn=/turn --select over=/over
-fivee encounter.state enc-1 --select turn=/turn --raw
-fivee encounter.act enc-1 --kind dodge --select events=/events \
+fivee --run adv-1 encounter.state enc-1 --select turn=/turn --select over=/over
+fivee --run adv-1 encounter.state enc-1 --select turn=/turn --raw
+fivee --run adv-1 encounter.act enc-1 --kind dodge --select events=/events \
   --select view=/view --select delta=/state_delta --select full=/state
 ```
 
@@ -65,6 +65,24 @@ retry. Selection runs on the server's answer and cannot recover anything a
 chair-safe `--as` projection withheld. Keep chair payloads whole when another
 seat must receive the exact engine document; select only the control and
 outcome facts you would otherwise parse locally.
+
+## Select the adventure run
+
+Every mutable artifact belongs to one isolated adventure run. Start it once,
+without a selector:
+
+```bash
+fivee adventure.create --name "The Sunken Bell"   # returns adv-1 and its version
+```
+
+The returned adventure id is also the global selector. From that point every
+map, scene, replay, encounter, dice, and adventure command uses
+**`fivee --run <adv-id> ...`**; keep the same selector through resume and
+finalization. Even a map-only workflow creates the adventure first. A command
+without `--run` may inspect configured shared inputs but refuses writes. Shared
+project maps, scenes, and replays are read-only overlay inputs: a guarded edit
+copies one into the run, never changes the shared bytes. `--run legacy` is for
+explicit read-only inspection of pre-run stores, not continued play.
 
 ## The one rule that matters
 
@@ -82,7 +100,8 @@ narrating from memory puts it straight back.
 
 ## Running a fight
 
-1. **`fivee encounter.create`** with the combatants and a seed. Each is either a
+1. **`fivee --run <adv-id> adventure.encounter <adv-id>`** with the combatants,
+   adventure version, and a seed. Each is either a
    bundled stat block — `{"monster": "Goblin Warrior", "label": "Goblin A",
    "team": "monsters", "position": [15, 0]}` — or an explicit build with at least
    `name`, `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they
@@ -105,7 +124,7 @@ narrating from memory puts it straight back.
    every-second-diagonal-costs-double variant.
 
    ```bash
-   fivee encounter.create --seed 41 --json '{"combatants": [
+   fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 41 --json '{"combatants": [
      {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [0, 0],
       "attacks": [{"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3",
                    "damage_type": "slashing", "kind": "melee"}]},
@@ -117,11 +136,11 @@ narrating from memory puts it straight back.
    Give creation and later state-changing calls a stable `--idempotency-key`
    whenever a call may be retried; the engine returns the first recorded result
    instead of acting twice.
-2. **`fivee encounter.state <id>`** to see whose turn it is and what the situation
+2. **`fivee --run <adv-id> encounter.state <id>`** to see whose turn it is and what the situation
    is. The id is a bare word — it is the subject of the command, so no flag is
    needed.
 
-   **`fivee encounter.brief <id> --as "<name>"`** is the same fight as *one
+   **`fivee --run <adv-id> encounter.brief <id> --as "<name>"`** is the same fight as *one
    combatant* is entitled to know it, and is what you show a player. Their own
    sheet comes back whole, with their remaining movement and action economy on
    their turn and their allies unredacted; the other side is reduced to position,
@@ -130,17 +149,17 @@ narrating from memory puts it straight back.
    listed. Which side is redacted follows the asker, so a monster's brief hides
    the party. Use it whenever somebody at the table should not be reading the
    referee's view, rather than paraphrasing `encounter.state` and hoping.
-3. **`fivee encounter.act <id> --kind …`** for each action: `attack`, `cast`,
+3. **`fivee --run <adv-id> encounter.act <id> --kind …`** for each action: `attack`, `cast`,
    `use_item`, `move`, `dash`, `disengage`, `dodge`, `stand` (up from Prone — half
    Speed in movement, no action), or `surrender`. A creature whose pack lists Dash
    or Disengage in `bonus_actions` uses it with `--as-bonus-action`. It returns the
    events it generated plus fresh state.
 
    ```bash
-   fivee encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
-   fivee encounter.act enc-1 --kind move --to-position '[10, 0]'
+   fivee --run adv-1 encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
+   fivee --run adv-1 encounter.act enc-1 --kind move --to-position '[10, 0]'
    ```
-4. **`fivee encounter.advance <id>`** to end the turn. Death saves for dying
+4. **`fivee --run <adv-id> encounter.advance <id>`** to end the turn. Death saves for dying
    creatures are rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
 
@@ -213,18 +232,18 @@ reports the fight's new version as an `etag` line on stderr. Pass the version yo
 read to refuse a write that would land on a fight that has moved on — the same
 guard, asked for deliberately rather than inferred.
 
-Past events are never lost: **`fivee encounter.log <id>`** pages the whole history
+Past events are never lost: **`fivee --run <adv-id> encounter.log <id>`** pages the whole history
 (`--since`/`--limit`), each event stamped with its round and turn, plus the action
 records that — with the reported seed — reproduce the fight exactly. Recap earlier
 rounds from it rather than from memory; `encounter.state` stays the view of *now*.
 
 The history survives the process. Creation, every attempt, and every result are
-fsynced into a hash-chained journal under the configured encounters root (the
-sibling `.fivee-sim/encounters/` by default). Use **`fivee encounter.list`** to
-discover active/finalized fights, **`fivee encounter.resume <id>`** after a
-restart, and **`fivee encounter.finalize <id>`** when play is done; finalization
+fsynced into a hash-chained journal under the selected run's `encounters/` root.
+Use **`fivee --run <adv-id> encounter.list`** to discover active/finalized fights,
+**`fivee --run <adv-id> encounter.resume <id>`** after a restart, and
+**`fivee --run <adv-id> encounter.finalize <id>`** when play is done; finalization
 writes replay v2 and retains the journal. If narration or an adjudication must be
-part of the record, use **`fivee encounter.note <id> --text "…"`** rather than
+part of the record, use **`fivee --run <adv-id> encounter.note <id> --text "…"`** rather than
 leaving it only in prose.
 
 `dice.roll`, `dice.check`, and `dice.save` accept an `--encounter-id` and an
@@ -239,7 +258,7 @@ the problem's `detail` on stderr, and the exit code is 3. Read the reason and
 adapt. Do not retry the same call hoping for a different answer, and do not
 narrate the action as though it happened.
 
-For a portable record, **`fivee encounter.replay <id>`** defaults to version 3:
+For a portable record, **`fivee --run <adv-id> encounter.replay <id>`** defaults to version 3:
 normalized starting combatants, captured inline/loaded maps and storeys, captured
 content, successful actions, refused attempts, timestamps, state checkpoints —
 the first whole and each later one as what moved since the one before it — and
@@ -258,16 +277,17 @@ journals, not a session, so a run survives a restart the way a fight does.
 
 Six operations, and the shape is create → link a fight per chapter → finalize.
 
-1. **`fivee adventure.create --name "The Sunken Bell"`** returns the new run's id
-   — `adv-1` — and its `version`.
-2. **`fivee adventure.encounter <adv-id> --if-match <version>`** starts the run's
+1. **`fivee adventure.create --name "The Sunken Bell"`** is the sole unscoped
+   write. It atomically creates the workspace and returns the new run's id —
+   `adv-1` — and its `version`.
+2. **`fivee --run <adv-id> adventure.encounter <adv-id> --if-match <version>`** starts the run's
    next fight. It answers with the `encounter_id`, who was carried, the updated
    adventure, and everything `encounter.create` would have returned; drive that
    fight exactly as above, `encounter.act` and `encounter.advance` until it is over.
-3. **`fivee adventure.state <adv-id>`** lists the members in order and reports the
-   version the next write must match. **`fivee adventure.list`** names every run on
+3. **`fivee --run <adv-id> adventure.state <adv-id>`** lists the members in order and reports the
+   version the next write must match. **`fivee --run <adv-id> adventure.list`** names the selected run on
    disk — `--status active` by default, or `finalized`, or `all`.
-4. **`fivee adventure.finalize <adv-id> --if-match <version>`** closes the run.
+4. **`fivee --run <adv-id> adventure.finalize <adv-id> --if-match <version>`** closes the run.
    After it, linking another encounter is refused with *is finalized; start
    another one to keep playing*.
 
@@ -289,7 +309,7 @@ written exactly as `encounter.create` takes them. Every later chapter carries th
 previous fight's cast forward:
 
 ```bash
-fivee adventure.encounter adv-1 --if-match <version> --seed 20260806 --json '{
+fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 20260806 --json '{
   "carry": ["Thora"],
   "recovery": {"Thora": {"hp": 30, "conditions": []}},
   "recovery_note": "Long rest at the abbey",
@@ -334,7 +354,7 @@ it is display prose only, never input to rest mechanics. A note without a
 `recovery` delta is refused. An explicit empty `"recovery": {}` is allowed when
 the boundary happened but changed none of the carried fields.
 
-**`fivee adventure.replay <adv-id>`** composes the run's finalized encounters into
+**`fivee --run <adv-id> adventure.replay <adv-id>`** composes the run's finalized encounters into
 one bundle on disk. Every member must have been through `encounter.finalize`
 first, and nothing is re-derived — see the **map-forge** skill, which owns
 replays, for what that bundle is and is not.
@@ -348,13 +368,13 @@ a fight. Without it those beats leave no engine artifact at all and the only
 record of them is prose.
 
 ```bash
-fivee adventure.encounter adv-1 --if-match <version> --seed 20260809 \
+fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 20260809 \
   --mode exploration --carry-map --json '{"carry": ["Thora", "Bran"]}'
-fivee encounter.act enc-3 --kind move --actor Thora --to-position '[25, 25]'
-fivee encounter.note enc-3 --speaker Kettle --category dialogue \
+fivee --run adv-1 encounter.act enc-3 --kind move --actor Thora --to-position '[25, 25]'
+fivee --run adv-1 encounter.note enc-3 --speaker Kettle --category dialogue \
   --text "Nobody crosses the mill after dark."
-fivee dice.check --modifier 3 --dc 12 --skill perception --encounter-id enc-3
-fivee encounter.finalize enc-3
+fivee --run adv-1 dice.check --modifier 3 --dc 12 --skill perception --encounter-id enc-3
+fivee --run adv-1 encounter.finalize enc-3
 ```
 
 Five differences from a fight, and each is the absence of something a fight has:
@@ -409,7 +429,7 @@ attack or a named-target spell outright and shelters a creature from an area
 entirely), and blocks sight. Positions snap to square centres, and `state["map"]`
 reports dimensions and door state.
 
-`fivee encounter.act <id> --kind interact --feature door` opens or closes a door —
+`fivee --run <adv-id> encounter.act <id> --kind interact --feature door` opens or closes a door —
 free, once per turn, from the feature's square or one next to it and on its own
 storey. `analytics.rounds` accepts the same `map` and `movement_rule`, so batches
 fight on the terrain too.
@@ -459,10 +479,10 @@ closes, including swimming through underwater terrain and flying between storeys
 ## Maps
 
 Nine operations manage maps, and a map is a **file addressed by an id** — not a
-session object. `fivee map.list` names every one under the maps directory, and
+session object. `fivee --run <adv-id> map.list` names the overlay, and
 that id is what every other call takes.
 
-**`fivee map.generate --kind dungeon --seed 71203941`** builds a dungeon, caves,
+**`fivee --run <adv-id> map.generate --kind dungeon --seed 71203941`** builds a dungeon, caves,
 or overland map and returns the whole document **unsaved** (the seed is always
 reported — quote it); add `--save-as <id>` to write it under that id in the same
 call. **`map.render`** shows a saved or inline map as glyph rows, with
@@ -475,8 +495,8 @@ adjust_elevation — a bad operation names its index and changes nothing.
 **`map.query`** answers distance, line-of-sight, and pathing questions on a bare
 map.
 
-**A guarded write is two calls, and there is no third.** `fivee map.get <id>`
-returns the document and reports its sha256 as an `etag` on stderr; `fivee map.put
+**A guarded write is two calls, and there is no third.** `fivee --run <adv-id> map.get <id>`
+returns the document and reports its sha256 as an `etag` on stderr; `fivee --run <adv-id> map.put
 <id> --if-match <that etag> --json -` writes the new bytes and is refused with a
 409 if anything else got there first. The listing deliberately carries no hash, so
 the version you write against is always one you actually read. `--if-match '*'`
@@ -493,7 +513,7 @@ fight as a shareable replay — use the **map-forge** skill.
 **If the user would rather drive the fight themselves**, the editor page has a
 Play mode: they place a roster on a map and act turn by turn in the browser,
 either as the whole table or from one creature's seat, rolling their own dice or
-letting the engine roll. Point them at `editor_url` from `fivee serve`, passed
+letting the engine roll. Point them at `editor_url` from `fivee --run <adv-id> serve`, passed
 exactly as printed — the `#` and everything after it is this launch's access
 token, and a URL trimmed to the path opens a page the engine will refuse.
 
@@ -516,7 +536,7 @@ combatant name or a point). On a map, a sphere or cube also needs its point of
 origin in the caster's sight.
 
 ```bash
-fivee encounter.act enc-1 --kind cast --spell Fireball --center '[20, 15]' --slot-level 3
+fivee --run adv-1 encounter.act enc-1 --kind cast --spell Fireball --center '[20, 15]' --slot-level 3
 ```
 
 `--center` is what makes a Fireball a Fireball. Named targets are each hit
@@ -531,7 +551,7 @@ the spell's range legitimately; the origin is what has to be reachable.
 
 ## Items
 
-`fivee encounter.act <id> --kind use_item --item "Potion of Healing"` spends the
+`fivee --run <adv-id> encounter.act <id> --kind use_item --item "Potion of Healing"` spends the
 item's declared action or Bonus Action. Healing defaults to the user; a damaging
 or condition-applying item needs a `--target`, and any item used on another
 creature needs to be within 5 ft. Quantity is the charge count, and
@@ -566,7 +586,8 @@ for turn-by-turn play.
 
 ## Primitives
 
-`fivee dice.roll`, `fivee dice.check`, and `fivee dice.save` handle one-off rolls
+`fivee --run <adv-id> dice.roll`, `fivee --run <adv-id> dice.check`, and
+`fivee --run <adv-id> dice.save` handle one-off rolls
 outside a tracked encounter. Every one accepts an optional `--seed` and **always
 reports the seed it used**, so any result can be replayed exactly. Quote the seed
 when a roll matters.
@@ -592,7 +613,7 @@ authority.
 
 ## Conditions the table imposes
 
-`fivee encounter.condition --id <id> --target <name> --condition <name>` imposes a
+`fivee --run <adv-id> encounter.condition --id <id> --target <name> --condition <name>` imposes a
 condition by your ruling, and `--applied false` lifts one. A ruling registers no
 ongoing effect: nothing expires it and no lost concentration breaks it, so it
 lasts until you take it off. Lifting also ends any spell effect sustaining the
@@ -617,12 +638,12 @@ rule, and doing it by hand costs a combatant an action the current rules give it
 ## Overwriting what the simulation got wrong
 
 `encounter.condition` is a ruling within the rules the engine already runs.
-`fivee encounter.correct` is the other case: an engine defect, a rule this
+`fivee --run <adv-id> encounter.correct` is the other case: an engine defect, a rule this
 engine does not model, or an input you only later learn was wrong — a fight
 holding a number nobody at the table believes.
 
 ```bash
-fivee encounter.correct <id> --json '{
+fivee --run adv-1 encounter.correct <id> --json '{
   "state": {"Thora": {"hp": 12}, "Bram": {"conditions": ["prone"]}},
   "reason": "the fireball never landed"
 }'

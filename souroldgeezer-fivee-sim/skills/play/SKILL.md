@@ -46,6 +46,17 @@ the sandbox or diagnose the resulting bind failure as an engine defect.
 The root never invokes it during an interval. Each disposable
 `play-mechanics` child uses it under its own scoped profile.
 
+Before preparation writes any table or engine artifact, the root asks mechanics
+for **`fivee adventure.create --name <name>`**. Record the returned adventure id
+in `roster.json`; it is both the durable run id and the global selector. Every
+later mechanics call, including map work, resume, `serve`, and export, uses
+**`fivee --run <adv-id> ...`**. A missing selector may inspect configured shared
+inputs but refuses writes. Shared project maps, scenes, and replays are read-only
+overlay inputs; copy-on-write edits land in the run and never change shared
+bytes. `--run legacy` is read-only inspection of old stores, never a play or
+resume target. Run artifacts remain local; no publish or promotion operation
+exists.
+
 ## 1. Seat the table
 
 Ask once for the adventure path, player count and human seats, whether the game
@@ -137,7 +148,7 @@ ordinary success path.
 
 ## 4. Carry the adventuring day
 
-Link encounters through `adventure.*`; never create every fight as a fresh
+Link encounters through `fivee --run <adv-id> adventure.*`; never create every fight as a fresh
 party. Carry hit points, conditions, slots, death saves, stability, and death.
 The **encounter-sim** skill owns commands, write versions, and replay details;
 the controller reaches the engine only through one-beat mechanics children.
@@ -182,7 +193,8 @@ current index entries and their line or page locators.
 
 When a human pause is about to occur, or when resuming a saved run, load
 [pause and resume](references/resume.md). Do not load it during uninterrupted
-all-agent play. Finalize every chapter and export `fivee adventure.replay` when
+all-agent play. Finalize every chapter and export
+`fivee --run <adv-id> adventure.replay <adv-id>` when
 play ends; hand over its path and where play concluded.
 
 ## Playtest only

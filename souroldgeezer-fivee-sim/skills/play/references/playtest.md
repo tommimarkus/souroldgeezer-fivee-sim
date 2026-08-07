@@ -75,4 +75,4 @@ Close `report.md` with severity-ordered changes followed by limits:
 - One run is one path; offer multiple seeded runs when branching matters.
 - State each engine limit that bore on a ruling; encounter-sim owns the list.
 
-Link the finalized `fivee adventure.replay` so the author can inspect the run.
+Link the finalized `fivee --run <adv-id> adventure.replay <adv-id>` so the author can inspect the run.
