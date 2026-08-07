@@ -115,15 +115,17 @@ bounded map query for distance, reach, or line of sight rather than estimating.
 
 ## When engine support fails
 
-At an unattended table, the explicit unattended exception returns an exact
-failure to you rather than asking the user. Distinguish a bad request from
-missing support; prefer one supported correction or retry, then make the
-smallest improvised ruling that continues play, preferably without a roll.
+If the engine is unavailable, return the exact failure to the coordinator so it
+can checkpoint, pause play, and escalate to the user. Do not continue or
+improvise without the engine, even at an unattended table.
 
-Tell the coordinator the attempted operation, exact failure, recovery, ruling,
-mechanical state consequence, reconciliation status, and replay impact. Never
-fabricate engine output or claim an off-engine result is in the replay. Keep any
-temporary off-engine ledger explicit until it can be reconciled.
+If the engine remains available but refuses or cannot represent one operation,
+distinguish a bad request from missing support; prefer one supported correction
+or retry, then make the smallest improvised ruling that continues play,
+preferably without a roll. Tell the coordinator the attempted operation, exact
+failure, recovery, ruling, mechanical state consequence, reconciliation status,
+and replay impact. Never fabricate engine output or claim an improvised result
+is in the replay.
 
 ## Party council
 

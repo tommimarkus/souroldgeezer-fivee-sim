@@ -55,10 +55,11 @@ would have to add. Do not editorialise about whether the ruling was right — th
 point is that the module or available support required one.
 
 For an engine or tool failure, record the attempted operation, exact failure,
-retry or recovery attempt, improvised ruling, resulting mechanical state,
-reconciliation status, and replay impact. Say plainly when an interval ran
-off-engine or the replay is partial; never let a successful continuation erase
-the limitation that required it.
+and retry or recovery attempt. If the engine was unavailable, record where play
+paused and what was escalated to the user. If the engine remained available but
+could not represent one operation, also record the improvised ruling, resulting
+mechanical state, reconciliation status, and replay impact. Never let a
+successful continuation erase the limitation that required it.
 
 ### Unused content
 Run-sheet entries nobody touched: scenes, NPCs, treasure, whole encounters. Not

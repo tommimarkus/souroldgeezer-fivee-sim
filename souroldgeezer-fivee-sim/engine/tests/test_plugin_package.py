@@ -622,20 +622,22 @@ def test_player_tool_inventory_makes_no_capability_claim() -> None:
     assert "Read (player-visible/**" in seating
 
 
-def test_unattended_play_improvises_through_failures_without_confirmation() -> None:
+def test_play_escalates_sandbox_launch_and_pauses_without_the_engine() -> None:
     skill = _text("skills/play/SKILL.md")
     failure = _markdown_section(skill, "### Failures at an unattended table")
     failure_plain = " ".join(failure.lower().split())
 
     assert re.search(
-        r"\b(?:never|do not)\b.{0,120}\b(?:ask|pause)\b"
-        r".{0,120}\b(?:approval|confirmation)\b",
+        r"\bsandbox(?:ed)?\b.{0,200}\b(?:escalat|outside the sandbox)",
+        skill,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"\bengine\b.{0,160}\b(?:cannot|can't|unavailable|without)\b"
+        r".{0,160}\bpause\b.{0,160}\b(?:user|owner)\b",
         failure_plain,
     )
-    assert "game-master seat" in failure_plain
-    assert "improvised ruling" in failure_plain
-    assert "continue" in failure_plain
-    assert "explicit unattended exception" in failure_plain
+    assert "even when unattended" in failure_plain
     assert "references/unattended-failures.md" in failure
 
     policy = _packaged_reference(
@@ -647,6 +649,9 @@ def test_unattended_play_improvises_through_failures_without_confirmation() -> N
         "game-master seat",
         "improvised ruling",
         "exact failure",
+        "checkpoint",
+        "pause",
+        "user",
         "transcript.md",
         "findings.jsonl",
         "replay",
@@ -654,15 +659,7 @@ def test_unattended_play_improvises_through_failures_without_confirmation() -> N
     ):
         assert obligation in policy_plain
     assert re.search(
-        r"\bdo not stop\b.{0,180}\bno (?:supported )?operation\b.{0,180}\brepresent\b",
-        policy_plain,
-    )
-    assert re.search(
-        r"\b(?:never|do not)\b.{0,120}\b(?:fabricate|invent)\b.{0,120}\bengine\b",
-        policy_plain,
-    )
-    assert re.search(
-        r"\bgenuinely impossible\b.{0,180}\b(?:stop|blocked)\b.{0,180}\b(?:ask|confirmation)\b",
+        r"\b(?:do not|never)\b.{0,120}\b(?:continue|improvise)\b.{0,160}\bwithout the engine\b",
         policy_plain,
     )
 
@@ -670,18 +667,18 @@ def test_unattended_play_improvises_through_failures_without_confirmation() -> N
     degradation = _markdown_section(game_master, "## When engine support fails")
     degradation_plain = " ".join(degradation.lower().split())
     for obligation in (
-        "unattended",
-        "improvised ruling",
         "exact failure",
+        "coordinator",
+        "pause",
+        "user",
+        "improvised ruling",
         "mechanical state",
         "replay",
-        "coordinator",
-        "explicit unattended exception",
         "without a roll",
     ):
         assert obligation in degradation_plain
     assert re.search(
-        r"\b(?:never|do not)\b.{0,120}\b(?:fabricate|invent)\b.{0,120}\bengine\b",
+        r"\b(?:do not|never)\b.{0,120}\b(?:continue|improvise)\b.{0,160}\bwithout the engine\b",
         degradation_plain,
     )
 
@@ -689,8 +686,8 @@ def test_unattended_play_improvises_through_failures_without_confirmation() -> N
         _text("skills/play/references/report-format.md"),
         "### Adjudication notes",
     ).lower()
-    for field in ("operation", "exact failure", "retry", "ruling", "state", "replay"):
-        assert field in report
+    assert re.search(r"engine.{0,160}unavailable.{0,160}pause", report, flags=re.DOTALL)
+    assert "off-engine" not in report
 
 
 def test_play_skill_makes_testing_an_explicit_optional_mode() -> None:

@@ -38,6 +38,11 @@ Live mechanics uses the packaged launcher at an absolute path:
 python3 <skill dir>/../../scripts/fivee.py
 ```
 
+`fivee` starts a loopback engine server on demand. In a sandboxed host that
+blocks loopback binding, request sandbox escalation and run the command outside
+the sandbox from its first invocation; do not first retry the same launch inside
+the sandbox or diagnose the resulting bind failure as an engine defect.
+
 The root never invokes it during an interval. Each disposable
 `play-mechanics` child uses it under its own scoped profile.
 
@@ -121,11 +126,12 @@ seat; no role substitutes a legal move.
 
 ### Failures at an unattended table
 
-At a table with no humans, never pause or ask for approval or confirmation merely
-because an engine, catalog, role-agent, or host operation failed. The controller
-gives the exact failure to the game-master seat; it makes the smallest workable
-improvised ruling and play continues. This is the explicit unattended exception
-to engine authority. On the first such failure, load
+An unavailable engine is not an unattended exception. If `fivee` cannot start
+or reach the engine after the required sandbox escalation, checkpoint the table,
+pause play even when unattended, and escalate the exact failure to the user. Do
+not improvise or continue play without the engine.
+
+For other operation failures while the engine remains available, load
 [unattended failures](references/unattended-failures.md); do not load it on the
 ordinary success path.
 
