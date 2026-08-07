@@ -2489,6 +2489,171 @@ function adventureEnvelope(chapters) {
   return envelope;
 }
 
+function recoveryAdventure(recovery, note) {
+  const before = replayV2();
+  const endingHero = before.checkpoints[0].state.combatants[0];
+  endingHero.hp = 3;
+  endingHero.conditions = ["Poisoned"];
+  endingHero.spell_slots = { 1: 0 };
+  before.latest_state = copy(before.checkpoints[0].state);
+  sealReplayV2(before);
+
+  const after = replayV2();
+  after.name = "the rested road";
+  after.initial.state.combatants[0].conditions = [];
+  after.initial.combatants[0].conditions = [];
+  sealReplayV2(after);
+
+  const envelope = adventureEnvelope([before, after]);
+  envelope.chapters[1].recovery = recovery;
+  if (note !== undefined) { envelope.chapters[1].recovery_note = note; }
+  envelope.integrity.chapters = canonicalHash(envelope.chapters);
+  return envelope;
+}
+
+await suite("viewer.html: recovery at an adventure boundary",
+  "the page sandbox in makePage()",
+  async () => {
+    const recovery = {
+      Hero: { hp: 9, spell_slots: { 1: 2 }, conditions: [] },
+    };
+
+    /* 1. A direct jump lands on the boundary rather than making the recovery
+     * invisible behind the next chapter's already-restored initial state. */
+    const direct = makePage({
+      canvasIds: ["stage"], manualAnimationFrames: true,
+      seed: {
+        "embedded-data": JSON.stringify(recoveryAdventure(
+          recovery, "Long rest at the abbey"
+        )),
+      },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    direct.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    direct.frame(0);
+    direct.element("chapter-select").value = "1";
+    direct.element("chapter-select").dispatch("change");
+    const directRows = direct.element("ticker").children;
+    const directBoundary = directRows.find(
+      (row) => row.className.indexOf("recovery-row") !== -1
+    );
+    check("direct chapter selection reveals the recovery boundary and its changes",
+      directBoundary
+        && directBoundary.dataset.eventIndex === "0"
+        && directBoundary.classList.contains("current")
+        && directBoundary.textContent.indexOf("Long rest at the abbey") !== -1
+        && directBoundary.textContent.indexOf("HP 3→9") !== -1
+        && directBoundary.textContent.indexOf("slots L1 0→2") !== -1
+        && directBoundary.textContent.indexOf("conditions Poisoned→none") !== -1
+        && direct.element("combatant-state").textContent.indexOf("Long rest at the abbey") !== -1,
+      show(directRows.map((row) => row.textContent)));
+    direct.frame(1);
+    check("the boundary starts from the prior chapter's ending hit points",
+      Math.abs(direct.last().overlays.tokens[0].hpFraction - (3 / 9)) < 0.001,
+      String(direct.last().overlays.tokens[0].hpFraction));
+
+    /* 2. Continuous playback must hold at event zero while the boundary is on
+     * screen; it may not jump directly from chapter one's last event to chapter
+     * two's first event. */
+    const continuous = makePage({
+      canvasIds: ["stage"], manualAnimationFrames: true,
+      seed: { "embedded-data": JSON.stringify(recoveryAdventure(recovery)) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    continuous.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    continuous.frame(0);
+    continuous.element("btn-play").click();
+    continuous.frame(0);
+    continuous.frame(1000);
+    check("continuous playback visibly visits recovery before the next event",
+      continuous.element("chapter-select").value === "1"
+        && continuous.element("readout").textContent.indexOf("Recovery") === 0
+        && continuous.element("readout").textContent.indexOf("event 0/1") !== -1
+        && continuous.element("btn-play").textContent === "Pause",
+      show([continuous.element("chapter-select").value,
+        continuous.element("readout").textContent,
+        continuous.element("btn-play").textContent]));
+
+    /* 3. Presence, not truthiness: an empty delta still records a real rest
+     * boundary and gets the honest default label. */
+    const empty = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(recoveryAdventure({})) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    empty.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    empty.element("chapter-select").value = "1";
+    empty.element("chapter-select").dispatch("change");
+    check("an empty recovery object still creates a boundary",
+      empty.element("ticker").children.some(
+        (row) => row.className.indexOf("recovery-row") !== -1
+          && row.textContent.indexOf("Recovery") === 0
+      ),
+      show(empty.element("ticker").children.map((row) => row.textContent)));
+
+    /* 4. Old envelopes omit both keys and keep the exact old event-zero view. */
+    const old = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(adventureEnvelope([replayV2(), replayV2()])) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    old.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    old.element("chapter-select").value = "1";
+    old.element("chapter-select").dispatch("change");
+    check("missing recovery metadata preserves the old chapter behavior",
+      old.element("readout").textContent.indexOf("round 1 · Hero · event 0/1") === 0
+        && old.element("ticker").children.every(
+          (row) => row.className.indexOf("recovery-row") === -1
+        )
+        && old.element("combatant-state").textContent.indexOf("Recovery") === -1,
+      show([old.element("readout").textContent,
+        old.element("ticker").children.map((row) => row.textContent)]));
+
+    /* 5. Reduced motion applies the carried state immediately: no interpolated
+     * hit-point ring is left between the two chapter states. */
+    const reduced = makePage({
+      canvasIds: ["stage"], manualAnimationFrames: true, reducedMotion: true,
+      seed: { "embedded-data": JSON.stringify(recoveryAdventure(recovery)) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    reduced.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    reduced.frame(0);
+    reduced.element("chapter-select").value = "1";
+    reduced.element("chapter-select").dispatch("change");
+    reduced.frame(1);
+    check("reduced motion applies recovery without interpolation",
+      reduced.last().overlays.tokens[0].hpFraction === 1
+        && reduced.element("combatant-state").textContent.indexOf("HP 9/9") !== -1
+        && reduced.element("readout").textContent.indexOf("Recovery") === 0
+        && reduced.element("ticker").children.some(
+          (row) => row.className.indexOf("recovery-row") !== -1
+        ),
+      show([reduced.last().overlays.tokens[0].hpFraction,
+        reduced.element("combatant-state").textContent,
+        reduced.element("readout").textContent]));
+
+    /* 6. A caller supplies this label. It is prose, never markup. */
+    const hostileLabel = "<img src=x onerror=alert('rest')>";
+    const hostile = makePage({
+      canvasIds: ["stage"],
+      seed: {
+        "embedded-data": JSON.stringify(recoveryAdventure(recovery, hostileLabel)),
+      },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    hostile.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    hostile.element("chapter-select").value = "1";
+    hostile.element("chapter-select").dispatch("change");
+    const hostileBoundary = hostile.element("ticker").children.find(
+      (row) => row.className.indexOf("recovery-row") !== -1
+    );
+    check("the caller's recovery label is text rather than HTML",
+      hostileBoundary && hostileBoundary.textContent.indexOf(hostileLabel) === 0
+        && hostileBoundary.children.length === 0,
+      hostileBoundary ? show([hostileBoundary.textContent, hostileBoundary.children.length])
+        : "no recovery row");
+  });
+
 await suite("viewer.html: an adventure's chapters", "the page sandbox in makePage()",
   async () => {
     /* An adventure's replay nests whole fights. The picker that moves between

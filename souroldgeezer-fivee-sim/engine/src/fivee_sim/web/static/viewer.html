@@ -12,7 +12,7 @@
 :root {
   color-scheme: light dark;
   --bg: #f4f1ea; --panel: #ebe7de; --edge: #d4cfc2; --text: #2b2925;
-  --muted: #6f6a5e; --accent: #7a5c2e; --canvas-bg: #efece3;
+  --muted: #6f6a5e; --accent: #7a5c2e; --positive: #2c7a45; --canvas-bg: #efece3;
   --terrain-floor: #e9e4d8; --terrain-normal: #e9e4d8; --terrain-wall: #4d463c;
   --terrain-difficult: #dcd3bd; --terrain-half-cover: #ddd8c6;
   --terrain-three-quarters-cover: #d3cdb8;
@@ -23,7 +23,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1d1f22; --panel: #24272b; --edge: #34383d; --text: #d9d6cf;
-    --muted: #8f8b82; --accent: #c9a86a; --canvas-bg: #191b1e;
+    --muted: #8f8b82; --accent: #c9a86a; --positive: #66c983; --canvas-bg: #191b1e;
     --terrain-floor: #31353b; --terrain-normal: #31353b; --terrain-wall: #14161a;
     --terrain-difficult: #383b34; --terrain-half-cover: #343a3c;
     --terrain-three-quarters-cover: #383f42;
@@ -78,6 +78,13 @@ header .spacer { flex: 1; }
 #ticker li:hover { background: var(--bg); }
 #ticker li.audit-row { border-left: 2px solid var(--accent); padding-left: 8px; }
 #ticker li.audit-refused { border-left-color: #b73b35; }
+#ticker li.recovery-row {
+  border-inline-start: 2px solid var(--positive); padding: 5px 8px; color: var(--text);
+}
+.recovery-card {
+  padding: 5px 7px; margin-block: 0 6px; border: 1px solid var(--positive);
+  border-radius: 4px; color: var(--text);
+}
 @media (max-width: 40rem) {
   #layout { flex-direction: column; }
   #sidebar {
@@ -308,6 +315,7 @@ if (typeof FiveeRenderer === "undefined") {
   var playTimer = null;
   var transition = null;
   var transitionFrame = null;
+  var recoveryBoundary = null; /* the optional beat before this chapter's event zero */
   var activeLevel = 0;
   var motionQuery = window.matchMedia
     ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -720,7 +728,7 @@ if (typeof FiveeRenderer === "undefined") {
     if (kind === "damage" || kind === "down" || kind === "death") {
       return dark ? "#ef6a63" : "#b73b35";
     }
-    if (kind === "heal" || kind === "stabilised") {
+    if (kind === "heal" || kind === "stabilised" || kind === "recovery") {
       return dark ? "#66c983" : "#2c7a45";
     }
     if (kind === "interact") { return dark ? "#70b7d8" : "#2d7396"; }
@@ -743,6 +751,12 @@ if (typeof FiveeRenderer === "undefined") {
   /* The event's affected cells. While it moves, the cue rises and falls with
      time; a scrubbed-to attack keeps the old static participant highlight. */
   function eventMarks() {
+    if (transition && transition.recovery) {
+      var recoveryAlpha = 0.5 * Math.sin(Math.PI * transition.progress);
+      return transition.changedNames.map(function (name) {
+        return { at: tokenPoint(name), color: pulseColor("recovery"), alpha: recoveryAlpha };
+      }).filter(function (mark) { return mark.at !== null; });
+    }
     if (cursor === 0) { return []; }
     var event = transition ? transition.event : bundle.events[cursor - 1];
     if (transition) {
@@ -817,7 +831,10 @@ if (typeof FiveeRenderer === "undefined") {
       var token = state.tokens[name];
       if (token.level !== activeLevel) { return; }
       var hp = token.hp;
-      if (transition && transition.target === name
+      if (transition && transition.recovery
+        && typeof transition.fromHpByName[name] === "number") {
+        hp = mix(transition.fromHpByName[name], token.hp, easedProgress());
+      } else if (transition && transition.target === name
         && typeof transition.fromHp === "number") {
         hp = mix(transition.fromHp, token.hp, easedProgress());
       }
@@ -881,6 +898,10 @@ if (typeof FiveeRenderer === "undefined") {
   function updateReadout() {
     if (!bundle) { byId("readout").textContent = "—"; return; }
     var position = "event " + cursor + "/" + bundle.events.length;
+    if (recoveryBoundary && cursor === 0) {
+      byId("readout").textContent = recoveryBoundary.label + " · " + position;
+      return;
+    }
     /* An interlude has no rounds to count — `round` is 1 from its first beat to
        its last, because nothing in it turns one over — so the counter goes on
        the *mode* rather than on the number happening to be 1. A fight with one
@@ -897,6 +918,13 @@ if (typeof FiveeRenderer === "undefined") {
     var heading = document.createElement("h2");
     heading.textContent = "Combatants";
     panel.appendChild(heading);
+    if (recoveryBoundary && cursor === 0) {
+      var recoveryCard = document.createElement("div");
+      recoveryCard.className = "recovery-card";
+      recoveryCard.textContent = recoveryBoundary.label + " — "
+        + recoveryBoundary.summaries.join("; ");
+      panel.appendChild(recoveryCard);
+    }
     /* Whose card is lit. An interlude rolls no initiative — `order` still lists
        everybody and every combatant's `initiative` is null — so "whose turn"
        has no answer there and the highlight follows whoever last acted
@@ -924,7 +952,14 @@ if (typeof FiveeRenderer === "undefined") {
       var items = Object.keys(token.items).map(function (item) {
         return item + ":" + token.items[item];
       });
-      card.textContent = name + " · HP " + token.hp + "/" + token.maxHp
+      var shownHp = token.hp;
+      if (transition && transition.recovery
+        && typeof transition.fromHpByName[name] === "number") {
+        shownHp = Math.round(mix(
+          transition.fromHpByName[name], token.hp, easedProgress()
+        ) * 10) / 10;
+      }
+      card.textContent = name + " · HP " + shownHp + "/" + token.maxHp
         + (token.ac === undefined ? "" : " · AC " + token.ac)
         + " · saves " + saves.successes + "✓/" + saves.failures + "✗"
         + (slots.length ? " · slots " + slots.join(" ") : "")
@@ -985,6 +1020,7 @@ if (typeof FiveeRenderer === "undefined") {
     if (playTimer !== null) { window.clearTimeout(playTimer); playTimer = null; }
     if (transition !== null) {
       cancelTransition();
+      if (state) { updateStatePanel(); }
       redraw();
     }
     byId("btn-play").textContent = "Play";
@@ -995,16 +1031,37 @@ if (typeof FiveeRenderer === "undefined") {
     if (transition.started === null) { transition.started = time; }
     transition.progress = Math.min(1, (time - transition.started) / transition.duration);
     renderFrame();
+    if (transition.recovery) { updateStatePanel(); }
     if (transition.progress < 1) {
       transitionFrame = window.requestAnimationFrame(transitionTick);
       return;
     }
     transition = null;
     transitionFrame = null;
+    updateStatePanel();
     if (playing) { advancePlayback(); }
   }
 
+  function startRecoveryTransition() {
+    if (!recoveryBoundary || reducedMotion()) { return; }
+    transition = {
+      event: { kind: "recovery", actor: "", target: "", data: {} },
+      recovery: true,
+      changedNames: recoveryBoundary.changedNames,
+      fromHpByName: recoveryBoundary.fromHpByName,
+      progress: 0,
+      started: null,
+      duration: eventDuration()
+    };
+    updateStatePanel();
+    transitionFrame = window.requestAnimationFrame(transitionTick);
+  }
+
   function advancePlayback() {
+    /* A directly opened chapter may still be showing its recovery transition.
+       Pressing Play joins that beat rather than starting the first event over
+       the top of it; transitionTick continues the run when the beat settles. */
+    if (transition && transition.recovery) { return; }
     if (!bundle || cursor >= bundle.events.length) {
       /* The end of a chapter is not the end of the run — see advanceChapter. A
          lone replay has no next chapter and stops here exactly as it did. */
@@ -1108,6 +1165,19 @@ if (typeof FiveeRenderer === "undefined") {
   function buildTicker() {
     ticker.textContent = "";
     noteSpeakers = Object.create(null);
+    if (recoveryBoundary) {
+      var recoveryRow = document.createElement("li");
+      recoveryRow.className = "recovery-row";
+      recoveryRow.textContent = recoveryBoundary.label + " — "
+        + recoveryBoundary.summaries.join("; ");
+      recoveryRow.title = "recovery · before event 1";
+      recoveryRow.dataset.eventIndex = "0";
+      recoveryRow.addEventListener("click", function () {
+        stopPlaying();
+        setCursor(0);
+      });
+      ticker.appendChild(recoveryRow);
+    }
     var rows = [];
     bundle.events.forEach(function (event, index) {
       rows.push({ timestamp: event.timestamp || "", order: index, event: event, index: index });
@@ -1715,7 +1785,7 @@ if (typeof FiveeRenderer === "undefined") {
      chapter that will not load rather than skipping quietly past it. Every
      other caller ignores the answer, and the refusal is still spoken here so
      no caller has to remember to speak it. */
-  function loadBundle(payload, sourceName) {
+  function loadBundle(payload, sourceName, boundary) {
     var diagnostics = validateBundle(payload);
     if (diagnostics.length) {
       window.alert((sourceName || "that") + " is not a valid fivee-sim-replay bundle:\n"
@@ -1724,6 +1794,7 @@ if (typeof FiveeRenderer === "undefined") {
     }
     stopPlaying();
     bundle = payload;
+    recoveryBoundary = boundary || null;
     /* Rebuilt here rather than per beat: a scrub drag replays the whole log per
        frame, and a chain rebuilt from the middle is not a chain. */
     checkpointStateList = checkpointStates(payload);
@@ -1740,6 +1811,7 @@ if (typeof FiveeRenderer === "undefined") {
     buildTicker();
     state = null;
     setCursor(0);
+    startRecoveryTransition();
     return true;
   }
 
@@ -1803,6 +1875,126 @@ if (typeof FiveeRenderer === "undefined") {
       && payload.format === ADVENTURE_FORMAT;
   }
 
+  function combatantsByName(list) {
+    var indexed = Object.create(null);
+    (Array.isArray(list) ? list : []).forEach(function (combatant) {
+      if (isRecord(combatant) && typeof combatant.name === "string") {
+        indexed[combatant.name] = combatant;
+      }
+    });
+    return indexed;
+  }
+
+  function endingCombatants(chapter) {
+    var replay = chapter && chapter.replay;
+    if (!isRecord(replay)) { return []; }
+    if (isRecord(replay.latest_state) && Array.isArray(replay.latest_state.combatants)) {
+      return replay.latest_state.combatants;
+    }
+    /* A bare v1 replay has no authoritative final state. Its initial cast is
+       not a safe substitute after events have run, so omit the before value
+       and render the recovery's target without inventing an arrow. */
+    return [];
+  }
+
+  function startingCombatants(chapter) {
+    var replay = chapter && chapter.replay;
+    var initial = isRecord(replay) && isRecord(replay.initial) ? replay.initial : {};
+    if (isRecord(initial.state) && Array.isArray(initial.state.combatants)) {
+      return initial.state.combatants;
+    }
+    return Array.isArray(initial.creatures) ? initial.creatures : [];
+  }
+
+  function recoveryValue(value) {
+    if (Array.isArray(value)) { return value.length ? value.join(", ") : "none"; }
+    if (value === null || value === undefined || value === "") { return "none"; }
+    if (typeof value === "boolean") { return value ? "yes" : "no"; }
+    if (isRecord(value)) {
+      try { return JSON.stringify(value); } catch (error) { return "updated"; }
+    }
+    return String(value);
+  }
+
+  function recoveryChange(label, before, after) {
+    return label + " " + (before === undefined ? "" : recoveryValue(before) + "→")
+      + recoveryValue(after);
+  }
+
+  function resourceChanges(label, before, after) {
+    var held = isRecord(before) ? before : {};
+    var target = isRecord(after) ? after : {};
+    var changes = Object.keys(target).sort(function (left, right) {
+      return String(left).localeCompare(String(right));
+    }).map(function (key) {
+      var name = label === "slots" ? "L" + key : key;
+      var hasBefore = Object.prototype.hasOwnProperty.call(held, key);
+      return name + " " + (hasBefore ? recoveryValue(held[key]) + "→" : "")
+        + recoveryValue(target[key]);
+    });
+    return label + (changes.length ? " " + changes.join(" ") : " updated");
+  }
+
+  function recoverySummary(name, target, before) {
+    if (!isRecord(target)) { return name + " · recovery recorded"; }
+    var changes = [];
+    Object.keys(target).forEach(function (key) {
+      var previous = before && Object.prototype.hasOwnProperty.call(before, key)
+        ? before[key] : undefined;
+      if (key === "hp") {
+        changes.push(recoveryChange("HP", previous, target[key]));
+      } else if (key === "temp_hp") {
+        changes.push(recoveryChange("temporary HP", previous, target[key]));
+      } else if (key === "conditions") {
+        changes.push(recoveryChange("conditions", previous, target[key]));
+      } else if (key === "spell_slots") {
+        changes.push(resourceChanges("slots", previous, target[key]));
+      } else if (key === "items") {
+        changes.push(resourceChanges("items", previous, target[key]));
+      } else {
+        changes.push(recoveryChange(key.replace(/_/g, " "), previous, target[key]));
+      }
+    });
+    return name + " · " + (changes.length ? changes.join(" · ") : "recovery recorded");
+  }
+
+  /* Recovery is caller-authored boundary metadata, never a rules inference.
+     Presence is the contract: `{}` records a real boundary even though it has
+     no per-combatant delta to enumerate. The next replay's initial state is
+     still the state drawn after the beat; this descriptor only explains and
+     animates the change into it. */
+  function recoveryForChapter(index) {
+    var chapter = chapters[index];
+    if (!chapter || !Object.prototype.hasOwnProperty.call(chapter, "recovery")) {
+      return null;
+    }
+    var recovery = isRecord(chapter.recovery) ? chapter.recovery : {};
+    var before = combatantsByName(index ? endingCombatants(chapters[index - 1]) : []);
+    var after = combatantsByName(startingCombatants(chapter));
+    var names = Object.keys(recovery);
+    var summaries = names.map(function (name) {
+      return recoverySummary(name, recovery[name], before[name]);
+    });
+    if (!summaries.length) { summaries.push("No carried-state changes recorded."); }
+    var fromHpByName = Object.create(null);
+    var changedNames = [];
+    names.forEach(function (name) {
+      var held = before[name];
+      var target = after[name];
+      if (held && target && typeof held.hp === "number" && typeof target.hp === "number") {
+        fromHpByName[name] = held.hp;
+      }
+      if (target) { changedNames.push(name); }
+    });
+    var note = chapter.recovery_note;
+    return {
+      label: typeof note === "string" && note.trim() ? note : "Recovery",
+      summaries: summaries,
+      fromHpByName: fromHpByName,
+      changedNames: changedNames
+    };
+  }
+
   function playChapter(index) {
     var chapter = chapters[index];
     if (!chapter || !chapter.replay || typeof chapter.replay !== "object") {
@@ -1812,7 +2004,9 @@ if (typeof FiveeRenderer === "undefined") {
     /* The source name is what a refusal will be spoken as, so it says which
        chapter rather than which file: a reader looking at one bad fight in a
        run of six needs the ordinal, and the file name is the same for all. */
-    if (!loadBundle(chapter.replay, "chapter " + (index + 1))) { return false; }
+    if (!loadBundle(chapter.replay,
+      "chapter " + (index + 1), recoveryForChapter(index)
+    )) { return false; }
     chapterIndex = index;
     /* The picker follows the chapter rather than deciding it. It is a jump now,
        not the only way to move, so it has to show where playback has got to. */
@@ -1835,7 +2029,16 @@ if (typeof FiveeRenderer === "undefined") {
     if (!playChapter(chapterIndex + 1)) { return false; }
     playing = true;
     byId("btn-play").textContent = "Pause";
-    advancePlayback();
+    /* A motion-enabled recovery is already animating from the prior ending
+       state. Reduced motion applies the target immediately but still holds the
+       labelled boundary for one beat before starting the first event. */
+    if (!transition) {
+      if (recoveryBoundary && reducedMotion()) {
+        playTimer = window.setTimeout(advancePlayback, eventDuration());
+      } else {
+        advancePlayback();
+      }
+    }
     return true;
   }
 
