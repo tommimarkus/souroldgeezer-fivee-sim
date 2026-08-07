@@ -16,7 +16,11 @@ import pytest
 from fivee_sim.model.encounter import CORRECTABLE_KEYS, EncounterError
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service import sessions as sessions_service
-from fivee_sim.service.errors import NotFoundError, RequestError
+from fivee_sim.service.errors import (
+    IdempotencyConflictError,
+    NotFoundError,
+    RequestError,
+)
 
 from . import api
 from .conftest import REPLAY_GOBLIN, REPLAY_HERO, mapless_fight
@@ -406,22 +410,33 @@ class TestTheBoundsThatAreDeliberatelyAbsent:
 
 
 class TestIdempotency:
-    def test_a_retry_under_the_same_key_returns_the_first_result_and_applies_once(
+    def test_a_changed_correction_under_the_same_key_conflicts_and_applies_once(
         self,
     ) -> None:
         encounter_id = mapless_fight(seed=435)
 
-        first = api.encounter_correct(
+        api.encounter_correct(
             encounter_id, {"Thora": {"ac": 11}}, REASON, request_id="fix-1"
         )
-        second = api.encounter_correct(
-            encounter_id, {"Thora": {"ac": 99}}, "a different reason entirely",
-            request_id="fix-1",
-        )
+        with pytest.raises(IdempotencyConflictError, match="different request"):
+            api.encounter_correct(
+                encounter_id,
+                {"Thora": {"ac": 99}},
+                "a different reason entirely",
+                request_id="fix-1",
+            )
 
-        assert second == first
         state = api.encounter_state(encounter_id)
         assert next(r for r in state["combatants"] if r["name"] == "Thora")["ac"] == 11
+        corrections = [
+            attempt
+            for attempt in api.replay_export(encounter_id, format_version=2)["bundle"][
+                "attempts"
+            ]
+            if attempt["operation"] == "encounter_correct"
+        ]
+        assert len(corrections) == 1
+        assert corrections[0]["arguments"]["reason"] == REASON
 
 
 class TestRecoveryAndExport:

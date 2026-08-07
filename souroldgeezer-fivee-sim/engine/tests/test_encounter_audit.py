@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from fivee_sim.service.errors import NotFoundError
+from fivee_sim.service.errors import IdempotencyConflictError, NotFoundError
 
 from . import api
 from .conftest import mapless_fight
@@ -50,7 +50,7 @@ def test_rolls_and_saves_are_encounter_scoped_without_advancing_combat() -> None
     assert operations[-2:] == ["roll", "save"]
 
 
-def test_notes_are_durable_and_idempotent() -> None:
+def test_a_changed_note_under_the_same_key_conflicts_and_the_first_stays_durable() -> None:
     encounter_id = mapless_fight(seed=139)
 
     first = api.encounter_note(
@@ -59,14 +59,15 @@ def test_notes_are_durable_and_idempotent() -> None:
         category="negotiation",
         request_id="note-1",
     )
-    second = api.encounter_note(
-        encounter_id,
-        "This retry must not replace the first note.",
-        category="negotiation",
-        request_id="note-1",
-    )
+    with pytest.raises(IdempotencyConflictError, match="different request"):
+        api.encounter_note(
+            encounter_id,
+            "This retry must not replace the first note.",
+            category="negotiation",
+            request_id="note-1",
+        )
 
-    assert second == first
+    assert first["text"] == "The sentry agrees to stand down."
     notes = [
         entry
         for entry in api.replay_export(encounter_id, format_version=2)["bundle"]["attempts"]
