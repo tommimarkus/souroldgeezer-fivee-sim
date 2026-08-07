@@ -285,6 +285,11 @@ def adventure_state(adventure_id: str) -> dict[str, Any]:
     return _adventures.state_of(adventure_id)
 
 
+def adventure_brief(adventure_id: str, as_name: str) -> dict[str, Any]:
+    brief, _version = _adventures.brief_for(STATE, adventure_id, as_name)
+    return brief
+
+
 def adventure_list(status: str = "active") -> dict[str, Any]:
     return _adventures.list_adventures(status)
 

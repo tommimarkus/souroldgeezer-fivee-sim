@@ -440,6 +440,8 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_problem(_Problem(HTTPStatus.NOT_FOUND, str(error)))
         except StaleWriteError as error:
             self._send_problem(_Problem(HTTPStatus.CONFLICT, str(error)))
+        except adventure_service.NoCurrentChapterError as error:
+            self._send_problem(_Problem(HTTPStatus.CONFLICT, str(error)))
         except MapEditError as error:
             self._send_problem(_Problem(HTTPStatus.BAD_REQUEST, str(error)))
         except MapError as error:
@@ -1197,6 +1199,24 @@ class _Handler(BaseHTTPRequestHandler):
             HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["version"]))}
         )
 
+    def _h_adventure_brief(self, request: _Request) -> None:
+        result, version = adventure_service.brief_for(
+            self.state, request.id, request.query["as"]
+        )
+        headers = {"ETag": _etag_of(version)}
+        raw = self.headers.get("If-None-Match")
+        if raw is not None and any(
+            _etag_value(candidate) in ("*", version) for candidate in raw.split(",")
+        ):
+            self._send_bytes(
+                HTTPStatus.NOT_MODIFIED,
+                b"",
+                "application/json; charset=utf-8",
+                headers,
+            )
+            return
+        self._send_json(HTTPStatus.OK, result, headers=headers)
+
     def _h_adventure_encounter(self, request: _Request) -> None:
         body = request.body
         expected = self._adventure_precondition()
@@ -1477,6 +1497,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "adventure_list": _Handler._h_adventure_list,
     "adventure_create": _Handler._h_adventure_create,
     "adventure_state": _Handler._h_adventure_state,
+    "adventure_brief": _Handler._h_adventure_brief,
     "adventure_encounter": _Handler._h_adventure_encounter,
     "adventure_finalize": _Handler._h_adventure_finalize,
     "adventure_replay": _Handler._h_adventure_replay,

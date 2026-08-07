@@ -80,8 +80,10 @@ __all__ = [
     "FORMAT",
     "FORMAT_VERSION",
     "LIST_STATUSES",
+    "NoCurrentChapterError",
     "RECOVERY_NOTE_MAX",
     "adventure_path",
+    "brief_for",
     "carry_forward",
     "compose_replay",
     "create",
@@ -128,6 +130,10 @@ _SAFE_ID = re.compile(r"^adv-[A-Za-z0-9_-]+$")
 #: *no precondition at all*, and "this must not exist yet" is a precondition —
 #: it is what makes id allocation safe against a second process.
 _ABSENT = ""
+
+
+class NoCurrentChapterError(RequestError):
+    """The adventure exists, but has no chapter a live view can follow."""
 
 #: The fields a combatant carries **out of the fight it just finished** and into
 #: the next one: everything a turn can change and a spec can state.
@@ -470,6 +476,54 @@ def state_of(adventure_id: str) -> dict[str, Any]:
     """
     document, version = _load(adventure_id)
     return _response(document, version)
+
+
+def brief_for(
+    state: EngineState, adventure_id: str, as_name: str
+) -> tuple[dict[str, Any], str]:
+    """The current chapter as one seat may see it, plus its composite version.
+
+    The response is an allowlist rather than a redaction of the adventure
+    document.  Only the last linked member identifies the current chapter; its
+    encounter is projected through :func:`encounters.brief_for`, so this layer
+    never reconstructs player visibility or inherits a new adventure field by
+    accident.
+
+    The returned version joins the adventure document version to the current
+    encounter's journal head.  A polling client therefore wakes for either a
+    chapter transition or a move inside the current chapter.
+    """
+    document, adventure_version = _load(adventure_id)
+    members = document["members"]
+    if not members:
+        raise NoCurrentChapterError(
+            f"adventure {adventure_id!r} has no current chapter; link an encounter first"
+        )
+    member = members[-1]
+    encounter_id = str(member["encounter_id"])
+    session = sessions.session_for(state, encounter_id)
+    player_state = encounters.brief_for(state, encounter_id, as_name)
+    chapter: dict[str, Any] = {
+        "index": int(member["index"]),
+        "encounter_id": encounter_id,
+        "mode": str(member["mode"]),
+        "finalized": session.finalized,
+    }
+    recovery_note = member.get("recovery_note")
+    if isinstance(recovery_note, str):
+        chapter["recovery_note"] = recovery_note
+    payload = {
+        "adventure": {
+            "id": str(document["id"]),
+            "name": str(document["name"]),
+            "status": str(document["status"]),
+            "chapter_count": len(members),
+        },
+        "chapter": chapter,
+        "state": player_state,
+    }
+    version = sha256_of(f"{adventure_version}:{session.journal_head}")
+    return payload, version
 
 
 def list_adventures(status: str = "active") -> dict[str, Any]:

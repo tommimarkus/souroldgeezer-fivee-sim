@@ -3940,6 +3940,132 @@ class TestAdventuresOverHttp:
         assert read.json()["name"] == "The Sunless Citadel"
         assert read.headers["ETag"] == created.headers["ETag"]
 
+    def test_the_live_brief_is_player_safe_and_conditionally_pollable(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor, "The Drowned Mill")
+        linked = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            headers={"If-Match": "*"},
+        )
+        assert linked.status == 201, linked.body
+        encounter_id = linked.json()["encounter_id"]
+
+        response = editor.request("GET", "/api/v1/adventures/adv-1/brief?as=Thora")
+
+        assert response.status == 200, response.body
+        body = response.json()
+        assert set(body) == {"adventure", "chapter", "state"}
+        assert body["adventure"] == {
+            "id": "adv-1",
+            "name": "The Drowned Mill",
+            "status": "active",
+            "chapter_count": 1,
+        }
+        assert body["chapter"] == {
+            "index": 0,
+            "encounter_id": encounter_id,
+            "mode": "combat",
+            "finalized": False,
+        }
+        assert body["state"] == editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        ).json()
+        etag = response.headers["ETag"]
+        adventure_etag = editor.request(
+            "GET", "/api/v1/adventures/adv-1"
+        ).headers["ETag"]
+
+        unchanged = editor.request(
+            "GET",
+            "/api/v1/adventures/adv-1/brief?as=Thora",
+            headers={"If-None-Match": etag},
+        )
+        assert unchanged.status == 304
+        assert unchanged.body == b""
+        assert unchanged.headers["ETag"] == etag
+
+        noted = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/notes",
+            json_body={"text": "The water rises."},
+        )
+        assert noted.status == 201, noted.body
+        changed_fight = editor.request(
+            "GET",
+            "/api/v1/adventures/adv-1/brief?as=Thora",
+            headers={"If-None-Match": etag},
+        )
+        assert changed_fight.status == 200
+        assert changed_fight.headers["ETag"] != etag
+        assert editor.request(
+            "GET", "/api/v1/adventures/adv-1"
+        ).headers["ETag"] == adventure_etag
+
+        next_chapter = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"seed": 6},
+            headers={"If-Match": "*"},
+        )
+        assert next_chapter.status == 201, next_chapter.body
+        changed_run = editor.request(
+            "GET", "/api/v1/adventures/adv-1/brief?as=Thora"
+        )
+        assert changed_run.status == 200
+        assert changed_run.headers["ETag"] != changed_fight.headers["ETag"]
+        assert changed_run.json()["chapter"]["index"] == 1
+
+        current_id = next_chapter.json()["encounter_id"]
+        encounter_etag = editor.request(
+            "GET", f"/api/v1/encounters/{current_id}"
+        ).headers["ETag"]
+        finalized = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/finalize",
+            json_body={},
+            headers={"If-Match": "*"},
+        )
+        assert finalized.status == 200, finalized.body
+        changed_adventure = editor.request(
+            "GET",
+            "/api/v1/adventures/adv-1/brief?as=Thora",
+            headers={"If-None-Match": changed_run.headers["ETag"]},
+        )
+        assert changed_adventure.status == 200
+        assert changed_adventure.headers["ETag"] != changed_run.headers["ETag"]
+        assert changed_adventure.json()["adventure"]["status"] == "finalized"
+        assert editor.request(
+            "GET", f"/api/v1/encounters/{current_id}"
+        ).headers["ETag"] == encounter_etag
+
+    def test_an_empty_adventures_live_brief_is_409(self, editor: Editor) -> None:
+        self.start(editor)
+
+        assert_problem(
+            editor.request("GET", "/api/v1/adventures/adv-1/brief?as=Thora"),
+            409,
+            "adventure 'adv-1' has no current chapter",
+        )
+
+    def test_an_unknown_live_brief_seat_is_404(self, editor: Editor) -> None:
+        self.start(editor)
+        linked = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": 7},
+            headers={"If-Match": "*"},
+        )
+        assert linked.status == 201, linked.body
+
+        assert_problem(
+            editor.request("GET", "/api/v1/adventures/adv-1/brief?as=Nobody"),
+            404,
+            "Nobody",
+        )
+
     def test_an_unknown_adventure_is_404_and_names_what_is_there(
         self, editor: Editor
     ) -> None:

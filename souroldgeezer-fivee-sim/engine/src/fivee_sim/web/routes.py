@@ -228,6 +228,12 @@ _IF_MATCH = Param(
         "ETag, or * to write regardless"
     ),
 )
+_IF_NONE_MATCH = Param(
+    "If-None-Match",
+    "header",
+    {"type": "string"},
+    description="the ETag from the last live brief; a match answers 304",
+)
 #: An adventure's precondition, required rather than optional — the map's rule
 #: rather than the encounter's, because an adventure is a *document* rewritten
 #: whole. An unguarded link would let two callers each be told they linked and
@@ -956,6 +962,20 @@ ROUTES: tuple[Route, ...] = (
         "One adventure: its encounters in order, and the version a write must match.",
         params=(_ID,),
         handler="adventure_state",
+    ),
+    Route(
+        "GET", f"{API_PREFIX}/adventures/{{id}}/brief", "adventure.brief",
+        "The current chapter as one combatant may see it, conditionally pollable.",
+        params=(
+            _ID,
+            Param(
+                "as", "query", {"type": "string"}, required=True,
+                description="the combatant whose chair this is",
+            ),
+            _IF_NONE_MATCH,
+        ),
+        handler="adventure_brief",
+        errors=(409,),
     ),
     Route(
         "POST", f"{API_PREFIX}/adventures/{{id}}/encounters", "adventure.encounter",
