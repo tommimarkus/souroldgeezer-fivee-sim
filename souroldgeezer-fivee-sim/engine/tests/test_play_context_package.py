@@ -161,6 +161,36 @@ def test_controller_receives_values_and_discovers_direct_command_syntax() -> Non
             assert field in dispatch.lower()
 
 
+def test_controller_preserves_closed_values_and_changes_keys_for_corrected_calls() -> None:
+    controller = _section(_text("agents/play-controller.md"), "## Run the table")
+    mechanical = _section(
+        _text("skills/play/references/table-loop.md"),
+        "## Mechanical context and briefs",
+    )
+    guidance = " ".join((controller + mechanical).replace("`", "").split())
+
+    assert re.search(
+        r"closed.set.{0,160}(?:exact|verbatim).{0,160}(?:spell|case)",
+        guidance,
+        flags=re.IGNORECASE,
+    )
+    assert re.search(
+        r"semantic argument.{0,200}(?:changes|changed).{0,200}fresh idempotency key",
+        guidance,
+        flags=re.IGNORECASE,
+    )
+    assert re.search(
+        r"at most one help.{0,100}one corrected call",
+        guidance,
+        flags=re.IGNORECASE,
+    )
+    assert re.search(r"never identical retry", guidance, flags=re.IGNORECASE)
+
+    encounter = _text("skills/encounter-sim/SKILL.md")
+    assert "charisma/persuasion" in encounter
+    assert "Charisma/Persuasion" not in encounter
+
+
 def test_fresh_interval_rehydrates_roles_from_bounded_table_state() -> None:
     controller = CONTROLLER_PATH.read_text(encoding="utf-8")
     rehydration = _section(controller, "## Fresh interval rehydration")

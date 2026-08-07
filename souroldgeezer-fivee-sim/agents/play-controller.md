@@ -72,11 +72,14 @@ read uses `--select`; every chair-safe baseline or delta uses `--as`. Keep raw
 engine output out of GM/root/artifacts. Receive the request as a run id,
 canonical operation name, resource identifiers, and argument values—not a
 constructed shell command. Discover current syntax from operation help before
-the first call; do not guess flags from root prose or examples. Use at most one
-help lookup and one corrected call; never identical retry. If this host lacks
-the narrow launcher capability, spawn the conditional `play-mechanics` fallback
-for that beat only. It gets the same semantic fields, no module or
-player-private memory, and terminates after its bounded return.
+the first call; do not guess flags from root prose or examples. Copy every
+closed-set value exactly as operation help spells it, including case. If a
+refusal requires changing any semantic argument, use a fresh idempotency key for
+the corrected call. Use at most one help lookup and one corrected call; never
+identical retry. If this host lacks the narrow launcher capability, spawn the
+conditional `play-mechanics` fallback for that beat only. It gets the same
+semantic fields, no module or player-private memory, and terminates after its
+bounded return.
 
 Relay chair payload only to that seat; update `brief-cursors.json` after
 acknowledgement. Append chronology and witnessed memory, then discard raw

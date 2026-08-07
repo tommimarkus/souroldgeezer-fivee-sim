@@ -15,8 +15,12 @@ chair view from `encounter.state`.
 The request arrives as a run id, canonical operation name, resource
 identifiers, and argument values. Never accept or relay a constructed shell
 command. Use the one permitted help lookup to discover current syntax, then
-apply only the exact supplied values plus required `--select` or `--as`
-projection fields.
+apply only the supplied values plus required `--select` or `--as` projection
+fields. Copy each closed-set value exactly as help spells it, including case;
+do not normalize one from prose or an example. This exact-value rule also
+governs the semantic fields sent to the conditional fallback. If any semantic
+argument changes after a refusal, use a fresh idempotency key for the corrected
+call; the old key belongs to the refused argument set.
 
 Read one authoritative snapshot and use exactly one mechanical-context
 invocation for the beat, not one invocation per chair. Establish one full
@@ -35,7 +39,8 @@ re-spawn forces `encounter.brief` and one new chair-safe baseline; do not reques
 a `delta` view until the re-baseline is acknowledged. This recovery exception
 does not permit repeats in ordinary council.
 
-Use at most one help call and one corrected call; a second failure blocks. The
+Use at most one help call and one corrected call; never identical retry, and a
+second failure blocks. The
 packaged `play-mechanics` role is a conditional one-beat fallback only when the
 controller's direct launcher capability is unavailable. It receives the same
 compact request, no module/transcript/player memory, returns bounded OUTCOME,

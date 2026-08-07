@@ -248,7 +248,7 @@ leaving it only in prose.
 
 `dice.roll`, `dice.check`, and `dice.save` accept an `--encounter-id` and an
 `--idempotency-key`. A scoped check can name `--ability` and `--skill` (for
-example Charisma/Persuasion or Charisma/Intimidation); this is audit metadata
+example charisma/persuasion or charisma/intimidation); this is audit metadata
 around the supplied modifier, not a proficiency system. Scoped primitives are
 recorded without consuming the encounter's combat RNG or advancing its turn.
 
