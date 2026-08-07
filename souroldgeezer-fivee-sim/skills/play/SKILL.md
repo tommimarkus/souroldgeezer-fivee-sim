@@ -54,7 +54,8 @@ read [core seating](references/seating-and-pauses.md). Party councils default to
 requires an explicit roster opt-in.
 
 If any seat is human, load [human seats](references/human-seats.md) before its
-first prompt. Do not load that reference for an uninterrupted all-agent run.
+first prompt. That reference also owns the live seat view after the adventure's
+first encounter is linked. Do not load it for an uninterrupted all-agent run.
 
 ## 2. Brief the seats
 

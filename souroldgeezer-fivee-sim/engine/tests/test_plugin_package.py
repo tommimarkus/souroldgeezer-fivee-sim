@@ -417,6 +417,73 @@ def test_party_council_is_resumable_for_mixed_human_and_agent_seats() -> None:
     )
 
 
+def test_human_seats_receive_a_fresh_unrecorded_live_adventure_view() -> None:
+    skill = _text("skills/play/SKILL.md")
+    seating = _markdown_section(skill, "## 1. Seat the table")
+    human = _packaged_reference(
+        "skills/play/SKILL.md",
+        seating,
+        "references/human-seats.md",
+    )
+    resume = _packaged_reference(
+        "skills/play/SKILL.md",
+        _markdown_section(skill, "## 6. Checkpoint, pause, and resume"),
+        "references/resume.md",
+    )
+
+    assert re.search(
+        r"adventure.{0,200}link.{0,120}(?:first|initial).{0,120}encounter"
+        r".{0,300}fivee serve",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert "viewer_url" in human
+    assert (
+        "?adventure=<URL-encoded adventure id>&as=<URL-encoded seat>#<launch token>"
+        in human
+    )
+    assert re.search(r"(?:before|ahead of).{0,100}#", human, flags=re.IGNORECASE)
+    assert re.search(
+        r"URL.encode.{0,200}adventure.{0,200}URL.encode.{0,200}seat",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:only|solely).{0,120}(?:that|named).{0,80}seat",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    for artifact in ("roster", "checkpoint", "transcript", "seat memory", "report"):
+        assert re.search(
+            rf"(?:never|do not).{{0,240}}token.{{0,240}}{artifact}"
+            rf"|(?:never|do not).{{0,240}}{artifact}.{{0,240}}token",
+            human,
+            flags=re.IGNORECASE | re.DOTALL,
+        ), artifact
+    assert re.search(r"(?:loopback|same.machine)", human, flags=re.IGNORECASE)
+    assert re.search(
+        r"player.safe.{0,80}projection",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:cooperating|cooperative).{0,200}(?:not|isn't|is not).{0,100}"
+        r"(?:per.seat )?authentication",
+        human,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"fivee serve.{0,200}fresh.{0,200}viewer_url",
+        resume,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"server replacement.{0,200}launch tokens change",
+        resume,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 def test_player_tool_inventory_reports_weaker_boundaries_without_pausing() -> None:
     seating = _text("skills/play/references/seating-and-pauses.md")
     roster_example = re.search(r"```json\s+(?P<body>.*?)```", seating, flags=re.DOTALL)

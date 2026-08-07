@@ -33,7 +33,12 @@ what and what happens next.
 5. Read authoritative mechanics from `fivee encounter.state` or
    `fivee adventure.state` through the resettable mechanical context; never
    reconstruct state from chronology.
-6. Say where play stands and continue.
+6. If the roster has a human player seat, run `fivee serve` again. Reconstruct
+   each seat's fresh URL from the returned `viewer_url` using the human-seats
+   procedure and hand it only to that seat before continuing. Do this after a
+   server replacement too: launch tokens change, so a URL from the prior server
+   is invalid. Never restore a live URL from any saved artifact.
+7. Say where play stands and continue.
 
 `brief-cursors.json` records acknowledged recipient ownership, not merely what
 the server last produced. Every re-spawned player is a new context generation:
