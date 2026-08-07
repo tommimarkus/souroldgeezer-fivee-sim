@@ -272,6 +272,109 @@ def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
     )
 
 
+def test_play_skill_has_a_bounded_participant_scoped_party_council() -> None:
+    skill = _text("skills/play/SKILL.md")
+    council = _markdown_section(skill, "### Party council")
+
+    for message_kind in ("`TABLE`", "`SAY`", "`COMMIT`"):
+        assert message_kind in council
+    assert re.search(
+        r"(?:present|eligible).{0,300}\bcommunicat",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"own\s+(?:player\s+)?brief.{0,500}\b(?:never|do not)\b"
+        r".{0,200}(?:another|other)\s+(?:player|seat).{0,100}\bbrief",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"one\s+proposal\s+pass.{0,500}one\s+(?:response|revision)\s+pass",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:material|plan-breaking).{0,200}\breopen",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"coordinator.{0,300}\brelay",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"plan.{0,300}\badvisory.{0,300}(?:acting|active)\s+seat.{0,300}\bCOMMIT",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def test_party_council_keeps_table_talk_out_of_world_state_and_gm_bulk_context() -> None:
+    skill = _text("skills/play/SKILL.md")
+    council = _markdown_section(skill, "### Party council")
+    game_master = _markdown_section(_text("agents/game-master.md"), "## Party council")
+    player = _markdown_section(_text("agents/typical-player.md"), "## Party council")
+
+    assert re.search(
+        r"`TABLE`.{0,300}(?:not|never).{0,200}(?:enemy|enemies|creature|world)",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"`SAY`.{0,300}(?:world|hear|audible|encounter)",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:raw|full).{0,200}(?:discussion|council|table talk).{0,300}"
+        r"(?:not|never).{0,100}game.master",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:bounded|compact).{0,100}(?:summary|plan).{0,300}table.only",
+        game_master,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"table.only.{0,300}(?:monster|enemy|NPC).{0,200}(?:does not|never|not)",
+        game_master,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"`COMMIT`.{0,300}\bown\b.{0,200}(?:action|turn|declaration)",
+        player,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def test_party_council_is_resumable_for_mixed_human_and_agent_seats() -> None:
+    seating = _text("skills/play/references/seating-and-pauses.md")
+    council = _markdown_section(seating, "## Party council")
+    resume = _markdown_section(seating, "## Resume")
+
+    assert "council.json" in council
+    for field in ("participants", "pass", "current_plan", "open_questions"):
+        assert f'"{field}"' in council
+    assert re.search(
+        r"agent.{0,300}(?:human|user-input).{0,300}\brelay",
+        council,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"council\.json.{0,400}\bparticipant",
+        resume,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:not|never).{0,200}\bfull\s+transcript\b",
+        resume,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 def test_player_tool_inventory_reports_weaker_boundaries_without_pausing() -> None:
     seating = _text("skills/play/references/seating-and-pauses.md")
     roster_example = re.search(r"```json\s+(?P<body>.*?)```", seating, flags=re.DOTALL)
