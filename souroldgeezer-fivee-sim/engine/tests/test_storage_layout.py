@@ -36,6 +36,10 @@ runs = "runs"
 
 def _complete_run(configuration: Configuration, run_id: str) -> None:
     root = configuration.runs_dir / run_id
+    _complete_run_at(root, run_id)
+
+
+def _complete_run_at(root: Path, run_id: str) -> None:
     for name in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
         (root / name).mkdir(parents=True, exist_ok=True)
     (root / "adventures" / f"{run_id}.json").write_text("{}", encoding="utf-8")
@@ -82,6 +86,30 @@ def test_an_unknown_or_unsafe_run_is_refused(tmp_path: Path, run_id: str) -> Non
 
     with pytest.raises(RunSelectionError, match="run"):
         storage_layout(configuration=configuration, run_id=run_id)
+
+
+def test_a_symlinked_run_root_is_refused(tmp_path: Path) -> None:
+    configuration = _configuration(tmp_path)
+    outside = tmp_path / "outside" / "adv-linked"
+    _complete_run_at(outside, "adv-linked")
+    configuration.runs_dir.mkdir(parents=True)
+    (configuration.runs_dir / "adv-linked").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(RunSelectionError, match="symbolic link"):
+        storage_layout(configuration=configuration, run_id="adv-linked")
+
+
+def test_a_symlinked_mutable_run_directory_is_refused(tmp_path: Path) -> None:
+    configuration = _configuration(tmp_path)
+    _complete_run(configuration, "adv-linked-child")
+    maps = configuration.runs_dir / "adv-linked-child" / "maps"
+    maps.rmdir()
+    outside = tmp_path / "outside-maps"
+    outside.mkdir()
+    maps.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(RunSelectionError, match="symbolic link"):
+        storage_layout(configuration=configuration, run_id="adv-linked-child")
 
 
 def test_storage_layout_can_be_constructed_directly_only_with_complete_roots(

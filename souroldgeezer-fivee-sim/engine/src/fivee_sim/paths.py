@@ -413,11 +413,25 @@ def storage_layout(
         if _SAFE_RUN_ID.fullmatch(run_id) is None:
             raise RunSelectionError(f"run {run_id!r} is not a safe adventure id")
         run = runs / run_id
+        if run.is_symlink():
+            raise RunSelectionError(f"run {run_id!r} may not be a symbolic link")
         if not run.is_dir():
             raise RunSelectionError(f"run {run_id!r} does not exist under {runs}")
-        required = {"maps", "scenes", "replays", "encounters", "adventures", "blobs"}
+        runs_canonical = runs.resolve()
+        if not run.resolve().is_relative_to(runs_canonical):
+            raise RunSelectionError(f"run {run_id!r} resolves outside {runs}")
+        required = ("maps", "scenes", "replays", "encounters", "adventures", "blobs")
+        linked = sorted(name for name in required if (run / name).is_symlink())
+        if linked:
+            raise RunSelectionError(
+                f"run {run_id!r} contains symbolic link: {', '.join(linked)}"
+            )
         missing = sorted(name for name in required if not (run / name).is_dir())
         document = run / "adventures" / f"{run_id}.json"
+        if document.is_symlink():
+            raise RunSelectionError(
+                f"run {run_id!r} adventure document may not be a symbolic link"
+            )
         if missing or not document.is_file():
             detail = f"missing {', '.join(missing)}" if missing else "missing adventure document"
             raise RunSelectionError(f"run {run_id!r} is incomplete: {detail}")
