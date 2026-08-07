@@ -689,6 +689,23 @@ class TestTheLookupSpecStaysNarrow:
         ):
             creature_from_spec({"monster": "Goblin Warrior", "hp": -5}, registry)
 
+    def test_a_looked_up_combatant_refuses_the_sentinel_value_itself(
+        self, registry: ContentRegistry
+    ) -> None:
+        # -1 is the one negative this module gives a *meaning* to: it is
+        # ``specs._HP_UNSET``, what the helper answers for an absent key and what
+        # this branch compares against before applying anything. So it is the
+        # boundary where "refused" and "read as unset" are one relaxation apart,
+        # and the only value where the two are indistinguishable from the
+        # outside — a guard written ``< -1`` passes every other case here while
+        # building this goblin at full health.
+        sentinel = specs._HP_UNSET
+        with pytest.raises(
+            RequestError,
+            match=f"combatant Goblin Warrior: hp {sentinel} cannot be negative",
+        ):
+            creature_from_spec({"monster": "Goblin Warrior", "hp": sentinel}, registry)
+
     def test_a_looked_up_combatant_still_refuses_a_carried_flag(
         self, registry: ContentRegistry
     ) -> None:
