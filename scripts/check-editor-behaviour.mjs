@@ -1405,7 +1405,8 @@ await suite("renderer.js: token status furniture", "the renderer sandbox", async
   const s = FACING_VIEW.scale;
   const cx = FACING_AT[0] * s + s / 2;
   const cy = FACING_AT[1] * s + s / 2;
-  const ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
+  const tokenRadius = s * 0.36;
+  const ringEdge = tokenRadius + Math.max(1.5, s * 0.07) * 1.5;
   const draw = (token) => {
     R.render(page.context, facingDoc({ bare: true }), FACING_VIEW, {
       tokens: [Object.assign({
@@ -1414,29 +1415,44 @@ await suite("renderer.js: token status furniture", "the renderer sandbox", async
     });
     return page.last();
   };
-  const ranksIn = (frame) => frame.texts.filter((entry) => entry.text.startsWith("↑"));
+  const ranksIn = (frame) => frame.texts.filter((entry) => /^\d+$/.test(entry.text));
 
   const ranked = draw({ initiativeRank: 12 });
   const ranks = ranksIn(ranked);
-  const capsules = ranked.paths.filter(
-    (path) => path.kind === "fill" && path.ink === "rgba(250,248,242,0.96)");
-  const capsuleOps = capsules.length === 1 ? capsules[0].ops : [];
-  const capsuleRight = Math.max(...capsuleOps.filter(
+  const medallions = ranked.paths.filter(
+    (path) => path.kind === "fill" && path.ink === "rgba(18,20,23,0.92)");
+  const medallionOps = medallions.length === 1 ? medallions[0].ops : [];
+  const medallionLeft = Math.min(...medallionOps.filter(
+    (op) => op[0] === "arc" || op[0] === "lineTo").map(
+    (op) => op[1] - (op[0] === "arc" ? op[3] : 0)));
+  const medallionRight = Math.max(...medallionOps.filter(
     (op) => op[0] === "arc" || op[0] === "lineTo").map(
     (op) => op[1] + (op[0] === "arc" ? op[3] : 0)));
-  const capsuleBottom = Math.max(...capsuleOps.filter(
+  const medallionTop = Math.min(...medallionOps.filter(
+    (op) => op[0] === "arc" || op[0] === "lineTo").map(
+    (op) => op[2] - (op[0] === "arc" ? op[3] : 0)));
+  const medallionBottom = Math.max(...medallionOps.filter(
     (op) => op[0] === "arc" || op[0] === "lineTo").map(
     (op) => op[2] + (op[0] === "arc" ? op[3] : 0)));
+  const rankedLabel = ranked.texts.find((entry) => entry.text === "H");
+  const unranked = draw({});
+  const unrankedLabel = unranked.texts.find((entry) => entry.text === "H");
   check("a ranked creature wears the replay order supplied by its caller",
-    ranks.length === 1 && ranks[0].text === "↑12", show(ranked.texts));
-  check("and corrected v1 keeps the whole capsule beyond the health ring at upper-left",
-    ranks.length === 1 && capsules.length === 1
-      && capsuleRight < cx && capsuleBottom < cy
-      && Math.hypot(capsuleRight - cx, capsuleBottom - cy) > ringEdge,
-    show([ranks, capsules, { cx, cy, ringEdge, capsuleRight, capsuleBottom }]));
+    ranks.length === 1 && ranks[0].text === "12", show(ranked.texts));
+  check("and v2 anchors its medallion inside the token at bottom-centre",
+    ranks.length === 1 && medallions.length === 1
+      && ranks[0].x === cx && ranks[0].y > cy
+      && medallionLeft >= cx - tokenRadius && medallionRight <= cx + tokenRadius
+      && medallionTop >= cy && medallionBottom < cy + tokenRadius,
+    show([ranks, medallions, {
+      cx, cy, tokenRadius, medallionLeft, medallionRight, medallionTop, medallionBottom,
+    }]));
+  check("and the creature glyph yields enough vertical space to read the rank",
+    rankedLabel && unrankedLabel && rankedLabel.y < unrankedLabel.y,
+    show([rankedLabel, unrankedLabel]));
 
   check("an unranked creature gets no initiative furniture",
-    ranksIn(draw({})).length === 0, show(page.last().texts));
+    ranksIn(unranked).length === 0, show(unranked.texts));
   check("and a dead creature gets none even when handed a stale rank",
     ranksIn(draw({ initiativeRank: 1, hpFraction: 0, dead: true })).length === 0,
     show(page.last().texts));

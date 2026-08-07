@@ -540,6 +540,8 @@ var FiveeRenderer = (function () {
        hiding the very state the ring exists to show. */
     var healthRingWidth = Math.max(1.5, size * 0.07);
     var furnitureEdge = r + healthRingWidth * 1.5;
+    var hasInitiative = !token.dead && Number.isInteger(token.initiativeRank)
+      && token.initiativeRank > 0;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = token.down || token.dead
@@ -570,7 +572,10 @@ var FiveeRenderer = (function () {
         + "px ui-sans-serif, system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(token.label).charAt(0), cx, cy + size * 0.02);
+      ctx.fillText(
+        String(token.label).charAt(0), cx,
+        hasInitiative ? cy - size * 0.1 : cy + size * 0.02
+      );
     }
     if (token.dead) {
       ctx.strokeStyle = dark ? "#e8e8e8" : "#222";
@@ -590,26 +595,28 @@ var FiveeRenderer = (function () {
       ctx.arc(cx + stableReach, cy - stableReach, stableRadius, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (!token.dead && Number.isInteger(token.initiativeRank) && token.initiativeRank > 0) {
-      /* A compact turn-order badge beyond the upper-left edge of the health
-         ring. The viewer decides the rank; this shared renderer only presents
-         the optional number it was handed. A dead creature has left initiative
-         and therefore wears no rank even if a stale caller supplies one.
+    if (hasInitiative) {
+      /* The rank belongs inside its creature at six o'clock: crowded tokens can
+         no longer make a detached badge look like somebody else's. The health
+         ring remains outside the disc, while Stable and later effect furniture
+         retain their separate exterior lane at upper-right. The viewer decides
+         the rank; this shared renderer only presents the number it was handed.
 
-         A capsule rather than a fixed circle keeps a double-digit encounter
-         legible without shrinking its number below the token's own initial. */
-      var rank = "\u2191" + token.initiativeRank;
-      var fontSize = Math.max(7, Math.min(13, Math.round(size * 0.22)));
-      var badgeHeight = Math.max(9, Math.round(size * 0.26));
+         A short medallion rather than a fixed circle keeps double-digit order
+         legible without an arrow competing with the number. */
+      var rank = String(token.initiativeRank);
+      var fontSize = Math.max(6, Math.min(12, Math.round(size * 0.25)));
+      var badgeHeight = Math.max(
+        6, Math.min(Math.round(size * 0.28), Math.floor(r - 0.5))
+      );
       ctx.save();
       ctx.font = "bold " + fontSize + "px ui-sans-serif, system-ui, sans-serif";
       var badgeWidth = Math.max(
-        badgeHeight, Math.ceil(ctx.measureText(rank).width + Math.max(4, size * 0.12))
+        badgeHeight, Math.ceil(ctx.measureText(rank).width + Math.max(3, size * 0.08))
       );
-      var badgeGap = Math.max(1, size * 0.02);
-      var badgeTangent = furnitureEdge / Math.sqrt(2);
-      var badgeX = cx - badgeTangent - badgeGap - badgeWidth;
-      var badgeY = cy - badgeTangent - badgeGap - badgeHeight;
+      var badgeInset = 0.5;
+      var badgeX = cx - badgeWidth / 2;
+      var badgeY = cy + r - badgeInset - badgeHeight;
       var badgeRadius = badgeHeight / 2;
       ctx.beginPath();
       ctx.arc(
@@ -622,12 +629,12 @@ var FiveeRenderer = (function () {
         -Math.PI / 2, Math.PI / 2
       );
       ctx.closePath();
-      ctx.fillStyle = dark ? "rgba(24,26,30,0.94)" : "rgba(250,248,242,0.96)";
+      ctx.fillStyle = "rgba(18,20,23,0.92)";
       ctx.fill();
-      ctx.strokeStyle = dark ? "#c9a86a" : "#7a5c2e";
+      ctx.strokeStyle = "rgba(255,255,255,0.88)";
       ctx.lineWidth = Math.max(1, size * 0.035);
       ctx.stroke();
-      ctx.fillStyle = dark ? "#f0cf8b" : "#5e431c";
+      ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(rank, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
