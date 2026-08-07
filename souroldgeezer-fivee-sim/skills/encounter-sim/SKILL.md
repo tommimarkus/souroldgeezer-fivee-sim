@@ -589,6 +589,43 @@ would tax every later ability check.
 Do not model surprise by skipping a creature's first turn. That is the older
 rule, and doing it by hand costs a combatant an action the current rules give it.
 
+## Overwriting what the simulation got wrong
+
+`encounter.condition` is a ruling within the rules the engine already runs.
+`fivee encounter.correct` is the other case: an engine defect, a rule this
+engine does not model, or an input you only later learn was wrong — a fight
+holding a number nobody at the table believes.
+
+```bash
+fivee encounter.correct <id> --json '{
+  "state": {"Thora": {"hp": 12}, "Bram": {"conditions": ["prone"]}},
+  "reason": "the fireball never landed"
+}'
+```
+
+`state` is keyed by combatant name, exactly like `adventure.encounter`'s own
+`recovery` overlay. Every combatant named is validated whole before any of
+them is written — a refusal for one leaves all of them untouched. `reason` is
+mandatory and bounded; it reaches the journal, the encounter log, and an
+exported replay bundle, but no player seat is ever served it — a corrected
+`field`, its `before` and its `after` are withheld from every brief, the same
+way an exact hit point total already is.
+
+Only a fixed set of fields may be corrected — the ones a fight itself can
+change, plus the printed sheet's `ac` and `max_hp` and the `initiative` roll
+announced out loud. A derived value like `conscious` has no field to correct
+because nothing sets it directly; fix what it derives from instead. Correcting
+`conditions` routes through the same effect ledger `encounter.condition` owns,
+so lifting one here still ends whatever spell was sustaining it.
+
+**Initiative may only be corrected before the first turn is taken**, and never
+in an interlude — re-sorting an order the fight has already walked would skip
+or double a turn. There is deliberately no guard against a finished fight:
+"it ended and it should not have" is exactly the correction this exists for,
+reviving the last enemy simply un-ends it. A correction is journalled and
+replayed on recovery, so it survives `encounter.resume` like any other
+change to the fight.
+
 ## What is actually loaded
 
 **Do not assume the bundled slice is what is loaded.** A campaign can add its own

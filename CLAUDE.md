@@ -323,6 +323,20 @@ for events by reading every `_emit` call site out of `model/encounter.py` with
 `ast`, because a sampled set is only whatever the fixture happened to make
 happen. A new field lands in no bucket and fails until someone decides.
 
+**`CORRECTABLE_KEYS` / `UNCORRECTABLE_KEYS` is a seventh pair over the same
+payload, and it exists for a different reason than the six above.** Every
+`*_VISIBLE_KEYS` / `*_WITHHELD_KEYS` pair guards a leak — an *output*
+projection deciding who may be shown a field that already has a value.
+`encounter.correct` writes, not reads, and `_creature_state` emits keys with
+**no setter at all**: `conscious`, `dying`, `speeds` and `elevation` are
+derived, and `dodging`, `disengaged` and `reaction_available` live on the
+encounter rather than the creature. `UNCORRECTABLE_KEYS` is the only place
+that knowledge is written down, and it earns its place beside
+`CORRECTABLE_KEYS` the same way the other pairs earn theirs: the two are held
+against a real `_creature_state` payload by `tests/test_correction.py`, so an
+emitted key falling into neither bucket fails the same way a brief field
+falling into neither of its two does.
+
 `EVENT_NEVER_KEYS` is the one refinement: a named subset *inside*
 `EVENT_WITHHELD_KEYS` for the handful no seat is served at all — `dc`, `check`,
 the map's wiring — so that the pair stays total and the sharper rule is still
@@ -469,13 +483,23 @@ which is where a caller is about to act on what the journal says.
 Two properties make that sound rather than merely cheap. A journal broken in the
 **middle** now lists as `active` rather than `corrupt` — nothing is trusted on
 the strength of a summary, and the refusal still arrives, in full, at recovery.
-And **finalization is terminal**: `act`, `advance` and `audited_primitive` all
-refuse a finished fight *before* `attempt_started` writes anything, so
-`finalized` is the last word a journal can hold and a listing can read a status
-off one line. That refusal rolled no dice and changed no state, which is what
-makes dropping its record a saving rather than a deletion — the same test
-`REPLAYED_OPERATIONS` applies, and the same reason `cached_request` short-circuits
-above it. A refusal the *rules* make is still audited in full.
+And **finalization is terminal**: `act`, `advance`, `correct` and
+`audited_primitive` all refuse a finished fight *before* `attempt_started`
+writes anything, so `finalized` is the last word a journal can hold and a
+listing can read a status off one line. That refusal rolled no dice and
+changed no state, which is what makes dropping its record a saving rather
+than a deletion — the same test `REPLAYED_OPERATIONS` applies, and the same
+reason `cached_request` short-circuits above it. A refusal the *rules* make
+is still audited in full.
+
+`correct` is nonetheless the one write that carries no `over` guard of its
+own — deliberately, and only up to that line. `Encounter.correct` never asks
+whether the fight has ended, because "it ended and it should not have" is one
+of the corrections it exists for: `over` is derived, so reviving the last
+enemy simply un-ends it, with no machinery. `finalized` is a different fact
+from `over` and the one this system actually treats as terminal — a table can
+correct a fight that is over but not yet finalized, and cannot correct one
+that is.
 
 **Each fight owns a directory, and the id is the directory's name.**
 `<encounters_root>/enc-7/` holds `journal.jsonl`, the lock guarding it, a
@@ -718,7 +742,7 @@ default every kernel function falls back to and the kernel may not do I/O.
 `content.py` renders that table as a synthetic pack so it still goes through the
 same validation.
 
-**A new `Creature` field crosses nine checkpoints, and a survey of its *type*
+**A new `Creature` field crosses ten checkpoints, and a survey of its *type*
 finds two of them.** Five consecutive steps rediscovered this list one miss at a
 time, so it is written down rather than relearned. `grep save_bonuses` walks the
 whole of it and is the fastest way to see a worked example:
@@ -734,6 +758,7 @@ whole of it and is the fastest way to see a worked example:
 | 7 | `CARRIED_STATE_KEYS` (`service/adventures.py`) | only if the **fight changes it** |
 | 8 | a `validation.py` reader primitive | only if none of the existing ones fits |
 | 9 | `SHEET_KEYS` / `LIVE_KEYS` (`model/encounter.py`) | only if `_creature_state` emits it as a **top-level** key |
+| 10 | `CORRECTABLE_KEYS` / `UNCORRECTABLE_KEYS` (`model/encounter.py`) | only if `_creature_state` emits it as a **top-level** key |
 
 Two of those conditions are the ones that get missed. **Checkpoint 2 is not
 automatic**: `hp`, `position` and `temp_hp` are per-instance and deliberately
@@ -744,16 +769,21 @@ fails to survive an adventure chapter boundary. A field nested inside the
 existing `speeds`/`senses` dicts needs neither, because the brief test
 classifies top-level keys only.
 
-**Checkpoints 6 and 9 have the same condition and ask different questions**, and
-conflating them is the mistake to avoid: 6 is the brief's *may this seat see
-it*, 9 is *can the fight move it*. A key belongs to one bucket of each pair, and
-`tests/test_player_brief.py` and `tests/test_state_split.py` derive their halves
-from the model separately rather than either importing the other's sets. Nine is
-also the one row where the wrong answer is cheap: a field nobody classified
-falls to the live half, so it is re-sent rather than dropped, and a
-`sheet_sha256` taken over the sheet as serialised means a declared-static field
-that ever moves moves the digest with it. **The split is bandwidth and never a
-claim about the rules.**
+**Checkpoints 6, 9 and 10 share the same condition and ask three different
+questions**, and conflating any two of them is the mistake to avoid: 6 is the
+brief's *may this seat see it*, 9 is *can the fight move it*, 10 is *may the
+table overrule it*. A key belongs to one bucket of each pair, and
+`tests/test_player_brief.py`, `tests/test_state_split.py` and
+`tests/test_correction.py` derive their halves from the model separately
+rather than any of the three importing another's sets. Nine is the one row
+where the wrong answer is cheap: a field nobody classified falls to the live
+half, so it is re-sent rather than dropped, and a `sheet_sha256` taken over
+the sheet as serialised means a declared-static field that ever moves moves
+the digest with it. **The split is bandwidth and never a claim about the
+rules.** Ten has no such cheap default — an unclassified field fails the test
+outright rather than falling to either bucket, because a game master silently
+gaining or losing the ability to overwrite a field is not a safe default in
+either direction.
 
 Definition of done: `uv run pytest` green with the field exercised end to end,
 and every row above either edited or consciously ruled out. Checkpoints 3 and 4

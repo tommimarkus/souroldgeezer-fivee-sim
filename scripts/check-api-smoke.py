@@ -125,6 +125,15 @@ EXPECTED_WOLF_HP = 11
 EXPECTED_EVENTS = 11
 EXPECTED_ATTACKS = ["Scimitar", "Bite"]
 
+#: A GM's correction, applied to the same ``COMBATANTS`` roster in a server of
+#: its own — never in ``primary``, so this claim cannot perturb the golden
+#: fight above. The Wolf's printed sheet is 11 hp and AC 12; both values here
+#: are simply *other than* those, so a corrected value read back and a stale
+#: uncorrected one cannot be mistaken for each other.
+CORRECTED_WOLF_HP = 3
+CORRECTED_WOLF_AC = 17
+CORRECTION_REASON = "the table ruled the fall damage the sim never modelled"
+
 #: The confidentiality scenario ``encounter.brief`` exists to satisfy, written
 #: out because this script may not import the engine. These seven are the
 #: *scenario* — an opposing creature's own sheet, named as the design brief
@@ -1156,6 +1165,45 @@ def scene_round_trip(engine: Engine) -> dict[str, Any]:
     return run
 
 
+# --- a table's correction, held against a fight the process never held -------
+def correction_survives_recovery(engine: Engine) -> dict[str, Any]:
+    """Correct a combatant, force the session off disk, and read the fix back.
+
+    ``REPLAY_BY_OPERATION`` is what makes a correction survive a restart — it
+    is one of the four operations recovery replays rather than one of the many
+    it resolves once and forgets — and nothing in ``pytest`` drives that claim
+    through the shipped launcher. So this stops the *process*, not merely the
+    in-memory session: ``fivee stop`` kills the server that took the
+    correction, and the next ``serve`` on the same root starts one holding
+    nothing, which is what forces ``encounter.resume`` to rebuild the fight by
+    replaying its journal rather than answering out of memory it never lost.
+    """
+    status, created, _ = engine.call(
+        "POST", "/encounters", {"combatants": COMBATANTS, "seed": SEED}
+    )
+    if status != 201:
+        raise SmokeError(f"encounter.create answered {status}: {json.dumps(created)[:300]}")
+    encounter_id = str(created["encounter_id"])
+    base = f"/encounters/{encounter_id}"
+
+    run: dict[str, Any] = {"encounter_id": encounter_id}
+    run["corrected"] = engine.json_call(
+        "POST",
+        f"{base}/corrections",
+        {
+            "state": {"Wolf": {"hp": CORRECTED_WOLF_HP, "ac": CORRECTED_WOLF_AC}},
+            "reason": CORRECTION_REASON,
+        },
+    )
+    run["before_restart"] = engine.json_call("GET", base)
+
+    engine.launcher("stop", "--compact", timeout=60.0)
+    engine.start(timeout=WARM_TIMEOUT)
+
+    run["resumed"] = engine.json_call("POST", f"{base}/resume", {})
+    return run
+
+
 # --- the contract, read from its own source ----------------------------------
 def repository_state() -> list[str]:
     """Every path under the repository's own ``.fivee-sim``, as a sorted list.
@@ -1939,6 +1987,37 @@ def main() -> int:
                     for member in walk["state"]["members"]
                 ]
             )[:250],
+        )
+
+        # -- 6c. a correction survives a restart, through recovery -----------
+        correcting = Engine("correction")
+        engines.append(correcting)
+
+        def corrected_and_restarted() -> dict[str, Any]:
+            correcting.start(timeout=WARM_TIMEOUT)
+            return correction_survives_recovery(correcting)
+
+        corrected = phase(
+            "a correction is journalled, the server is restarted, and it comes back",
+            corrected_and_restarted,
+        )
+        before = {
+            str(one["name"]): (one["hp"], one["ac"])
+            for one in corrected["before_restart"]["combatants"]
+        }
+        resumed_state = corrected["resumed"]["state"]
+        after = {
+            str(one["name"]): (one["hp"], one["ac"])
+            for one in resumed_state["combatants"]
+        }
+        report(
+            before.get("Wolf") == (CORRECTED_WOLF_HP, CORRECTED_WOLF_AC)
+            and corrected["resumed"]["recovered"] is True
+            and after.get("Wolf") == (CORRECTED_WOLF_HP, CORRECTED_WOLF_AC),
+            "encounter.correct's change is still there after the process holding it dies",
+            f"before restart={before.get('Wolf')} "
+            f"recovered={corrected['resumed'].get('recovered')} "
+            f"after resume={after.get('Wolf')}",
         )
 
         # -- 7. a scene: the fight a table saved, read back and played -------

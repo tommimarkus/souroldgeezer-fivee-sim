@@ -378,6 +378,13 @@ interlude exactly as in a fight, which is most of why the interlude exists:
 fivee encounter.note <id> --category ruling --text "Ruled the statue can be levered aside with a DC 15 Strength check — the module gives no method."
 ```
 
+A ruling like the one above works within the rules the engine already runs.
+When the fight itself is wrong — a bug, an unmodelled rule, or an input you
+only learn was mistaken after the fact — use `fivee encounter.correct <id>`
+instead, with a `reason` naming what was wrong. Do this rarely and say so out
+loud at the table; it overwrites what the simulation reports rather than
+adjudicating within it.
+
 In playtest mode, also flag the gap to the coordinator when it happens. Put the
 module-specific ruling or material engine or catalog limitation in an
 adjudication note. Reserve a divergence for a materially different route or
