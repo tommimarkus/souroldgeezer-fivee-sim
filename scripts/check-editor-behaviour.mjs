@@ -227,7 +227,7 @@ const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
   "btn-play", "btn-back", "btn-forward", "speed", "embedded-data", "level-select",
   "follow-level", "sight-cones", "combatant-state", "adventure-chapters",
-  "chapter-select",
+  "chapter-select", "live-status", "playback-controls",
 ];
 const HOME_IDS = [
   "operations", "ops-status", "ops-count", "link-openapi", "engine-version",
@@ -472,7 +472,9 @@ function makePage(options) {
   const alerts = [];
   const history_ = [];
   const animationFrames = new Map();
+  const timers = new Map();
   let nextAnimationFrame = 1;
+  let nextTimer = 1;
   let immediateFrameTime = 0;
   const page = {
     fills, paths, context, element, elements, documentStub, requests, blobs, alerts,
@@ -499,8 +501,12 @@ function makePage(options) {
     cancelAnimationFrame: options.manualAnimationFrames
       ? (id) => { animationFrames.delete(id); }
       : () => {},
-    setTimeout: () => 1,
-    clearTimeout: () => {},
+    setTimeout: (cb, delay) => {
+      const id = nextTimer++;
+      timers.set(id, { cb, delay: Number(delay) || 0 });
+      return id;
+    },
+    clearTimeout: (id) => { timers.delete(id); },
     getComputedStyle: () => ({ getPropertyValue: () => "" }),
     alert: (text) => { alerts.push(String(text)); },
     confirm: () => true,
@@ -544,6 +550,7 @@ function makePage(options) {
         url,
         method: options_.method || "GET",
         body: options_.body ? JSON.parse(options_.body) : null,
+        headers: options_.headers || {},
       });
       const reply = page.reply(url, options_);
       return Promise.resolve({
@@ -605,6 +612,19 @@ function makePage(options) {
     animationFrames.clear();
     pending.forEach((cb) => cb(time));
     return pending.length;
+  };
+  page.timerCount = () => timers.size;
+  page.nextTimerDelay = () => {
+    const first = timers.values().next();
+    return first.done ? null : first.value.delay;
+  };
+  page.runTimer = () => {
+    const first = timers.entries().next();
+    if (first.done) { return false; }
+    const [id, timer] = first.value;
+    timers.delete(id);
+    timer.cb();
+    return true;
   };
   page.run = (source) => vm.runInContext(source, sandbox);
   return page;
@@ -1400,6 +1420,56 @@ function replayBundle(openList) {
       { kind: "interact", round: 1, turn: "Hero", actor: "",
         data: { feature: "sluice", open: true, automatic: true, triggered_by: "lever" } },
     ],
+  };
+}
+
+function liveAdventureBrief(options = {}) {
+  const chapterIndex = options.chapterIndex || 0;
+  const round = options.round || 2;
+  const turn = options.turn === undefined ? "Thora" : options.turn;
+  const x = options.x || 5;
+  const state = options.waiting ? null : {
+    as: "Thora",
+    mode: options.mode || "combat",
+    round,
+    turn,
+    your_turn: turn === "Thora",
+    over: false,
+    winner: null,
+    you: {
+      name: "Thora", team: "party", position: [x, 5], level: 0,
+      facing: "east", hp: 18, max_hp: 20, ac: 16, conditions: [],
+      conscious: true, dead: false, stable: false,
+    },
+    allies: [{
+      name: "Mira", team: "party", position: [10, 10], level: 0,
+      facing: "south", hp: 9, max_hp: 9, ac: 14, conditions: ["prone"],
+      conscious: true, dead: false, stable: false, distance: 10,
+    }],
+    enemies: [{
+      name: "Shade", team: "foes", position: [20, 5], level: 0,
+      facing: "west", conditions: ["frightened"], conscious: true,
+      dead: false, stable: false, distance: 15, health: "hurt",
+    }],
+    map: {
+      name: "flooded hall", width: 6, height: 4, movement_rule: "standard",
+      elevation: { default: 0, min: 0, max: 0, flat: true }, levels: [],
+      features: {
+        gate: { square: [5, 2], kind: "door", level: 0, open: false },
+      },
+    },
+  };
+  return {
+    adventure: {
+      id: "adv-1", name: "the sunken road",
+      status: options.adventureStatus || "active", chapter_count: 3,
+    },
+    chapter: {
+      index: chapterIndex, encounter_id: "enc-" + (chapterIndex + 1),
+      mode: options.mode || "combat", finalized: !!options.finalized,
+      recovery_note: options.recoveryNote,
+    },
+    state,
   };
 }
 
@@ -2444,6 +2514,161 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     check("an unknown deep link asks for nothing and draws nothing",
       stale.requests.length === 1 && stale.renders.length === 0,
       show([stale.requests, stale.renders.length]));
+  });
+
+await suite("viewer.html: a human seat follows a live adventure",
+  "the page sandbox and manual timer in makePage()", async () => {
+    const replies = [
+      { status: 200, body: liveAdventureBrief(), etag: '"live-1"' },
+      { status: 304, body: null, etag: '"live-1"' },
+      {
+        status: 200,
+        body: liveAdventureBrief({ chapterIndex: 1, round: 1, turn: "Mira", x: 15 }),
+        etag: '"live-2"',
+      },
+      { status: 409, body: { detail: "adventure has no current chapter" } },
+      { status: 503, body: { detail: "temporarily unavailable" } },
+      {
+        status: 200,
+        body: liveAdventureBrief({ chapterIndex: 1, finalized: true }),
+        etag: '"live-3"',
+      },
+    ];
+    const live = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { apiBase: "/api", version: "test" },
+      hash: "#seat-token",
+      search: "?adventure=adv-1&as=Thora",
+      hiddenIds: VIEWER_HIDDEN,
+      reducedMotion: true,
+    });
+    live.reply = () => replies.shift();
+    live.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+
+    check("live mode asks only for the seat-specific adventure brief",
+      live.requests.length === 1
+        && live.requests[0].url === "/api/adventures/adv-1/brief?as=Thora",
+      show(live.requests));
+    check("the live request carries the launch token but no initial validator",
+      live.requests[0].headers["X-Fivee-Editor-Token"] === "seat-token"
+        && live.requests[0].headers["If-None-Match"] === undefined,
+      show(live.requests[0].headers));
+    check("the fragment is removed while both live coordinates stay in the URL",
+      live.history.length === 1
+        && live.history[0].url === "/?adventure=adv-1&as=Thora",
+      show(live.history));
+    check("live mode removes historical playback rather than offering an empty history",
+      live.element("playback-controls").hidden === true
+        && live.element("adventure-chapters").hidden === true
+        && live.element("served-replays").hidden === true,
+      show([live.element("playback-controls").hidden,
+        live.element("adventure-chapters").hidden,
+        live.element("served-replays").hidden]));
+    check("the seat sees its adventure, chapter, round and turn at a glance",
+      live.element("title").textContent === "the sunken road"
+        && live.element("live-status").textContent.indexOf("Chapter 1/3") !== -1
+        && live.element("live-status").textContent.indexOf("round 2") !== -1
+        && live.element("live-status").textContent.indexOf("Thora") !== -1,
+      show([live.element("title").textContent, live.element("live-status").textContent]));
+    check("the current projected board reaches the shared renderer",
+      live.renders.length > 0
+        && live.last().overlays.tokens.length === 3
+        && live.last().doc.features.some(
+          (feature) => feature.id === "gate" && feature.state === "closed"
+        ),
+      show(live.last() && [live.last().overlays.tokens, live.last().doc.features]));
+    const enemy = live.last().overlays.tokens.find((token) => token.label === "S");
+    check("the enemy token carries no invented hit-point fraction",
+      enemy !== undefined && enemy.hpFraction === undefined,
+      show(enemy));
+    check("the live panel says allies' numbers and the enemy's engine-owned band",
+      live.element("combatant-state").textContent.indexOf("Thora · HP 18/20") !== -1
+        && live.element("combatant-state").textContent.indexOf("Shade · hurt") !== -1,
+      live.element("combatant-state").textContent);
+    check("a completed poll schedules exactly one successor",
+      live.timerCount() === 1, String(live.timerCount()));
+
+    live.runTimer();
+    await flush();
+    check("the next poll presents the prior ETag and accepts no-body 304",
+      live.requests.length === 2
+        && live.requests[1].headers["If-None-Match"] === '"live-1"'
+        && live.renders.length > 0
+        && live.timerCount() === 1,
+      show([live.requests, live.renders.length, live.timerCount()]));
+
+    live.runTimer();
+    await flush();
+    const moved = live.last().overlays.tokens.find((token) => token.label === "T");
+    check("a chapter change is followed and snapped into place under reduced motion",
+      live.element("live-status").textContent.indexOf("Chapter 2/3") !== -1
+        && live.element("live-status").textContent.indexOf("Mira") !== -1
+        && show(moved.at) === show([3, 1]),
+      show([live.element("live-status").textContent, moved]));
+    check("the chapter response advances the conditional validator",
+      live.requests[2].headers["If-None-Match"] === '"live-1"',
+      show(live.requests[2].headers));
+
+    const lastGoodRender = live.renders.length;
+    live.runTimer();
+    await flush();
+    const firstBackoff = live.nextTimerDelay();
+    check("a chapter gap keeps the last good board and names waiting",
+      live.renders.length === lastGoodRender
+        && live.element("live-status").textContent.indexOf("Waiting") !== -1
+        && live.element("live-status").textContent.indexOf("no current chapter") !== -1
+        && live.timerCount() === 1,
+      show([live.renders.length, lastGoodRender,
+        live.element("live-status").textContent, live.timerCount()]));
+
+    live.runTimer();
+    await flush();
+    const secondBackoff = live.nextTimerDelay();
+    check("retries back off without growing beyond the live viewer's bound",
+      secondBackoff > firstBackoff && secondBackoff <= 8000,
+      show([firstBackoff, secondBackoff]));
+
+    live.runTimer();
+    await flush();
+    check("a finalized chapter remains visible and says it is waiting for its successor",
+      live.renders.length >= lastGoodRender
+        && live.element("live-status").textContent.indexOf("finalized") !== -1
+        && live.element("live-status").textContent.indexOf("waiting") !== -1
+        && live.timerCount() === 1,
+      show([live.renders.length, live.element("live-status").textContent,
+        live.timerCount()]));
+    check("live mode never asks for a replay, event log or full encounter state",
+      live.requests.every((request) => (
+        request.url === "/api/adventures/adv-1/brief?as=Thora"
+      )),
+      show(live.requests));
+
+    let finishPoll;
+    const pending = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" },
+      config: { apiBase: "/api", version: "test" }, hash: "#seat-token",
+      search: "?adventure=adv-1&as=Thora", hiddenIds: VIEWER_HIDDEN,
+    });
+    pending.sandbox.fetch = (url, init) => {
+      pending.requests.push({ url, headers: init.headers });
+      return new Promise((resolve) => { finishPoll = resolve; });
+    };
+    pending.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("an in-flight live request has no overlapping poll timer",
+      pending.requests.length === 1 && pending.timerCount() === 0,
+      show([pending.requests, pending.timerCount()]));
+    finishPoll({
+      status: 200,
+      headers: { get: () => '"pending-1"' },
+      text: () => Promise.resolve(JSON.stringify(liveAdventureBrief())),
+    });
+    await flush();
+    check("the successor is scheduled only after the in-flight poll settles",
+      pending.requests.length === 1 && pending.timerCount() === 1,
+      show([pending.requests, pending.timerCount()]));
   });
 
 function adventureEnvelope(chapters) {

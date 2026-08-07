@@ -50,6 +50,7 @@ header {
 }
 #title { font-weight: 600; }
 #seed { color: var(--muted); font-family: ui-monospace, monospace; }
+#live-status { color: var(--muted); }
 header .spacer { flex: 1; }
 #layout { display: flex; flex: 1; min-height: 0; }
 #canvas-wrap { flex: 1; position: relative; min-width: 0; }
@@ -92,6 +93,7 @@ header .spacer { flex: 1; }
     border-inline-start: 0; border-block-start: 1px solid var(--edge);
   }
   #combatant-state { display: none; }
+  body.live-mode #combatant-state { display: block; max-height: none; }
 }
 footer {
   border-top: 1px solid var(--edge); background: var(--panel);
@@ -113,6 +115,7 @@ footer {
 <header>
   <span id="title">replay viewer</span>
   <span id="seed"></span>
+  <span id="live-status" role="status" aria-live="polite" hidden></span>
   <label>Storey <select id="level-select" aria-label="visible storey"></select></label>
   <label><input id="follow-level" type="checkbox" checked> Follow action</label>
   <!-- An orientation aid, not a visibility claim: the wedge says which way a
@@ -152,7 +155,7 @@ footer {
     <ul id="ticker" aria-label="event and audit timeline"></ul>
   </aside>
 </div>
-<footer>
+<footer id="playback-controls">
   <div id="controls">
     <button id="btn-play">Play</button>
     <button id="btn-back">&#8722;1</button>
@@ -301,6 +304,8 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   var bundle = null;
+  var liveMode = false;
+  var liveSnapshot = null; /* the latest seat projection; null outside live mode */
   var checkpointStateList = [];  /* the loaded bundle's checkpoint states, in
                                     order, rebuilt once — see checkpointStates */
   var mapDoc = null;      /* what is drawn: the map payload or a synthesized
@@ -381,6 +386,7 @@ if (typeof FiveeRenderer === "undefined") {
     activeLevel = Number(level) || 0;
     byId("level-select").value = String(activeLevel);
     if (bundle && bundle.map) { mapDoc = planeDocument(activeLevel); }
+    if (liveSnapshot) { mapDoc = liveMapDocument(liveSnapshot); }
     if (state) { state.terrainOverrides = overridesFor(state.featureStates); }
     if (view && mapDoc) {
       var box = canvas.getBoundingClientRect();
@@ -823,6 +829,10 @@ if (typeof FiveeRenderer === "undefined") {
   /* --- rendering -------------------------------------------------------- */
   function renderFrame() {
     var box = R.resizeCanvas(canvas, ctx);
+    if (liveSnapshot) {
+      renderLiveFrame(box);
+      return;
+    }
     if (!bundle) { ctx.clearRect(0, 0, box.width, box.height); return; }
     view.width = box.width;
     view.height = box.height;
@@ -1844,6 +1854,7 @@ if (typeof FiveeRenderer === "undefined") {
   document.addEventListener("dragover", function (event) { event.preventDefault(); });
   document.addEventListener("drop", function (event) {
     event.preventDefault();
+    if (liveMode) { return; }
     if (event.dataTransfer.files.length) {
       openFileObject(event.dataTransfer.files[0]);
     }
@@ -2098,6 +2109,290 @@ if (typeof FiveeRenderer === "undefined") {
      whole offline guarantee: an exported file cannot reach this code, so it
      cannot issue a request, so adding a network path to this page did not
      give the export one. Gate on the config object, never on the protocol. */
+
+  /* --- a human seat: the current adventure, with no history -------------- */
+  /* This page's other life reads frozen replay bundles. Live mode deliberately
+     does not synthesize one: the seat endpoint already owns the safe current
+     projection, and asking for an event log or full state would hand this page
+     secrets it must remember not to draw. The URL owns both coordinates, so a
+     refresh reconnects to the same adventure and chair. */
+  var LIVE_POLL_MS = 1000;
+  var LIVE_MAX_BACKOFF_MS = 8000;
+  var liveTarget = null;
+  var liveEtag = null;
+  var livePollTimer = null;
+  var liveInFlight = false;
+  var liveFailures = 0;
+  var liveChapterKey = null;
+  var liveLastStatus = "Connecting…";
+
+  function queryValue(name) {
+    var search = (window.location && window.location.search) || "";
+    var match = new RegExp("[?&]" + name + "=([^&]*)").exec(search);
+    if (!match) { return null; }
+    try { return decodeURIComponent(match[1].replace(/\+/g, " ")); }
+    catch (error) { return match[1]; }
+  }
+
+  function wantedLiveAdventure() {
+    var adventure = queryValue("adventure");
+    var seat = queryValue("as");
+    return adventure && seat ? { adventure: adventure, seat: seat } : null;
+  }
+
+  function liveCast(snapshot) {
+    if (!snapshot) { return []; }
+    return (snapshot.you ? [snapshot.you] : [])
+      .concat(snapshot.allies || [], snapshot.enemies || []);
+  }
+
+  function liveMapDocument(snapshot) {
+    var block = snapshot && snapshot.map;
+    var width;
+    var height;
+    var features = [];
+    if (block) {
+      offset = [0, 0];
+      width = Math.max(1, Number(block.width) || 1);
+      height = Math.max(1, Number(block.height) || 1);
+      Object.keys(block.features || {}).forEach(function (name) {
+        var fixture = block.features[name];
+        if (!isRecord(fixture) || Number(fixture.level || 0) !== activeLevel
+          || !Array.isArray(fixture.square)) { return; }
+        features.push({
+          id: name,
+          kind: fixture.kind || "feature",
+          at: fixture.square.slice(0, 2),
+          state: fixture.open ? "open" : "closed"
+        });
+      });
+    } else {
+      var squares = liveCast(snapshot).map(function (creature) {
+        var position = Array.isArray(creature.position) ? creature.position : [0, 0];
+        return [Math.floor(Number(position[0]) / 5), Math.floor(Number(position[1]) / 5)];
+      });
+      if (!squares.length) { squares.push([0, 0]); }
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      squares.forEach(function (square) {
+        minX = Math.min(minX, square[0]); maxX = Math.max(maxX, square[0]);
+        minY = Math.min(minY, square[1]); maxY = Math.max(maxY, square[1]);
+      });
+      width = Math.max(12, maxX - minX + 3);
+      height = Math.max(8, maxY - minY + 3);
+      offset = [1 - minX, 1 - minY];
+    }
+    var tiles = [];
+    for (var y = 0; y < height; y++) { tiles.push(new Array(width + 1).join(".")); }
+    return {
+      grid: { width: width, height: height, cell_feet: 5 },
+      legend: { ".": "floor" },
+      tiles: tiles,
+      features: features
+    };
+  }
+
+  function configureLiveLevels(snapshot, reset) {
+    var select = byId("level-select");
+    var levels = [{ index: 0, name: "ground" }];
+    var block = snapshot && snapshot.map;
+    (block && Array.isArray(block.levels) ? block.levels : []).forEach(function (level) {
+      var index = Number(level && level.index);
+      if (Number.isFinite(index) && !levels.some(function (one) { return one.index === index; })) {
+        levels.push({ index: index, name: "level " + index });
+      }
+    });
+    levels.sort(function (left, right) { return left.index - right.index; });
+    var wanted = reset ? levels[0].index : activeLevel;
+    if (!levels.some(function (level) { return level.index === wanted; })) {
+      wanted = levels[0].index;
+    }
+    select.textContent = "";
+    levels.forEach(function (level) {
+      var option = document.createElement("option");
+      option.value = String(level.index);
+      option.textContent = level.name + " (" + level.index + ")";
+      select.appendChild(option);
+    });
+    select.disabled = levels.length === 1;
+    activeLevel = wanted;
+    select.value = String(activeLevel);
+  }
+
+  function renderLiveFrame(box) {
+    view.width = box.width;
+    view.height = box.height;
+    var tokens = [];
+    liveCast(liveSnapshot).forEach(function (creature) {
+      if (Number(creature.level || 0) !== activeLevel) { return; }
+      var position = Array.isArray(creature.position) ? creature.position : [0, 0];
+      var token = {
+        at: feetToCell(position),
+        label: String(creature.name || "").charAt(0),
+        team: creature.team || "",
+        down: creature.hp === 0 || creature.conscious === false,
+        dead: !!creature.dead,
+        stable: !!creature.stable,
+        facing: creature.facing || null
+      };
+      /* An opponent has a health *word*, not a number. Draw no ring at all:
+         assigning a fraction to that word would invent the very value the
+         seat projection withheld. Allies carry real numbers and keep theirs. */
+      if (typeof creature.hp === "number" && typeof creature.max_hp === "number"
+        && creature.max_hp > 0) {
+        token.hpFraction = creature.hp / creature.max_hp;
+      }
+      tokens.push(token);
+    });
+    R.render(ctx, mapDoc, view, {
+      tokens: tokens,
+      marks: [],
+      sightCones: byId("sight-cones").checked
+    });
+  }
+
+  function renderLivePanel(snapshot) {
+    var panel = byId("combatant-state");
+    panel.textContent = "";
+    var heading = document.createElement("h2");
+    heading.textContent = "Visible combatants";
+    panel.appendChild(heading);
+    liveCast(snapshot).forEach(function (creature) {
+      var card = document.createElement("div");
+      card.className = "combatant-card"
+        + (snapshot.turn === creature.name ? " current" : "");
+      var parts = [String(creature.name || "")];
+      if (typeof creature.hp === "number" && typeof creature.max_hp === "number") {
+        parts.push("HP " + creature.hp + "/" + creature.max_hp);
+      } else if (creature.health) {
+        parts.push(String(creature.health));
+      }
+      if (typeof creature.distance === "number") {
+        parts.push(creature.distance + " ft away");
+      }
+      if ((creature.conditions || []).length) {
+        parts.push(creature.conditions.join(", "));
+      }
+      card.textContent = parts.join(" · ");
+      panel.appendChild(card);
+    });
+  }
+
+  function liveStatusFor(payload) {
+    var adventure = payload.adventure;
+    var chapter = payload.chapter;
+    var ordinal = Number(chapter.index) + 1;
+    var chapterText = "Chapter " + ordinal + "/" + adventure.chapter_count;
+    if (chapter.finalized) {
+      return adventure.status === "finalized"
+        ? "Adventure complete · " + chapterText + " finalized"
+        : chapterText + " finalized · waiting for the next chapter";
+    }
+    if (!payload.state) {
+      if (adventure.status === "finalized") {
+        return "Adventure complete · " + chapterText + " finalized";
+      }
+      return chapterText + " · waiting for the chapter to begin";
+    }
+    var state = payload.state;
+    if (state.mode === "exploration") {
+      return chapterText + " · exploration";
+    }
+    var acting = state.turn === null ? "someone out of sight" : state.turn;
+    return chapterText + " · round " + state.round + " · " + acting + "'s turn";
+  }
+
+  function isLiveAnswer(payload) {
+    return isRecord(payload) && isRecord(payload.adventure) && isRecord(payload.chapter)
+      && (payload.state === null || isRecord(payload.state));
+  }
+
+  function showLiveAnswer(payload) {
+    var adventure = payload.adventure;
+    var chapter = payload.chapter;
+    var key = String(chapter.index) + ":" + String(chapter.encounter_id || "");
+    var chapterChanged = liveChapterKey !== key;
+    liveChapterKey = key;
+    byId("title").textContent = adventure.name || adventure.id || "live adventure";
+    byId("seed").textContent = "";
+    liveLastStatus = liveStatusFor(payload);
+    byId("live-status").textContent = liveLastStatus;
+    if (!payload.state) {
+      if (!liveSnapshot) {
+        byId("empty-note").hidden = false;
+        byId("empty-hint").textContent = liveLastStatus;
+      }
+      return;
+    }
+    liveSnapshot = payload.state;
+    configureLiveLevels(liveSnapshot, chapterChanged);
+    mapDoc = liveMapDocument(liveSnapshot);
+    var box = canvas.getBoundingClientRect();
+    view = R.fitView(mapDoc.grid.width, mapDoc.grid.height, box.width, box.height);
+    byId("empty-note").hidden = true;
+    renderLivePanel(liveSnapshot);
+    redraw();
+  }
+
+  function scheduleLivePoll(delay) {
+    if (livePollTimer !== null) { window.clearTimeout(livePollTimer); }
+    livePollTimer = window.setTimeout(pollLiveAdventure, delay);
+  }
+
+  function liveRetry(answer) {
+    liveFailures += 1;
+    var delay = Math.min(LIVE_MAX_BACKOFF_MS,
+      LIVE_POLL_MS * Math.pow(2, liveFailures));
+    var detail = refusal(answer, "server unavailable");
+    var state = answer.status === 409 ? "Waiting" : "Reconnecting";
+    byId("live-status").textContent = state + " · " + detail
+      + " · retrying in " + Math.round(delay / 1000) + "s";
+    scheduleLivePoll(delay);
+  }
+
+  function pollLiveAdventure() {
+    livePollTimer = null;
+    if (!liveTarget || liveInFlight) { return; }
+    liveInFlight = true;
+    var headers = {};
+    if (liveEtag) { headers["If-None-Match"] = liveEtag; }
+    var path = "/adventures/" + encodeURIComponent(liveTarget.adventure)
+      + "/brief?as=" + encodeURIComponent(liveTarget.seat);
+    apiGet(path, headers).then(function (answer) {
+      liveInFlight = false;
+      if (answer.status === 304) {
+        liveFailures = 0;
+        byId("live-status").textContent = liveLastStatus;
+        scheduleLivePoll(LIVE_POLL_MS);
+        return;
+      }
+      if (answer.status !== 200 || !isLiveAnswer(answer.json)) {
+        liveRetry(answer);
+        return;
+      }
+      if (answer.etag) { liveEtag = answer.etag; }
+      liveFailures = 0;
+      showLiveAnswer(answer.json);
+      scheduleLivePoll(LIVE_POLL_MS);
+    });
+  }
+
+  function connectToLiveAdventure(target) {
+    liveMode = true;
+    liveTarget = target;
+    document.body.classList.add("live-mode");
+    byId("live-status").hidden = false;
+    byId("live-status").textContent = liveLastStatus;
+    byId("playback-controls").hidden = true;
+    byId("adventure-chapters").hidden = true;
+    byId("served-replays").hidden = true;
+    byId("btn-open-file").hidden = true;
+    byId("ticker").hidden = true;
+    byId("link-home").hidden = false;
+    byId("link-editor").hidden = false;
+    byId("empty-hint").textContent = "Connecting to " + target.seat + "'s table view…";
+    pollLiveAdventure();
+  }
+
   /* Deliberately the same shape as editor.html's `request`: status plus parsed
      body, never a throw on an HTTP error, and a network-level rejection folded
      into status 0 so every caller's chain completes instead of hanging as an
@@ -2105,13 +2400,23 @@ if (typeof FiveeRenderer === "undefined") {
      about what a failed call looks like. */
   function apiGet(path) {
     var config = window.__FIVEE_EDITOR__;
+    var extraHeaders = arguments.length > 1 ? arguments[1] : null;
+    var headers = { "X-Fivee-Editor-Token": config.token };
+    if (extraHeaders) {
+      Object.keys(extraHeaders).forEach(function (key) { headers[key] = extraHeaders[key]; });
+    }
     return window.fetch(config.apiBase + path, {
-      headers: { "X-Fivee-Editor-Token": config.token }
+      headers: headers
     }).then(function (response) {
       return response.text().then(function (text) {
         var parsed = null;
         try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
-        return { status: response.status, json: parsed };
+        return {
+          status: response.status,
+          json: parsed,
+          etag: response.headers && response.headers.get
+            ? response.headers.get("ETag") : null
+        };
       });
     }).catch(function (error) {
       return { status: 0, json: { detail: "replay server unreachable (" + error + ")" } };
@@ -2167,6 +2472,11 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   function connectToServer() {
+    var live = wantedLiveAdventure();
+    if (live) {
+      connectToLiveAdventure(live);
+      return;
+    }
     byId("link-home").hidden = false;
     byId("link-editor").hidden = false;
     byId("replay-select").addEventListener("change", function () {

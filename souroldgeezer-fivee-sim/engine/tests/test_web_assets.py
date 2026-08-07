@@ -275,6 +275,34 @@ class TestOneServiceTwoPages:
         assert "loadBundle(answer.json, id);" in read("viewer.html")
 
 
+class TestViewerLiveSeat:
+    """The served viewer can follow one human chair without gaining history.
+
+    Polling, projection rendering, retry behavior and the negative network
+    contract are behavior claims owned by ``check-editor-behaviour.mjs``.  The
+    source tests keep the pre-script DOM and the conditional-read vocabulary
+    explicit, which are properties of the shipped document itself.
+    """
+
+    def test_the_live_status_is_an_accessible_hidden_initial_state(self) -> None:
+        source = read("viewer.html")
+        assert (
+            '<span id="live-status" role="status" aria-live="polite" hidden>'
+            in source
+        )
+        assert '<footer id="playback-controls">' in source
+
+    def test_live_mode_names_one_seat_brief_route(self) -> None:
+        source = read("viewer.html")
+        assert source.count('"/brief?as="') == 1
+        assert source.count('"/adventures/"') == 1
+
+    def test_live_mode_uses_conditional_reads(self) -> None:
+        source = read("viewer.html")
+        assert source.count('headers["If-None-Match"] = liveEtag;') == 1
+        assert source.count("answer.status === 304") == 1
+
+
 class TestViewerAdventureChapters:
     """An adventure's replay nests whole fights, and the viewer picks between them.
 
