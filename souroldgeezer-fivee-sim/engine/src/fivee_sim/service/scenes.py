@@ -361,13 +361,35 @@ def index(root: str | Path | None = None) -> dict[str, dict[str, Any]]:
     return found
 
 
-def list_scenes(root: str | Path | None = None) -> dict[str, Any]:
+def scoped_index(
+    roots: Sequence[tuple[str | Path, str]],
+) -> dict[str, dict[str, Any]]:
+    """Scenes merged by id in root order, with their selected storage scope."""
+    found: dict[str, dict[str, Any]] = {}
+    for root, scope in roots:
+        for scene_id, entry in index(root).items():
+            if scene_id in found:
+                continue
+            found[scene_id] = {**entry, "scope": scope}
+    return found
+
+
+def list_scenes(
+    root: str | Path | None = None,
+    *,
+    scoped_roots: Sequence[tuple[str | Path, str]] | None = None,
+) -> dict[str, Any]:
     """Every saved scene, in id order — the ``scene.list`` operation's body."""
-    found = index(root)
+    found = scoped_index(scoped_roots) if scoped_roots is not None else index(root)
     return {"scenes": [found[scene_id] for scene_id in sorted(found)]}
 
 
-def resolve_id(scene_id: str, root: str | Path | None = None) -> Path:
+def resolve_id(
+    scene_id: str,
+    root: str | Path | None = None,
+    *,
+    scoped_roots: Sequence[tuple[str | Path, str]] | None = None,
+) -> Path:
     """The file a scene id names, or a refusal that says what is there.
 
     Naming the alternatives is what makes it actionable: a bare "not found"
@@ -375,7 +397,7 @@ def resolve_id(scene_id: str, root: str | Path | None = None) -> Path:
     """
     if ID_PATTERN.fullmatch(scene_id) is None:
         raise NotFoundError(f"no scene {scene_id!r}")
-    found = index(root)
+    found = scoped_index(scoped_roots) if scoped_roots is not None else index(root)
     entry = found.get(scene_id)
     if entry is None:
         known = ", ".join(sorted(found)) or "none"
@@ -383,14 +405,19 @@ def resolve_id(scene_id: str, root: str | Path | None = None) -> Path:
     return Path(str(entry["path"]))
 
 
-def load(scene_id: str, root: str | Path | None = None) -> dict[str, Any]:
+def load(
+    scene_id: str,
+    root: str | Path | None = None,
+    *,
+    scoped_roots: Sequence[tuple[str | Path, str]] | None = None,
+) -> dict[str, Any]:
     """One saved scene, and the version a write against it must match.
 
     Reading is generous where writing is strict: what comes back is whatever
     was stored, envelope problems and all, because a draft that no longer
     validates is exactly the draft its author needs to open and fix.
     """
-    path = resolve_id(scene_id, root)
+    path = resolve_id(scene_id, root, scoped_roots=scoped_roots)
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:  # pragma: no cover - lost in a race
@@ -436,6 +463,7 @@ def save(
     root: str | Path | None = None,
     *,
     expected_sha256: str | None = None,
+    baseline_roots: Sequence[str | Path] = (),
 ) -> dict[str, Any]:
     """Write a scene under ``scene_id``, refusing a write from a stale read.
 
@@ -454,6 +482,13 @@ def save(
     if errors:
         _refuse(scene_id, errors)
     target = path_for_id(scene_id, root)
+    baseline: Path | None = None
+    if not target.exists():
+        for candidate_root in baseline_roots:
+            candidate = path_for_id(scene_id, candidate_root)
+            if candidate.is_file():
+                baseline = candidate
+                break
     text = render(document)
     if expected_sha256 is None:
         expected: str | None = _ABSENT
@@ -468,7 +503,9 @@ def save(
             expected=expected,
             # Read under the lock, never before it: computing this first is
             # exactly the race the precondition exists to close.
-            current=lambda: _current_version(target),
+            current=lambda: _current_version(
+                target if target.exists() or baseline is None else baseline
+            ),
             subject=f"the saved scene {scene_id!r}",
         )
     except StaleWriteError:

@@ -274,9 +274,8 @@ def document_of(
     if (map_id is None) == (document is None):
         raise RequestError("give exactly one of 'map_id' (a saved map) or 'document' (inline)")
     if map_id is not None:
-        loaded, _path = map_service.load_by_id(
-            map_id, sessions.maps_dir_of(state), terrain=terrain_of(state)
-        )
+        path = sessions.map_path_of(state, map_id)
+        loaded, _warnings = map_service.load_file(path, terrain=terrain_of(state))
         return loaded, map_id
     assert document is not None
     parsed, _warnings = map_service.parse_payload(
@@ -287,15 +286,14 @@ def document_of(
 
 def map_list(state: EngineState) -> dict[str, Any]:
     """Every saved map under this adapter's maps directory, keyed by id."""
-    found = map_service.index(sessions.maps_dir_of(state))
+    found = sessions.map_index_of(state)
     return {"maps": [found[map_id] for map_id in sorted(found)]}
 
 
 def get_map(state: EngineState, map_id: str) -> dict[str, Any]:
     """One saved map: its canonical payload, and the hash that identifies it."""
-    document, path = map_service.load_by_id(
-        map_id, sessions.maps_dir_of(state), terrain=terrain_of(state)
-    )
+    path = sessions.map_path_of(state, map_id)
+    document, _warnings = map_service.load_file(path, terrain=terrain_of(state))
     return {
         "map_id": map_id,
         "path": str(path),
@@ -317,8 +315,15 @@ def save_map(
     and ``None`` requires the id to be free — a caller who did not read cannot
     claim to know what it is replacing.
     """
-    directory = sessions.maps_dir_of(state)
+    directory = sessions.map_write_dir_of(state)
     target = map_service.path_for_id(map_id, directory)
+    baseline = None
+    try:
+        visible = sessions.map_path_of(state, map_id)
+    except RequestError:
+        visible = None
+    if visible is not None and visible != target:
+        baseline = visible
     parsed, warnings = map_service.parse_payload(
         document, source=map_id, terrain=terrain_of(state)
     )
@@ -330,6 +335,7 @@ def save_map(
             overwrite=expected_sha256 is not None,
             expected_sha256=expected,
             terrain=terrain_of(state),
+            baseline_path=baseline,
         )
     except OSError as error:
         raise RequestError(f"cannot write {target}: {error}") from error
@@ -467,8 +473,7 @@ def edit(
     version it read; by default it is the one this call just read, which closes
     the window between the two rather than leaving it open by default.
     """
-    directory = sessions.maps_dir_of(state)
-    path = map_service.resolve_id(map_id, directory)
+    path = sessions.map_path_of(state, map_id)
     before, _warnings = map_service.load_file(path, terrain=terrain_of(state))
     base = expected_sha256 or sha256_of(serialize_map(before))
     try:
@@ -477,17 +482,20 @@ def edit(
         raise
     except ValueError as error:
         raise RequestError(str(error)) from error
+    target = map_service.path_for_id(map_id, sessions.map_write_dir_of(state))
     saved = map_service.save_file(
         after,
-        path,
+        target,
         overwrite=True,
         expected_sha256=None if base == "*" else base,
         terrain=terrain_of(state),
+        baseline_path=path if path != target else None,
     )
     return {
         "saved": True,
         "applied": len(operations),
         "map_id": map_id,
+        "path": str(target),
         "sha256": saved["sha256"],
         "edited": after.provenance.edited,
         "summary": map_summary(after),
@@ -539,6 +547,7 @@ def uvtt_export(
     open_features: list[str] | None = None,
 ) -> dict[str, Any]:
     subject, resolved_id = document_of(state, map_id, document)
+    write_root = sessions.map_write_dir_of(state)
     try:
         payload = uvtt_service.to_uvtt(
             subject,
@@ -553,7 +562,7 @@ def uvtt_export(
     target = (
         Path(path).expanduser()
         if path is not None
-        else map_service.maps_root() / "uvtt" / f"{slugify(subject.name)}.uvtt"
+        else write_root / "uvtt" / f"{slugify(subject.name)}.uvtt"
     )
     text = json.dumps(payload) + "\n"
     try:
@@ -765,6 +774,7 @@ def replay_export(
     }
 
     if embed:
+        write_root = sessions.replay_write_dir_of(state)
         static = resources.files("fivee_sim.web") / "static"
         viewer = (static / "viewer.html").read_text(encoding="utf-8")
         renderer = (static / "renderer.js").read_text(encoding="utf-8")
@@ -774,7 +784,7 @@ def replay_export(
         target = (
             Path(path).expanduser()
             if path is not None
-            else replay_service.replays_root() / f"{slug}-{session.seed}.html"
+            else write_root / f"{slug}-{session.seed}.html"
         )
         try:
             replay_service.atomic_write_text(target, html)
@@ -790,10 +800,11 @@ def replay_export(
     size = len(serialized.encode("utf-8"))
     if path is None and size <= INLINE_BUNDLE_BYTES:
         return {**result, "bundle": bundle, "bytes": size}
+    write_root = sessions.replay_write_dir_of(state)
     target = (
         Path(path).expanduser()
         if path is not None
-        else replay_service.replays_root() / f"{slug}-{session.seed}.json"
+        else write_root / f"{slug}-{session.seed}.json"
     )
     try:
         replay_service.atomic_write_text(target, serialized)

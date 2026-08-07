@@ -82,7 +82,6 @@ from ..service import analytics as analytics_service
 from ..service import catalog as catalog_service
 from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
-from ..service import maps as map_service
 from ..service import replay as replay_service
 from ..service import rulings as rulings_ops
 from ..service import scenes as scene_service
@@ -351,11 +350,11 @@ class EngineServer:
         table to explain itself.
         """
         index: dict[str, dict[str, Any]] = {}
-        for entry in replay_service.list_replays([self.replays_dir]):
-            replay_id = slugify(Path(str(entry["path"])).stem)
-            if replay_id in index:
-                continue
-            index[replay_id] = {"id": replay_id, **entry}
+        for entry in replay_service.list_replays(
+            scoped_roots=self.storage.scoped_replay_roots
+        ):
+            replay_id = str(entry["id"])
+            index[replay_id] = entry
         return index
 
     def viewer_link(self, target: Path) -> str | None:
@@ -1363,7 +1362,7 @@ class _Handler(BaseHTTPRequestHandler):
                 "to create a new map",
             )
         expected = _etag_value(if_match)
-        creating = map_id not in map_service.index(self.engine.maps_dir)
+        creating = map_id not in sessions.map_index_of(self.state)
         if creating and expected != "*":
             raise _Problem(
                 HTTPStatus.CONFLICT,
@@ -1390,10 +1389,17 @@ class _Handler(BaseHTTPRequestHandler):
 
     # -- scenes: a saved encounter.create body, addressed by id --------------
     def _h_scene_list(self, request: _Request) -> None:
-        self._send_json(HTTPStatus.OK, scene_service.list_scenes())
+        self._send_json(
+            HTTPStatus.OK,
+            scene_service.list_scenes(
+                scoped_roots=self.engine.storage.scoped_scene_roots
+            ),
+        )
 
     def _h_scene_get(self, request: _Request) -> None:
-        found = scene_service.load(request.id)
+        found = scene_service.load(
+            request.id, scoped_roots=self.engine.storage.scoped_scene_roots
+        )
         self._send_json(
             HTTPStatus.OK, found["document"], headers={"ETag": _etag_of(str(found["sha256"]))}
         )
@@ -1408,14 +1414,23 @@ class _Handler(BaseHTTPRequestHandler):
                 "to create a new scene",
             )
         expected = _etag_value(if_match)
-        creating = scene_id not in scene_service.index()
+        visible = scene_service.scoped_index(self.engine.storage.scoped_scene_roots)
+        creating = scene_id not in visible
         if creating and expected != "*":
             raise _Problem(
                 HTTPStatus.CONFLICT,
                 f"there is no saved scene {scene_id!r} to match against; use "
                 f"If-Match: * to create it",
             )
-        saved = scene_service.save(scene_id, request.body, expected_sha256=expected)
+        if not self.engine.storage.is_writable_run:
+            raise RequestError("scene writes require a selected adventure run")
+        saved = scene_service.save(
+            scene_id,
+            request.body,
+            self.engine.storage.scenes_dir,
+            expected_sha256=expected,
+            baseline_roots=(self.engine.storage.shared_scenes_dir,),
+        )
         self._send_json(
             HTTPStatus.CREATED if creating else HTTPStatus.OK,
             saved,
@@ -1430,7 +1445,7 @@ class _Handler(BaseHTTPRequestHandler):
         self._send_json(
             HTTPStatus.OK,
             scene_service.validate(
-                request.body, map_ids=sorted(map_service.index(self.engine.maps_dir))
+                request.body, map_ids=sorted(sessions.map_index_of(self.state))
             ),
         )
 

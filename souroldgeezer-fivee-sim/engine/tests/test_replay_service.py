@@ -187,6 +187,21 @@ class TestListReplays:
     ) -> None:
         assert list_replays([tmp_path / "no-such-directory"]) == []
 
+    def test_run_replays_shadow_shared_ids_and_report_scope(self, tmp_path: Path) -> None:
+        run, shared = tmp_path / "run", tmp_path / "shared"
+        run.mkdir()
+        shared.mkdir()
+        exported(shared / "shadow.json", seed=81)
+        exported(shared / "keep.json", seed=82)
+        run_bundle = exported(run / "shadow.json", seed=83)
+
+        rows = list_replays(scoped_roots=((run, "run"), (shared, "shared")))
+        by_id = {row["id"]: row for row in rows}
+
+        assert by_id["shadow"]["seed"] == run_bundle["seed"]
+        assert by_id["shadow"]["scope"] == "run"
+        assert by_id["keep"]["scope"] == "shared"
+
 
 class TestLoadBundleFile:
     """The load refuses what the viewer could not play, in the tool's own words."""

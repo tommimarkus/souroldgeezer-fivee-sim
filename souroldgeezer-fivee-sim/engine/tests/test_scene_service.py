@@ -201,6 +201,39 @@ class TestScenesAreEncounterBodies:
 
 
 class TestFiles:
+    def test_overlay_prefers_run_scenes_and_labels_both_scopes(self, tmp_path: Path) -> None:
+        run, shared = tmp_path / "run", tmp_path / "shared"
+        service.save("shadow", {**scene(), "name": "shared"}, shared)
+        service.save("keep", scene(), shared)
+        service.save("shadow", {**scene(), "name": "run"}, run)
+
+        listed = service.list_scenes(scoped_roots=((run, "run"), (shared, "shared")))
+        rows = {entry["id"]: entry for entry in listed["scenes"]}
+
+        assert rows["shadow"]["name"] == "run"
+        assert rows["shadow"]["scope"] == "run"
+        assert rows["keep"]["scope"] == "shared"
+
+    def test_shared_scene_update_is_guarded_copy_on_write(self, tmp_path: Path) -> None:
+        run, shared = tmp_path / "run", tmp_path / "shared"
+        service.save("ford", scene(), shared)
+        original = (shared / "ford.json").read_bytes()
+        roots = ((run, "run"), (shared, "shared"))
+        loaded = service.load("ford", scoped_roots=roots)
+        changed = {**loaded["document"], "name": "run copy"}
+
+        saved = service.save(
+            "ford",
+            changed,
+            run,
+            expected_sha256=loaded["sha256"],
+            baseline_roots=(shared,),
+        )
+
+        assert (shared / "ford.json").read_bytes() == original
+        assert Path(saved["path"]) == run / "ford.json"
+        assert service.load("ford", scoped_roots=roots)["document"]["name"] == "run copy"
+
     def test_save_then_load_round_trips_byte_identically(self, tmp_path: Path) -> None:
         saved = service.save("ford", scene(), tmp_path)
         assert saved["saved"] is True

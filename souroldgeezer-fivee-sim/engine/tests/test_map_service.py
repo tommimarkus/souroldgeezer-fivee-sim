@@ -24,9 +24,12 @@ from fivee_sim.map_document import (
     parse_document,
     serialize,
 )
+from fivee_sim.paths import StorageLayout
+from fivee_sim.service import map_ops
 from fivee_sim.service import maps as service
 from fivee_sim.service.common import resolve_seed, sha256_of, slugify
-from fivee_sim.service.errors import MapEditError, StaleWriteError
+from fivee_sim.service.errors import MapEditError, RequestError, StaleWriteError
+from fivee_sim.service.sessions import EngineState
 
 
 def payload() -> dict[str, Any]:
@@ -66,6 +69,22 @@ def payload() -> dict[str, Any]:
 
 def document() -> MapDocument:
     return parse_document(payload(), source="test", terrain=TERRAIN)
+
+
+def run_state(tmp_path: Path) -> EngineState:
+    run = tmp_path / "runs" / "adv-1"
+    run.mkdir(parents=True, exist_ok=True)
+    return EngineState(storage=StorageLayout(
+        run_id="adv-1",
+        runs_dir=tmp_path / "runs",
+        runtime_dir=tmp_path / "runtime" / "adv-1",
+        shared_map_paths=(tmp_path / "shared-maps",),
+        shared_replay_paths=(tmp_path / "shared-replays",),
+        shared_scenes_dir=tmp_path / "shared-scenes",
+        legacy_encounters_dir=tmp_path / "encounters",
+        legacy_adventures_dir=tmp_path / "adventures",
+        legacy_blobs_dir=tmp_path / "blobs",
+    ))
 
 
 def linked_document() -> MapDocument:
@@ -121,6 +140,114 @@ class TestCommon:
 
     def test_sha256_is_the_text_digest(self) -> None:
         assert sha256_of("abc").startswith("ba7816bf")
+
+
+class TestRunOverlay:
+    def test_control_and_legacy_servers_refuse_map_writes(self, tmp_path: Path) -> None:
+        for selector in (None, "legacy"):
+            state = run_state(tmp_path)
+            assert state.storage is not None
+            state.storage = StorageLayout(
+                run_id=selector,
+                runs_dir=state.storage.runs_dir,
+                runtime_dir=tmp_path / "runtime" / (selector or "control"),
+                shared_map_paths=state.storage.shared_map_paths,
+                shared_replay_paths=state.storage.shared_replay_paths,
+                shared_scenes_dir=state.storage.shared_scenes_dir,
+                legacy_encounters_dir=state.storage.legacy_encounters_dir,
+                legacy_adventures_dir=state.storage.legacy_adventures_dir,
+                legacy_blobs_dir=state.storage.legacy_blobs_dir,
+            )
+            with pytest.raises(RequestError, match="adventure run"):
+                map_ops.save_map(state, "new-map", payload(), expected_sha256="*")
+
+    def test_control_server_refuses_uvtt_exports(self, tmp_path: Path) -> None:
+        state = run_state(tmp_path)
+        assert state.storage is not None
+        state.storage = StorageLayout(
+            run_id=None,
+            runs_dir=state.storage.runs_dir,
+            runtime_dir=tmp_path / "runtime" / "control",
+            shared_map_paths=state.storage.shared_map_paths,
+            shared_replay_paths=state.storage.shared_replay_paths,
+            shared_scenes_dir=state.storage.shared_scenes_dir,
+            legacy_encounters_dir=state.storage.legacy_encounters_dir,
+            legacy_adventures_dir=state.storage.legacy_adventures_dir,
+            legacy_blobs_dir=state.storage.legacy_blobs_dir,
+        )
+
+        with pytest.raises(RequestError, match="adventure run"):
+            map_ops.uvtt_export(
+                state, document=payload(), path=str(tmp_path / "must-not-write.uvtt")
+            )
+
+    def test_run_maps_shadow_shared_maps_and_report_their_scope(self, tmp_path: Path) -> None:
+        state = run_state(tmp_path)
+        assert state.storage is not None
+        shared = state.storage.shared_map_paths[0]
+        service.save_file(document(), shared / "keep.json")
+        shared_payload = payload()
+        shared_payload["name"] = "shared shadow"
+        service.save_file(
+            parse_document(shared_payload, source="shared", terrain=TERRAIN),
+            shared / "shadow.json",
+        )
+        run_payload = payload()
+        run_payload["name"] = "run shadow"
+        service.save_file(
+            parse_document(run_payload, source="run", terrain=TERRAIN),
+            state.storage.maps_dir / "shadow.json",
+        )
+
+        rows = {entry["id"]: entry for entry in map_ops.map_list(state)["maps"]}
+
+        assert rows["shadow"]["name"] == "run shadow"
+        assert rows["shadow"]["scope"] == "run"
+        assert rows["keep"]["scope"] == "shared"
+
+    def test_editing_a_shared_map_copies_it_into_the_run_with_the_shared_etag(
+        self, tmp_path: Path
+    ) -> None:
+        state = run_state(tmp_path)
+        assert state.storage is not None
+        shared = state.storage.shared_map_paths[0] / "keep.json"
+        service.save_file(document(), shared)
+        original = shared.read_bytes()
+        before = map_ops.get_map(state, "keep")
+
+        result = map_ops.edit(
+            state,
+            "keep",
+            [{"op": "set_name", "name": "run copy"}],
+            expected_sha256=before["sha256"],
+        )
+
+        assert shared.read_bytes() == original
+        assert Path(result["path"]) == state.storage.maps_dir / "keep.json"
+        assert map_ops.get_map(state, "keep")["document"]["name"] == "run copy"
+
+    def test_a_stale_shared_etag_refuses_copy_on_write(self, tmp_path: Path) -> None:
+        state = run_state(tmp_path)
+        assert state.storage is not None
+        shared = state.storage.shared_map_paths[0] / "keep.json"
+        service.save_file(document(), shared)
+        stale = map_ops.get_map(state, "keep")["sha256"]
+        changed = payload()
+        changed["name"] = "changed outside"
+        service.save_file(
+            parse_document(changed, source="changed", terrain=TERRAIN),
+            shared,
+            overwrite=True,
+        )
+
+        with pytest.raises(StaleWriteError):
+            map_ops.edit(
+                state,
+                "keep",
+                [{"op": "set_name", "name": "must not land"}],
+                expected_sha256=stale,
+            )
+        assert not (state.storage.maps_dir / "keep.json").exists()
 
 
 class TestGenerate:

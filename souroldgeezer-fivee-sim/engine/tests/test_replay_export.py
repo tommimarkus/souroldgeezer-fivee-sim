@@ -38,6 +38,7 @@ from fivee_sim.model.encounter import (
     EncounterMode,
     apply_state_delta,
 )
+from fivee_sim.paths import StorageLayout
 from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, RequestError
@@ -624,6 +625,48 @@ class TestBundleV2:
 
 
 class TestSizeGate:
+    def test_a_selected_run_owns_the_default_replay_output(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        run_root = tmp_path / "runs" / "adv-1"
+        run_root.mkdir(parents=True)
+        storage = StorageLayout(
+            run_id="adv-1",
+            runs_dir=tmp_path / "runs",
+            runtime_dir=tmp_path / "runtime" / "adv-1",
+            shared_map_paths=(tmp_path / "maps",),
+            shared_replay_paths=(tmp_path / "shared-replays",),
+            shared_scenes_dir=tmp_path / "scenes",
+            legacy_encounters_dir=tmp_path / "encounters",
+            legacy_adventures_dir=tmp_path / "adventures",
+            legacy_blobs_dir=tmp_path / "blobs",
+        )
+        monkeypatch.setattr(api.STATE, "storage", storage)
+        monkeypatch.setattr(map_ops, "INLINE_BUNDLE_BYTES", 64)
+
+        result = api.replay_export(mapless_fight(seed=48))
+
+        assert Path(result["path"]).parent == run_root / "replays"
+
+    def test_control_server_refuses_an_explicit_replay_write(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        storage = StorageLayout(
+            run_id=None,
+            runs_dir=tmp_path / "runs",
+            runtime_dir=tmp_path / "runtime" / "control",
+            shared_map_paths=(tmp_path / "maps",),
+            shared_replay_paths=(tmp_path / "shared-replays",),
+            shared_scenes_dir=tmp_path / "scenes",
+            legacy_encounters_dir=tmp_path / "encounters",
+            legacy_adventures_dir=tmp_path / "adventures",
+            legacy_blobs_dir=tmp_path / "blobs",
+        )
+        monkeypatch.setattr(api.STATE, "storage", storage)
+
+        with pytest.raises(RequestError, match="adventure run"):
+            api.replay_export(mapless_fight(seed=49), path=str(tmp_path / "no.json"))
+
     def test_a_small_bundle_comes_back_inline(self) -> None:
         result = api.replay_export(mapless_fight())
         assert "bundle" in result

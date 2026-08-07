@@ -83,7 +83,7 @@ from ..paths import (
     environment_replay_roots,
     replays_root,
 )
-from .common import canonical_json, discover_json_files, sha256_of
+from .common import canonical_json, discover_json_files, sha256_of, slugify
 from .errors import ReplayError
 
 __all__ = [
@@ -1369,7 +1369,11 @@ def serialize_bundle(bundle: Mapping[str, Any]) -> str:
 
 
 # --- reading replays off disk ------------------------------------------------
-def list_replays(roots: Sequence[str | Path] | None = None) -> list[dict[str, Any]]:
+def list_replays(
+    roots: Sequence[str | Path] | None = None,
+    *,
+    scoped_roots: Sequence[tuple[str | Path, str]] | None = None,
+) -> list[dict[str, Any]]:
     """Every replay bundle under the given (or configured) roots, briefly.
 
     Reads each file just far enough for a catalogue row, and deliberately does
@@ -1379,6 +1383,15 @@ def list_replays(roots: Sequence[str | Path] | None = None) -> list[dict[str, An
     graded. Files that are not replay bundles at all are skipped in silence,
     exactly as :func:`~fivee_sim.service.maps.list_maps` skips non-maps.
     """
+    if scoped_roots is not None:
+        found: dict[str, dict[str, Any]] = {}
+        for root, scope in scoped_roots:
+            for entry in list_replays([root]):
+                replay_id = slugify(Path(str(entry["path"])).stem)
+                if replay_id in found:
+                    continue
+                found[replay_id] = {"id": replay_id, **entry, "scope": scope}
+        return [found[replay_id] for replay_id in sorted(found)]
     if roots is None:
         configured = environment_replay_roots()
         roots = configured if configured else [replays_root()]

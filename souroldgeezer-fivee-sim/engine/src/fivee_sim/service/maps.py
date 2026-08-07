@@ -1733,6 +1733,7 @@ def save_file(
     overwrite: bool = False,
     expected_sha256: str | None = None,
     terrain: TerrainTable | None = None,
+    baseline_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Write the document's canonical text, refusing a silent overwrite.
 
@@ -1758,7 +1759,12 @@ def save_file(
         # Read under the lock, never before it: computing this first is exactly
         # the race the precondition exists to close.
         current=lambda: (
-            None if terrain is None else current_sha256(file, terrain=terrain)
+            None
+            if terrain is None
+            else current_sha256(
+                file if file.exists() or baseline_path is None else baseline_path,
+                terrain=terrain,
+            )
         ),
         subject=f"the saved map {file.stem!r}",
     )
@@ -1820,6 +1826,20 @@ def index(root: str | Path) -> dict[str, dict[str, Any]]:
         if map_id in found:
             continue
         found[map_id] = {"id": map_id, **entry}
+    return found
+
+
+def scoped_index(
+    roots: Sequence[tuple[str | Path, str]],
+) -> dict[str, dict[str, Any]]:
+    """Maps merged by id in root order, with their selected storage scope."""
+    found: dict[str, dict[str, Any]] = {}
+    for root, scope in roots:
+        for entry in list_maps([root]):
+            map_id = slugify(Path(str(entry["path"])).stem)
+            if map_id in found:
+                continue
+            found[map_id] = {"id": map_id, **entry, "scope": scope}
     return found
 
 

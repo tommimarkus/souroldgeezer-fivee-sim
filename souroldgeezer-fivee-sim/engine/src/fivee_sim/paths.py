@@ -206,6 +206,29 @@ class StorageLayout:
     def state_path(self) -> Path:
         return self.runtime_dir / STATE_FILENAME
 
+    @property
+    def is_writable_run(self) -> bool:
+        """Whether this process owns an isolated adventure workspace."""
+        return self.run_root is not None
+
+    def _scoped(self, run: Path, shared: tuple[Path, ...]) -> tuple[tuple[Path, str], ...]:
+        if self.run_root is not None:
+            return ((run, "run"), *((root, "shared") for root in shared))
+        scope = "legacy" if self.run_id == "legacy" else "shared"
+        return tuple((root, scope) for root in shared)
+
+    @property
+    def scoped_map_roots(self) -> tuple[tuple[Path, str], ...]:
+        return self._scoped(self.maps_dir, self.shared_map_paths)
+
+    @property
+    def scoped_scene_roots(self) -> tuple[tuple[Path, str], ...]:
+        return self._scoped(self.scenes_dir, (self.shared_scenes_dir,))
+
+    @property
+    def scoped_replay_roots(self) -> tuple[tuple[Path, str], ...]:
+        return self._scoped(self.replays_dir, self.shared_replay_paths)
+
 
 def source_id(env: Mapping[str, str] | None = None) -> str:
     """The engine source this launch was started from, or ``""``.

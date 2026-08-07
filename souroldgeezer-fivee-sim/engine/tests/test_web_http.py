@@ -248,11 +248,15 @@ class Editor:
 
 
 @pytest.fixture()
-def editor(tmp_path: Path) -> Iterator[Editor]:
+def editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Editor]:
     log = io.StringIO()
+    runs = tmp_path / "runs"
+    (runs / "adv-test").mkdir(parents=True)
+    monkeypatch.setenv("FIVEE_SIM_RUNS", str(runs))
     server = EngineServer(
         maps_dir=tmp_path / "maps",
         replays_dir=tmp_path / "replays",
+        run_id="adv-test",
         log=log,
     )
     # A short poll interval, because shutdown() blocks until the serve loop next
@@ -265,8 +269,8 @@ def editor(tmp_path: Path) -> Iterator[Editor]:
     yield Editor(
         server=server,
         thread=thread,
-        maps_dir=tmp_path / "maps",
-        replays_dir=tmp_path / "replays",
+        maps_dir=server.maps_dir,
+        replays_dir=server.replays_dir,
         log=log,
     )
     server.shutdown()

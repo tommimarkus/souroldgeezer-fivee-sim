@@ -45,7 +45,7 @@ from ..map_document import MapDocument
 from ..map_document import serialize as serialize_map
 from ..model.creature import Creature
 from ..model.encounter import Encounter, EncounterError, EncounterMode
-from ..paths import StorageLayout, source_id
+from ..paths import StorageLayout, replays_root, source_id
 from . import blobs, specs
 from . import encounter_journal as journal_service
 from . import maps as map_service
@@ -278,6 +278,42 @@ def maps_dir_of(state: EngineState) -> Path:
     return state.maps_dir if state.maps_dir is not None else map_service.maps_root()
 
 
+def map_index_of(state: EngineState) -> dict[str, dict[str, Any]]:
+    """Saved maps visible to this launch, run-local first when selected."""
+    if state.storage is not None:
+        return map_service.scoped_index(state.storage.scoped_map_roots)
+    return map_service.index(maps_dir_of(state))
+
+
+def map_path_of(state: EngineState, map_id: str) -> Path:
+    if map_service.ID_PATTERN.fullmatch(map_id) is None:
+        raise NotFoundError(f"no map {map_id!r}")
+    found = map_index_of(state)
+    entry = found.get(map_id)
+    if entry is None:
+        known = ", ".join(sorted(found)) or "none"
+        raise NotFoundError(f"no map {map_id!r}; maps here: {known}")
+    return Path(str(entry["path"]))
+
+
+def map_write_dir_of(state: EngineState) -> Path:
+    """Run-local map destination, refusing control and legacy processes."""
+    if state.storage is None:
+        return maps_dir_of(state)
+    if not state.storage.is_writable_run:
+        raise RequestError("map writes require a selected adventure run")
+    return state.storage.maps_dir
+
+
+def replay_write_dir_of(state: EngineState) -> Path:
+    """Run-local replay destination, refusing control and legacy processes."""
+    if state.storage is None:
+        return replays_root()
+    if not state.storage.is_writable_run:
+        raise RequestError("replay writes require a selected adventure run")
+    return state.storage.replays_dir
+
+
 # --- building a fight ------------------------------------------------------
 def new_encounter(
     combatants: list[Creature],
@@ -327,7 +363,7 @@ def current_map_sha256(state: EngineState, map_id: str) -> str | None:
     fact: what it captured is no longer what is on disk.
     """
     try:
-        path = map_service.resolve_id(map_id, maps_dir_of(state))
+        path = map_path_of(state, map_id)
     except RequestError:
         return None
     return map_service.current_sha256(path, terrain=active_registry(state).terrain_effects)
@@ -438,9 +474,8 @@ def resolve_battle_map(
             document = specs.document_from_spec(map_spec, terrain)
         return ResolvedMap(document=document)
     if map_id is not None:
-        document, _path = map_service.load_by_id(
-            map_id, maps_dir_of(state), terrain=terrain
-        )
+        path = map_path_of(state, map_id)
+        document, _warnings = map_service.load_file(path, terrain=terrain)
         sha256 = sha256_of(serialize_map(document))
         return ResolvedMap(
             document=document,
