@@ -250,7 +250,7 @@ def _fivee_adventure_source(tmp_path: Path) -> Path:
             "title": "Running the adventure",
             "locator": {"line_start": 0, "line_end": 0},
             "related_ids": ["scene:A"],
-            "content": [{"type": "paragraph", "text": "Private GM context."}],
+            "content": [{"type": "p", "text": "Private GM context."}],
         },
         {
             "id": "scene:A",
@@ -259,7 +259,9 @@ def _fivee_adventure_source(tmp_path: Path) -> Path:
             "title": "The yard",
             "locator": {"line_start": 0, "line_end": 0},
             "related_ids": ["chapter:running"],
-            "content": [{"type": "boxed", "text": "A rain-dark yard."}],
+            "content": [
+                {"type": "read-aloud", "tag": "Read aloud", "paras": ["A rain-dark yard."]}
+            ],
             "play": {"light": "none"},
         },
         {
