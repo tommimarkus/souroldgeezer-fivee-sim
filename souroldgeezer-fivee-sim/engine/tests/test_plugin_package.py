@@ -1431,3 +1431,364 @@ def test_both_engine_facing_roles_keep_the_turn_order_the_dice_rolled(
         guidance,
         flags=re.IGNORECASE | re.DOTALL,
     )
+
+
+# =============================================================================
+# RED TESTS for Copilot CLI support (triple-harness plan)
+# =============================================================================
+# These tests define the contract for native Copilot CLI plugin support.
+# All should fail before implementation.
+
+
+def test_copilot_native_root_plugin_manifest_exists() -> None:
+    """Copilot CLI requires a root plugin.json at the plugin root.
+
+    The Copilot manifest is a first-class harness alongside Claude Code and Codex,
+    not nested under a platform-specific directory like .claude-plugin/ or
+    .codex-plugin/.
+    """
+    root_manifest_path = PLUGIN_ROOT / "plugin.json"
+    assert root_manifest_path.is_file(), (
+        f"Copilot CLI manifest missing at {root_manifest_path.relative_to(PLUGIN_ROOT)}"
+    )
+
+
+def test_copilot_native_root_manifest_has_required_fields() -> None:
+    """Copilot root manifest must have name, version, and shared skills/agents."""
+    manifest = _json("plugin.json")
+
+    # Required: name field (string)
+    assert "name" in manifest, "manifest missing 'name' field"
+    assert isinstance(manifest["name"], str), "'name' must be a string"
+    assert manifest["name"] == PLUGIN_ROOT.name, "name must match plugin root directory name"
+
+    # Required: version field (strict-semver format YYYY.0M.build)
+    assert "version" in manifest, "manifest missing 'version' field"
+    assert isinstance(manifest["version"], str), "'version' must be a string"
+    # Validate semver format YYYY.0M.build (e.g., 2026.8.122)
+    assert re.match(r"^\d{4}\.\d{1,2}\.\d+$", manifest["version"]), (
+        f"'version' must be in semver format (e.g., 2026.8.122), got: {manifest['version']}"
+    )
+
+    # Required: skills field (points to shared skills directory)
+    assert "skills" in manifest or "agents" in manifest, (
+        "manifest must have 'skills' or 'agents' field"
+    )
+
+
+def test_copilot_native_manifest_no_mcp_servers() -> None:
+    """Copilot CLI manifest must not declare mcpServers.
+
+    The engine is started by the command that needs it, never spawned by the host.
+    """
+    manifest = _json("plugin.json")
+    assert "mcpServers" not in manifest, (
+        "Copilot manifest must not declare mcpServers; engine is not spawned by host"
+    )
+
+
+def test_mcp_json_not_tracked_in_repository() -> None:
+    """.mcp.json is host-specific config, never committed to the repository.
+
+    Verify via git ls-files that .mcp.json is not in the tracked repository.
+    """
+    tracked = subprocess.run(
+        ["git", "ls-files", "--", ".mcp.json"],
+        cwd=PLUGIN_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if tracked.returncode != 0:
+        pytest.skip("git is not available")
+    assert tracked.stdout.strip() == "", (
+        f".mcp.json should not be tracked in git, but git ls-files shows: {tracked.stdout.strip()}"
+    )
+
+
+def test_shared_skills_directory_structure() -> None:
+    """Copilot must use the same shared skills/ directory as Claude and Codex.
+
+    Skills are cross-platform; only the manifest and frontmatter differ per host.
+    """
+    skills_path = PLUGIN_ROOT / "skills"
+    assert skills_path.is_dir(), f"skills/ directory missing at {skills_path}"
+
+    # Verify required skill subdirectories exist with SKILL.md files
+    required_skills = ["play", "encounter-sim", "map-forge"]
+    for skill_name in required_skills:
+        skill_dir = skills_path / skill_name
+        assert skill_dir.is_dir(), f"skills/{skill_name}/ not found"
+
+        skill_md = skill_dir / "SKILL.md"
+        assert skill_md.is_file(), f"skills/{skill_name}/SKILL.md not found"
+
+
+def test_canonical_agent_files_exist() -> None:
+    """Canonical role descriptions are the source of truth in agents/ directory.
+
+    These canonical files must not be moved; they remain the single source
+    for role definitions across all harnesses.
+    """
+    agents_path = PLUGIN_ROOT / "agents"
+    assert agents_path.is_dir(), f"agents/ directory missing at {agents_path}"
+
+    required_roles = [
+        "adventure-prep.md",
+        "encounter-sim.md",
+        "game-master.md",
+        "play-controller.md",
+        "play-mechanics.md",
+        "typical-player.md",
+    ]
+
+    for role_file in required_roles:
+        role_path = agents_path / role_file
+        assert role_path.is_file(), (
+            f"Canonical role file missing: agents/{role_file}"
+        )
+
+
+def test_copilot_agents_directory_placeholder() -> None:
+    """Copilot CLI will have generated agent profiles under copilot/agents/.
+
+    This directory holds generated .agent.md files, one per canonical role.
+    These are deterministic projections of the canonical roles for Copilot.
+    """
+    copilot_agents_path = PLUGIN_ROOT / "copilot" / "agents"
+    # This test documents the expected structure; the directory may not exist yet.
+    # On first implementation, copilot/agents/ will be created and populated.
+    # For now, assert it will be a directory when created.
+    if copilot_agents_path.exists():
+        assert copilot_agents_path.is_dir(), (
+            f"copilot/agents must be a directory, got: {copilot_agents_path}"
+        )
+
+
+def test_copilot_generated_profiles_per_role() -> None:
+    """Each canonical role must have a generated Copilot .agent.md profile.
+
+    Generated profiles are deterministic (hash-stable for unchanged canonical role)
+    and preserve the canonical description and body verbatim.
+    """
+    required_roles = [
+        "adventure-prep",
+        "encounter-sim",
+        "game-master",
+        "play-controller",
+        "play-mechanics",
+        "typical-player",
+    ]
+
+    copilot_agents_path = PLUGIN_ROOT / "copilot" / "agents"
+
+    for role_name in required_roles:
+        agent_file = copilot_agents_path / f"{role_name}.agent.md"
+        assert agent_file.is_file(), (
+            f"Copilot generated profile missing: copilot/agents/{role_name}.agent.md"
+        )
+
+
+def test_copilot_generated_profile_preserves_canonical_body() -> None:
+    """Copilot-generated profile must preserve canonical role description and body verbatim.
+
+    The frontmatter differs per host (tools, model, effort), but the role's
+    canonical description and body must not be modified.
+    """
+    canonical_role = PLUGIN_ROOT / "agents" / "game-master.md"
+    copilot_profile = PLUGIN_ROOT / "copilot" / "agents" / "game-master.agent.md"
+
+    assert canonical_role.is_file()
+    assert copilot_profile.is_file(), (
+        "Copilot profile for game-master not found"
+    )
+
+    canonical_text = canonical_role.read_text(encoding="utf-8")
+    copilot_text = copilot_profile.read_text(encoding="utf-8")
+
+    # Extract bodies (everything after frontmatter)
+    canonical_body = re.split(r"^---\s*$", canonical_text, flags=re.MULTILINE)[
+        -1
+    ].strip()
+    copilot_body = re.split(r"^---\s*$", copilot_text, flags=re.MULTILINE)[-1].strip()
+
+    assert canonical_body, "canonical role body is empty"
+    assert copilot_body, "Copilot profile body is empty"
+    assert canonical_body == copilot_body, (
+        "Copilot profile must preserve canonical role body verbatim"
+    )
+
+
+def test_copilot_frontmatter_no_disallowed_tools_field() -> None:
+    """Copilot frontmatter must not have disallowedTools field.
+
+    Copilot CLI uses a different tool allowlist model than Claude Code.
+    """
+    copilot_profile = PLUGIN_ROOT / "copilot" / "agents" / "game-master.agent.md"
+    assert copilot_profile.is_file()
+
+    text = copilot_profile.read_text(encoding="utf-8")
+    frontmatter = re.split(r"^---\s*$", text, flags=re.MULTILINE)[1]
+
+    assert "disallowedTools" not in frontmatter, (
+        "Copilot frontmatter must not have disallowedTools; use inverted tool model"
+    )
+
+
+def test_copilot_frontmatter_no_effort_field() -> None:
+    """Copilot frontmatter must not have effort field.
+
+    Effort is Claude-specific reasoning guidance not applicable to Copilot.
+    """
+    copilot_profile = PLUGIN_ROOT / "copilot" / "agents" / "game-master.agent.md"
+    assert copilot_profile.is_file()
+
+    text = copilot_profile.read_text(encoding="utf-8")
+    frontmatter = re.split(r"^---\s*$", text, flags=re.MULTILINE)[1]
+
+    assert "effort" not in frontmatter, (
+        "Copilot frontmatter must not have 'effort' field; this is Claude-specific"
+    )
+
+
+def test_copilot_frontmatter_no_model_field() -> None:
+    """Copilot frontmatter may omit model field (agents inherit model from host).
+
+    If model is present, it must not be a Claude-specific model name.
+    """
+    copilot_profile = PLUGIN_ROOT / "copilot" / "agents" / "game-master.agent.md"
+    assert copilot_profile.is_file()
+
+    text = copilot_profile.read_text(encoding="utf-8")
+    frontmatter = re.split(r"^---\s*$", text, flags=re.MULTILINE)[1]
+
+    # If model field exists, ensure it's not a Claude-specific model
+    if "model:" in frontmatter:
+        match = re.search(r"model:\s*(\S+)", frontmatter)
+        assert match is not None
+        model = match.group(1).strip()
+        claude_models = ["opus", "sonnet", "haiku"]
+        assert not any(
+            m in model.lower() for m in claude_models
+        ), f"Copilot profile must not use Claude model: {model}"
+
+
+def test_copilot_frontmatter_uses_native_tool_names() -> None:
+    """Copilot frontmatter must use native Copilot tool aliases.
+
+    Valid Copilot tools: agent, execute, read, edit, search, web, todo.
+    Must not use Claude-scoped tools like Read(path/**) or Bash(command:*).
+    """
+    copilot_profile = PLUGIN_ROOT / "copilot" / "agents" / "game-master.agent.md"
+    assert copilot_profile.is_file()
+
+    text = copilot_profile.read_text(encoding="utf-8")
+    frontmatter = re.split(r"^---\s*$", text, flags=re.MULTILINE)[1]
+
+    # Check for invalid Claude-scoped tool syntax
+    invalid_patterns = [
+        r"Read\([^)]*\*\*",  # Read(path/**)
+        r"Bash\([^)]*\*",  # Bash(command:*)
+        r"Write\([^)]*\*\*",  # Write(path/**)
+    ]
+
+    for pattern in invalid_patterns:
+        assert not re.search(pattern, frontmatter), (
+            f"Copilot frontmatter contains Claude-scoped tool syntax: {pattern}"
+        )
+
+
+def test_copilot_profile_no_claude_plugin_root_var() -> None:
+    """Copilot profile must not reference ${CLAUDE_PLUGIN_ROOT}.
+
+    This is a Claude Code environment variable; Copilot CLI has no such variable.
+    """
+    copilot_profile = PLUGIN_ROOT / "copilot" / "agents" / "game-master.agent.md"
+    if copilot_profile.is_file():
+        text = copilot_profile.read_text(encoding="utf-8")
+        assert (
+            "${CLAUDE_PLUGIN_ROOT}" not in text
+        ), "Copilot profile must not reference ${CLAUDE_PLUGIN_ROOT}"
+
+
+def test_manifest_metadata_parity_across_hosts() -> None:
+    """Claude, Codex, and Copilot manifests must have matching name, description, author, license.
+
+    This ensures a user sees consistent information regardless of which harness they use.
+    """
+    claude_manifest = _json(".claude-plugin/plugin.json")
+    codex_manifest = _json(".codex-plugin/plugin.json")
+
+    copilot_manifest_path = PLUGIN_ROOT / "plugin.json"
+    if copilot_manifest_path.is_file():
+        copilot_manifest = _json("plugin.json")
+
+        # Name must match across all three
+        assert claude_manifest["name"] == codex_manifest["name"]
+        assert copilot_manifest["name"] == codex_manifest["name"], (
+            f"Copilot name {copilot_manifest['name']!r} does not match "
+            f"Codex {codex_manifest['name']!r}"
+        )
+
+        # Description must match (or be a minor variation) across all three
+        claude_desc = claude_manifest.get("description", "")
+        codex_desc = codex_manifest.get("description", "")
+        copilot_desc = copilot_manifest.get("description", "")
+
+        assert claude_desc == codex_desc, "Claude and Codex descriptions must match"
+        assert copilot_desc == codex_desc, (
+            f"Copilot description does not match Codex. "
+            f"Copilot: {copilot_desc!r}\nCodex: {codex_desc!r}"
+        )
+
+        # Author should match if present
+        if "author" in claude_manifest and "author" in copilot_manifest:
+            assert claude_manifest["author"] == copilot_manifest["author"], (
+                "Copilot author does not match Claude"
+            )
+
+        # License should match if present
+        if "license" in claude_manifest and "license" in copilot_manifest:
+            assert claude_manifest["license"] == copilot_manifest["license"], (
+                "Copilot license does not match Claude"
+            )
+
+
+def test_manifest_versions_use_consistent_semver() -> None:
+    """All three manifests must use compatible version formats.
+
+    Claude uses CalVer (2026.08.122), Codex uses strict-semver (2026.8.122).
+    Copilot must use strict-semver like Codex.
+    """
+    codex_manifest = _json(".codex-plugin/plugin.json")
+    copilot_manifest_path = PLUGIN_ROOT / "plugin.json"
+
+    if copilot_manifest_path.is_file():
+        copilot_manifest = _json("plugin.json")
+
+        # Copilot version must be strict-semver (YYYY.0M.build without leading zero on month)
+        copilot_version = copilot_manifest.get("version", "")
+        assert re.match(
+            r"^\d{4}\.\d{1,2}\.\d+$", copilot_version
+        ), f"Copilot version must be strict-semver format, got: {copilot_version}"
+
+        # Extract numeric components and verify parity with Codex
+        # (month padding differs: Codex 2026.8.122 vs Claude 2026.08.122)
+        copilot_parts = copilot_version.split(".")
+        codex_parts = codex_manifest["version"].split(".")
+
+        assert len(copilot_parts) == 3, f"Copilot version must have 3 parts: {copilot_version}"
+        assert len(codex_parts) == 3, f"Codex version must have 3 parts: {codex_manifest['version']}"
+
+        # Year and build must match exactly
+        assert (
+            copilot_parts[0] == codex_parts[0]
+        ), f"Copilot year {copilot_parts[0]} does not match Codex {codex_parts[0]}"
+        assert (
+            copilot_parts[2] == codex_parts[2]
+        ), f"Copilot build {copilot_parts[2]} does not match Codex {codex_parts[2]}"
+
+        # Month should match numerically (allowing for zero-padding difference)
+        assert int(copilot_parts[1]) == int(codex_parts[1]), (
+            f"Copilot month {copilot_parts[1]} does not match Codex month {codex_parts[1]}"
+        )
