@@ -50,14 +50,24 @@ uses its narrow launcher grant directly; `play-mechanics` is the conditional
 fallback only.
 
 Before live roles, the root runs `scripts/fivee-play.py init`, which performs
-**`fivee adventure.create --name <name>`** idempotently. Roster v2 records the
-adventure id as both durable run id and global selector. Every later call uses
-**`fivee --run <adv-id> ...`**. A missing selector may inspect configured shared
-inputs but refuses writes. Shared project maps, scenes, and replays are read-only
-overlay inputs; copy-on-write edits land in the run and never change shared
-bytes. `--run legacy` is read-only inspection of old stores, never a play or
-resume target. Run artifacts remain local; no publish or promotion operation
-exists.
+**`fivee adventure.create --name <name> --json <opening>`** idempotently. The
+opening is required: a saved opening scene with a map (the map requirement), a `party` roster, and an
+optional seed. It returns three distinct identifiers — `run_id`, `adventure_id`,
+and `encounter_id` — and the opening chapter already exists. Roster schema v3 records
+all three, using `run_id` as the sole engine selector: every later engine call is
+**`fivee --run <run-id> ...`**, never an adventure id. The opening seed override only
+applies to that opening chapter; it does not silently become a master-seed replacement.
+
+The opening map's `team=party` spawn hints assign the submitted party in request
+order (request-order assignment): ground then stored-level/feature order. Hints
+require unique/unoccupied capacity for the party. The opening scene preserves its scene mode, movement rule,
+map, and nonparty preservation; only the supplied party is placed. A missing
+selector may inspect configured shared inputs but refuses writes. Shared project
+maps, scenes, and replays are read-only overlay inputs; copy-on-write edits land
+in the run and never change shared bytes. `--run legacy` is read-only inspection
+of old stores, never a play or resume target. The old adv-* workspace deliberately
+breaks; no migration or compatibility selector exists. Run artifacts remain local;
+no publish or promotion operation exists.
 
 ## 1. Seat the table
 
@@ -153,7 +163,8 @@ ordinary success path.
 
 ## 4. Carry the adventuring day
 
-Link encounters through `fivee --run <adv-id> adventure.*`; never create every
+The opening chapter is already linked. Link later encounters through
+`fivee --run <run-id> adventure.*`; never create every
 fight as a fresh party. Explicitly carry selected-PC names so prior foes do not
 cross chapters. Carry hit points, conditions, slots, death saves, stability,
 and death. The **encounter-sim** skill owns semantics; the controller uses
@@ -178,7 +189,7 @@ Keep these files under `.fivee-sim/plays/<id>/` in both modes:
 
 | File | Purpose |
 |---|---|
-| `roster.json` | mode, seats, seed, adventure id, and current encounter |
+| `roster.json` | roster schema v3: mode, seats, seed, run_id, adventure_id, encounter_id |
 | `transcript.md` | shared chronology; evidence, never rehydration context |
 | `seats/<name>.md` | only what that seat witnessed, in its voice |
 | `brief-cursors.json` | acknowledged chair baseline/delta ownership |
@@ -201,7 +212,7 @@ current index entries and their line or page locators.
 When a human pause is about to occur, or when resuming a saved run, load
 [pause and resume](references/resume.md). Do not load it during uninterrupted
 all-agent play. Finalize every chapter and export
-`fivee --run <adv-id> adventure.replay <adv-id>` when
+`fivee --run <run-id> adventure.replay <adventure-id>` when
 play ends; hand over its path and where play concluded.
 
 ## Playtest only

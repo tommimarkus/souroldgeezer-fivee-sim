@@ -210,55 +210,51 @@ def test_map_adventure_replay_guidance_is_conditionally_packaged() -> None:
         assert obligation in guidance_plain
 
 
-def test_shipped_guidance_carries_the_adventure_run_selector() -> None:
-    """Every mutable workflow stays inside the run ``adventure.create`` opened."""
+def test_shipped_guidance_carries_the_distinct_run_selector_contract() -> None:
+    """Scratch work and adventures return run ids; selecting never uses adventure ids."""
     encounter = _text("skills/encounter-sim/SKILL.md")
     map_forge = _text("skills/map-forge/SKILL.md")
     play = _text("skills/play/SKILL.md")
     table_loop = _text("skills/play/references/table-loop.md")
-    resume = _text("skills/play/references/resume.md")
-    replay = _text("skills/map-forge/references/adventure-replay.md")
-
     for entry_skill in (encounter, map_forge):
-        assert "fivee adventure.create" in entry_skill
-        assert "fivee --run <adv-id>" in entry_skill
-        assert "shared" in entry_skill.lower()
-        assert "read-only" in entry_skill.lower()
+        assert "fivee run.create" in entry_skill
+        assert "fivee --run <run-id>" in entry_skill
+
+    assert "fivee adventure.create --name" in play
+    assert "opening scene" in play.lower()
+    assert "opening chapter already exists" in play.lower()
+    assert "roster schema v3" in play.lower()
+    assert "run_id" in play
+    assert "encounter_id" in play
+    assert "run id" in table_loop.lower()
+    assert "encounter.brief" in table_loop
+
+
+def test_opening_adventure_contract_is_documented_across_guidance() -> None:
+    guidance = "\n".join(
+        (
+            _text("skills/play/SKILL.md"),
+            _text("skills/map-forge/SKILL.md"),
+            _text("skills/encounter-sim/SKILL.md"),
+            _text("docs/MAPS.md"),
+            _text("../README.md"),
+        )
+    )
+    plain = " ".join(guidance.lower().split())
 
     for obligation in (
-        "adventure.create",
-        "adventure id",
-        "run id",
-        "canonical operation name",
-        "argument values",
-        "shared",
-        "read-only",
+        "opening scene",
+        "map requirement",
+        "team=party",
+        "unique/unoccupied capacity",
+        "request-order assignment",
+        "ground then stored-level/feature order",
+        "seed override only",
+        "scene mode",
+        "nonparty preservation",
+        "old adv-* workspace",
     ):
-        assert obligation in play.lower()
-
-    for command in (
-        "fivee --run adv-1 adventure.encounter",
-        "fivee --run adv-1 encounter.act",
-        "fivee --run adv-1 encounter.finalize",
-    ):
-        assert command in encounter
-    for command in (
-        "fivee --run adv-1 map.generate",
-        "fivee --run adv-1 map.get",
-        "fivee --run adv-1 map.put",
-    ):
-        assert command in map_forge
-    assert "fivee --run adv-1 adventure.replay" in replay
-    assert "fivee --run" not in table_loop
-    for obligation in (
-        "run id",
-        "canonical operation name",
-        "encounter.brief",
-        "encounter.resume",
-    ):
-        assert obligation in table_loop
-    assert "fivee --run <adv-id> encounter.state" in resume
-    assert "fivee --run <adv-id> adventure.state" in resume
+        assert obligation in plain
 
 
 def test_host_manifests_identify_the_same_plugin() -> None:

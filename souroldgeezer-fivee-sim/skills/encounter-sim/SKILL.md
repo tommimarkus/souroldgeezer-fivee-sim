@@ -66,19 +66,19 @@ chair-safe `--as` projection withheld. Keep chair payloads whole when another
 seat must receive the exact engine document; select only the control and
 outcome facts you would otherwise parse locally.
 
-## Select the adventure run
+## Select a run
 
-Every mutable artifact belongs to one isolated adventure run. Start it once,
-without a selector:
+Every mutable artifact belongs to one isolated run. For scratch maps and a
+standalone encounter, start an empty run once, without a selector:
 
 ```bash
-fivee adventure.create --name "The Sunken Bell"   # returns adv-1 and its version
+fivee run.create                                  # returns run-1
 ```
 
-The returned adventure id is also the global selector. From that point every
-map, scene, replay, encounter, dice, and adventure command uses
-**`fivee --run <adv-id> ...`**; keep the same selector through resume and
-finalization. Even a map-only workflow creates the adventure first. A command
+The returned run id is the global selector. From that point every map, scene,
+replay, encounter, dice, and adventure command uses **`fivee --run <run-id> ...`**;
+keep the same selector through resume and finalization. Engine selection never
+uses an adventure id. A command
 without `--run` may inspect configured shared inputs but refuses writes. Shared
 project maps, scenes, and replays are read-only overlay inputs: a guarded edit
 copies one into the run, never changes the shared bytes. `--run legacy` is for

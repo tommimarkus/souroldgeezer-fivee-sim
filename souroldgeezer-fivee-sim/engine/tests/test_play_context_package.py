@@ -125,7 +125,7 @@ def test_root_owns_run_identity_while_controller_discovers_fivee_syntax() -> Non
     engine = _section(skill, "## Engine boundary")
     plain = " ".join(engine.replace("`", "").replace("*", "").split())
 
-    assert "adventure id" in plain.lower()
+    assert "run id" in plain.lower()
     assert "controller" in plain.lower()
     assert re.search(r"root.{0,160}never.{0,120}(?:invoke|run).{0,80}fivee", plain, re.I)
     assert re.search(
@@ -318,6 +318,22 @@ def test_live_play_uses_direct_controller_mechanics_with_conditional_fallback() 
     assert re.search(r"controller.{0,180}direct", mechanical, re.I | re.S)
     assert re.search(r"play-mechanics.{0,180}(?:fallback|unavailable)", mechanical, re.I | re.S)
     assert re.search(r"one decision beat", mechanical, flags=re.IGNORECASE)
+
+
+def test_table_loop_keeps_the_live_view_to_engine_state_and_journals_dialogue() -> None:
+    mechanical = _section(
+        _text("skills/play/references/table-loop.md"),
+        "## Mechanical context and briefs",
+    )
+    council = _section(
+        _text("skills/play/references/table-loop.md"), "## Party council"
+    )
+
+    assert re.search(r"opening brief.{0,160}movement.{0,160}immediately", mechanical, re.I | re.S)
+    assert re.search(r"audible.{0,160}encounter\.note.{0,160}attributed", council, re.I | re.S)
+    assert re.search(r"bounded.{0,120}encounter\.note", council, re.I | re.S)
+    assert re.search(r"(?:table.only|OOC).{0,160}transcript.only", council, re.I | re.S)
+    assert re.search(r"(?:table.only|OOC).{0,160}(?:not|never).{0,80}live", council, re.I | re.S)
     assert "--select" in mechanical
     assert "--as" in mechanical
     assert re.search(

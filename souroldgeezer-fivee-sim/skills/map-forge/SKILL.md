@@ -9,7 +9,7 @@ Battle maps as first-class documents: generated under a seed, tweaked verbally o
 by hand, written to disk as JSON, fought on, and replayed.
 
 **A map is a file, and its id is its filename.** There is no in-memory session
-copy to keep in step with disk — `fivee --run <adv-id> map.list` names that
+copy to keep in step with disk — `fivee --run <run-id> map.list` names that
 run's overlay, and every other operation takes the id and reads the file. Two
 servers bound to the same run therefore cannot disagree about a map; servers
 bound to different runs are isolated deliberately. What *can* go stale is a
@@ -39,15 +39,17 @@ map is written, because no flag grammar should try to spell one.
 
 ## Select the adventure run
 
-Maps are mutable run artifacts, including map-only work. Start the workspace
-without a selector, then carry the returned id on every later command:
+Maps are mutable run artifacts, including map-only work. Start scratch map work
+without a selector with `run.create`, then carry the returned run id on every
+later command:
 
 ```bash
-fivee adventure.create --name "Map work"             # returns adv-1
-fivee --run adv-1 map.generate --kind dungeon --save-as first-draft
+fivee run.create                                      # returns run-1
+fivee --run run-1 map.generate --kind dungeon --save-as first-draft
 ```
 
-The general form is **`fivee --run <adv-id> ...`**. Project maps, scenes, and
+The general form is **`fivee --run <run-id> ...`**. Engine selection always uses
+the run id, never an adventure id. Project maps, scenes, and
 replays are shared read-only overlay inputs; a run-local id wins. A guarded edit
 of a shared document is copy-on-write into the run, so the shared bytes do not
 change. An unscoped command may inspect shared inputs but refuses a write, and

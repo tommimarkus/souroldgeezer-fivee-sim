@@ -556,11 +556,13 @@ the recovery.
 
 **Those roots are now the explicit `--run legacy` view, not the current write
 model.** Current mutable state is isolated by adventure under
-`<runs_root>/<adv-id>/`: maps, scenes, replays, encounter directories, the one
-`adventures/<adv-id>.json` document, and blobs all live below that run root.
-`adventure.create` is the sole unscoped write; it allocates the workspace
-atomically, and the returned `adv-*` id becomes the global `fivee --run <adv-id>`
-selector. Even map-only work starts there. Unknown selectors refuse rather than
+`<runs_root>/<run-id>/`: maps, scenes, replays, encounter directories, the one
+`adventures/<adventure-id>.json` document, and blobs all live below that run root.
+`run.create` is the unscoped write for scratch maps and standalone encounters.
+`adventure.create` atomically allocates a distinct `run-*` workspace and opening
+chapter, returning distinct run, adventure, and encounter identifiers; only the
+returned run id may be selected by `fivee --run <run-id>`. An adventure id is never
+an engine selector. Unknown selectors refuse rather than
 creating lookalike directories, and an unscoped engine may read configured
 inputs but refuses every other write.
 
@@ -574,7 +576,7 @@ automatic copy, deletion, or cleanup is permitted.
 
 **A server is bound to one storage identity.** With a project config, rendezvous
 state is config-stable at `.fivee-sim/runtime/control/` for unscoped allocation
-and `.fivee-sim/runtime/<adv-id>/` for a selected run. The immutable
+and `.fivee-sim/runtime/<run-id>/` for a selected run. The immutable
 `StorageLayout` is constructed at the launcher/server composition edge and owned
 by `EngineState`; services receive its explicit roots rather than resolving an
 ambient working directory. `storage.runs = "runs"` and `FIVEE_SIM_RUNS` configure

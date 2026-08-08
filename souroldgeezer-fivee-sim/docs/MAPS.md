@@ -71,8 +71,9 @@ Relative paths resolve against the directory containing `config.toml` — normal
 `scenes`, `encounters`, `adventures`, `blobs`, and `runs` take one string each.
 When omitted, they default to the sibling `maps/`, `replays/`, `scenes/`,
 `encounters/`, `adventures/`, `blobs/`, and `runs/` directories. The first three
-are shared project inputs. Start a mutable workspace with `fivee adventure.create`,
-then select its returned id on every later command as `fivee --run <adv-id> ...`.
+are shared project inputs. Start a scratch map workspace with `fivee run.create`,
+then select its returned `run_id` on every later command as `fivee --run <run-id> ...`.
+Engine selection always uses `run_id`, never `adventure_id`.
 The run overlays maps, scenes, and replays; a run-local id wins, and a guarded
 edit of a shared map copies it into the run without changing shared bytes.
 

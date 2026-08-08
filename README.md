@@ -169,6 +169,17 @@ Exit codes separate the four failures that have four different fixes: **2** the
 command was wrong, **3** the engine refused, **4** the engine broke, **5** nothing
 answered.
 
+### Runs, adventures, and a fight
+
+Use `fivee run.create` for a scratch map or standalone encounter; it returns a
+`run_id`, which is always the value after `--run`. `adventure.create` is different:
+it requires a name and opening scene/party (with an optional seed), returns distinct
+`run_id`, `adventure_id`, and `encounter_id`, and creates the opening chapter at once.
+The opening scene requires a map. Its `team=party` hints are unique/unoccupied
+capacity assigned in request order, ground then stored-level/feature order. The
+scene mode, movement rule, map, and nonparty cast are preserved; the seed override
+applies only to the opening. Old adv-* workspace selectors deliberately break.
+
 ### A fight, end to end
 
 ```bash

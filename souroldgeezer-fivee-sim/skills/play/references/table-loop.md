@@ -23,7 +23,8 @@ argument changes after a refusal, use a fresh idempotency key for the corrected
 call; the old key belongs to the refused argument set.
 
 Read one authoritative snapshot and use exactly one mechanical-context
-invocation for the beat, not one invocation per chair. Establish one full
+invocation for the beat, not one invocation per chair. The opening brief and a
+movement update appear immediately from engine state. Establish one full
 baseline when a seat joins by requesting `encounter.brief` with the run,
 encounter, and chair identifiers. After change, deliver one per-seat delta by
 requesting `encounter.resume` with those identifiers and a `delta` view value
@@ -53,9 +54,10 @@ The GM names eligible present seats whose characters can communicate. Each gets
 only its own player brief; never another seat's brief. `table-wide` requires
 roster opt-in.
 
-- `TABLE`: out-of-character strategy; it never changes world state or alerts an
-  enemy.
-- `SAY`: audible in-world; the GM decides who hears and what follows.
+- `TABLE`: out-of-character strategy. It is transcript-only, never changes world
+  state, and is not displayed live.
+- `SAY`: audible in-world. Journal it immediately as a bounded `encounter.note`
+  entry attributed to its speaker; the GM decides who hears and what follows.
 - `COMMIT`: separate final declaration by the acting seat for its own action.
 
 Run one proposal pass and one response pass or one revision pass, ending early when all
@@ -65,7 +67,8 @@ reopens council. The plan is advisory; only the acting seat's COMMIT resolves.
 Player return, at most 120 words: `TABLE` (60), optional `SAY` (30), at most one
 optional `GM QUESTION` (30), and `READY: yes|no`. COMMIT is separate, 80 words.
 The coordinator relays fields, then appends chronology to `transcript.md` and
-seat-witnessed memory; after relay it drops raw returns. `council.json` retains
+seat-witnessed memory; after relay it drops raw returns. Table-only/OOC discussion
+stays transcript-only and is never displayed live. `council.json` retains
 only participants, pass, `current_plan`, `open_questions`, and readiness. Raw or
 full discussion is never sent to the game master; it receives audible SAY,
 COMMIT, and a bounded table-only plan summary. Never send raw council or COMMIT
