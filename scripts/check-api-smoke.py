@@ -412,8 +412,13 @@ class Engine:
     def launcher(
         self, *arguments: str, timeout: float = WARM_TIMEOUT
     ) -> subprocess.CompletedProcess[str]:
+        selected = (
+            ("--run", self.run_id)
+            if self.run_id is not None and "--run" not in arguments
+            else ()
+        )
         return subprocess.run(  # noqa: S603 - a fixed script with fixed arguments
-            [sys.executable, str(LAUNCHER), *arguments],
+            [sys.executable, str(LAUNCHER), *selected, *arguments],
             capture_output=True,
             text=True,
             env=self.env,
@@ -440,14 +445,26 @@ class Engine:
     @property
     def state_file(self) -> Path:
         if self.run_id is None:
-            return self.root / ".fivee-sim" / "fivee-sim-server.json"
+            return self.root / ".fivee-sim" / "runtime" / "control" / "fivee-sim-server.json"
         return self.root / ".fivee-sim" / "runtime" / self.run_id / "fivee-sim-server.json"
 
     def select_run(self, run_id: str) -> None:
         """Switch this smoke client to the manifest-backed workspace it created."""
+        if self.run_id is None:
+            stopped = self.launcher("stop", "--compact", timeout=60.0)
+            if stopped.returncode != 0:
+                raise SmokeError(f"could not stop the control server: {stopped.stderr[-400:]}")
         self.run_id = run_id
         self.fivee("--run", run_id, "serve")
         self.adopt()
+
+    def start_scratch(self, timeout: float = WARM_TIMEOUT) -> None:
+        """Start control, allocate a scratch run, then select that workspace."""
+        self.start(timeout=timeout)
+        status, created, _ = self.call("POST", "/runs", {})
+        if status != 201:
+            raise SmokeError(f"run.create answered {status}: {json.dumps(created)[:300]}")
+        self.select_run(str(created["id"]))
 
     def adopt(self) -> None:
         """Read the port and token of whatever server now serves this root.
@@ -854,8 +871,8 @@ def adventure_over_http(engine: Engine) -> dict[str, Any]:
             {
                 "name": "smoke opening",
                 "combatants": [
-                    {**ADVENTURE_ROSTER[2], "position": [15, 0]},
-                    {**ADVENTURE_ROSTER[3], "position": [20, 0]},
+                    {**ADVENTURE_ROSTER[2], "position": [0, 5]},
+                    {**ADVENTURE_ROSTER[3], "position": [5, 5]},
                 ],
                 "seed": ADVENTURE_SEEDS[0],
                 "map": {
@@ -966,11 +983,13 @@ def interlude_run(engine: Engine) -> dict[str, Any]:
     the run from being reported as the case after it.
     """
     run: dict[str, Any] = {}
-    status, stored_map, _ = engine.call(
-        "PUT", f"/maps/{MILL_MAP_ID}", MILL_MAP, headers={"If-Match": "*"}
-    )
-    if status != 201:
-        raise SmokeError(f"map.put answered {status}: {json.dumps(stored_map)[:300]}")
+    # The opening map is a configured shared input, like the scene below. A
+    # control server allocates runs but cannot mutate one, and selecting a
+    # scratch run would make adventure.create invalid, so materialise the
+    # fixture exactly where a campaign's checked-in map lives.
+    maps_dir = engine.root / ".fivee-sim" / "maps"
+    maps_dir.mkdir(parents=True, exist_ok=True)
+    (maps_dir / f"{MILL_MAP_ID}.json").write_text(json.dumps(MILL_MAP), encoding="utf-8")
 
     scenes_dir = engine.root / ".fivee-sim" / "scenes"
     scenes_dir.mkdir(parents=True, exist_ok=True)
@@ -1496,6 +1515,13 @@ def main() -> int:
             f"status={status} body={json.dumps(refused)[:200]}",
         )
 
+        scratch_status, scratch, _ = primary.call("POST", "/runs", {})
+        if scratch_status != 201:
+            raise SmokeError(
+                f"run.create answered {scratch_status}: {json.dumps(scratch)[:300]}"
+            )
+        primary.select_run(str(scratch["id"]))
+
         # -- 3. the fight, over plain HTTP -----------------------------------
         reference = phase(
             "the scripted fight runs end to end over plain HTTP",
@@ -1674,7 +1700,7 @@ def main() -> int:
         engines.append(second)
 
         def repeat() -> dict[str, Any]:
-            second.start(timeout=WARM_TIMEOUT)
+            second.start_scratch(timeout=WARM_TIMEOUT)
             return fight_over_http(second)
 
         repeated = phase("a second, independent server runs the same fight end to end", repeat)
@@ -1695,6 +1721,8 @@ def main() -> int:
         # -- 5. the same fight through the binary ----------------------------
         commanded = Engine("command")
         engines.append(commanded)
+
+        commanded.start_scratch(timeout=WARM_TIMEOUT)
         driven = phase(
             "the fivee command runs the same fight end to end, as a subprocess",
             lambda: fight_through_the_command(commanded),
@@ -2050,7 +2078,7 @@ def main() -> int:
         engines.append(correcting)
 
         def corrected_and_restarted() -> dict[str, Any]:
-            correcting.start(timeout=WARM_TIMEOUT)
+            correcting.start_scratch(timeout=WARM_TIMEOUT)
             return correction_survives_recovery(correcting)
 
         corrected = phase(
@@ -2081,7 +2109,7 @@ def main() -> int:
         engines.append(staging)
 
         def saved_fight() -> dict[str, Any]:
-            staging.start(timeout=WARM_TIMEOUT)
+            staging.start_scratch(timeout=WARM_TIMEOUT)
             return scene_round_trip(staging)
 
         scene = phase(
