@@ -396,9 +396,8 @@ def test_native_source_does_not_bypass_playtest_semantic_inventory_gate(
             selected_names=None,
             prepared_index=None,
             playtest_inventory=None,
-            opening_scene=None,
+            opening_scene="opening",
             runner=runner,
-            jq_path=Path("/usr/bin/jq"),
         )
 
     assert runner.calls == []
@@ -509,20 +508,21 @@ def test_publish_prep_refuses_inventory_for_another_adventure(
     assert not (tmp_path / "published").exists()
 
 
-def test_roster_loader_keeps_v1_inline_runs_and_resolves_v2_references(
+def test_roster_loader_rejects_unsupported_pre_v3_workspaces_and_resolves_v3_references(
     helper: ModuleType, tmp_path: Path
 ) -> None:
     v1 = tmp_path / "v1.json"
     inline = {"mode": "play", "seats": [{"name": "Thora", "sheet": {"ac": 16}}]}
     v1.write_text(json.dumps(inline), encoding="utf-8")
-    assert helper.load_roster(v1) == inline
+    with pytest.raises(helper.PlaySetupError, match="unsupported workspace.*schema_version 1"):
+        helper.load_roster(v1)
 
     run = tmp_path / "run"
     (run / "inputs" / "seats").mkdir(parents=True)
     seat = {"identity": "Thora", "sheet": {"name": "Thora", "ac": 16}}
     (run / "inputs" / "seats" / "thora.json").write_text(json.dumps(seat), encoding="utf-8")
     roster = {
-        "schema_version": 2,
+        "schema_version": 3,
         "mode": "play",
         "seats": [{"name": "Thora", "input": "inputs/seats/thora.json"}],
     }
@@ -537,10 +537,11 @@ def test_roster_loader_keeps_v1_inline_runs_and_resolves_v2_references(
 class FakeRunner:
     def __init__(self) -> None:
         self.calls: list[list[str]] = []
-        self.openings: list[dict[str, Any]] = []
+        self.inputs: list[str | None] = []
 
-    def run(self, tokens: list[str]) -> dict[str, Any]:
+    def run(self, tokens: list[str], *, stdin: str | None = None) -> dict[str, Any]:
         self.calls.append(tokens)
+        self.inputs.append(stdin)
         if "serve" in tokens:
             return {"runtime_dir": "/runtime", "already_running": False}
         if "content.status" in tokens:
@@ -551,19 +552,15 @@ class FakeRunner:
                 "configured_paths": ["secret-content-path"],
             }
         if "adventure.create" in tokens:
-            return {"adventure_id": "adv-7", "version": "1", "status": "active"}
+            return {
+                "run_id": "run-3",
+                "adventure_id": "adv-7",
+                "encounter_id": "enc-9",
+                "version": "2",
+                "state_sha256": "a" * 64,
+                "map_sha256": None,
+            }
         raise AssertionError(tokens)
-
-    def opening_chapter(self, **values: Any) -> dict[str, Any]:
-        self.openings.append(values)
-        return {
-            "adventure_id": "adv-7",
-            "encounter_id": "enc-9",
-            "index": 0,
-            "version": "2",
-            "state_sha256": "a" * 64,
-            "map_sha256": None,
-        }
 
 
 def _project_config(tmp_path: Path) -> Path:
@@ -587,7 +584,7 @@ runs = "runs"
     return config
 
 
-def test_init_stages_v2_artifacts_and_returns_only_compact_metadata(
+def test_init_stages_v3_artifacts_and_returns_only_compact_metadata(
     helper: ModuleType, tmp_path: Path
 ) -> None:
     adventure = tmp_path / "project" / "adventure.md"
@@ -608,19 +605,19 @@ def test_init_stages_v2_artifacts_and_returns_only_compact_metadata(
         selected_names=None,
         prepared_index=None,
         playtest_inventory=None,
-        opening_scene=None,
+        opening_scene="opening",
         runner=runner,
-        jq_path=Path("/usr/bin/jq"),
     )
 
-    run = tmp_path / "project" / ".fivee-sim" / "plays" / "adv-7"
+    run = tmp_path / "project" / ".fivee-sim" / "plays" / "run-3"
     assert result == {
         "schema_version": 1,
         "status": "ready",
         "mode": "play",
+        "run_id": "run-3",
         "adventure_id": "adv-7",
-        "artifact_id": "adv-7",
-        "adventure_version": "1",
+        "artifact_id": "run-3",
+        "adventure_version": "2",
         "source_sha256": helper.sha256_file(adventure),
         "module_index_sha256": helper.sha256_file(run / "module-index.json"),
         "content_generation": 1,
@@ -631,12 +628,16 @@ def test_init_stages_v2_artifacts_and_returns_only_compact_metadata(
             "roster": str(run / "roster.json"),
             "checkpoint": str(run / "checkpoint.json"),
         },
+        "encounter_id": "enc-9",
+        "state_sha256": "a" * 64,
+        "map_sha256": None,
     }
     assert "secret-content-path" not in json.dumps(result)
     assert "Thora" not in json.dumps(result)
 
     roster = json.loads((run / "roster.json").read_text(encoding="utf-8"))
-    assert roster["schema_version"] == 2
+    assert roster["schema_version"] == 3
+    assert roster["run_id"] == "run-3"
     assert roster["party_engine"] == "inputs/party-engine.json"
     assert roster["party_gm"] == "inputs/party-gm.json"
     assert [seat["kind"] for seat in roster["seats"]] == ["agent", "human"]
@@ -660,13 +661,25 @@ def test_init_stages_v2_artifacts_and_returns_only_compact_metadata(
         next(token for token in call if token in {"serve", "content.status", "adventure.create"})
         for call in runner.calls
     ]
-    assert operations == ["serve", "content.status", "adventure.create"]
-    create = runner.calls[-1]
+    assert operations == ["serve", "content.status", "adventure.create", "serve"]
+    create_index = operations.index("adventure.create")
+    create = runner.calls[create_index]
     assert "--idempotency-key" in create
+    assert "--json" in create
+    assert create[create.index("--json") + 1] == "-"
     assert "--select" in create
+    assert json.loads(runner.inputs[create_index] or "") == {
+        "name": "adventure",
+        "opening": {
+            "scene_id": "opening",
+            "party": json.loads((run / "inputs/party-engine.json").read_text(encoding="utf-8")),
+            "seed": 42,
+        },
+    }
+    assert runner.calls[-1][:3] == ["--run", "run-3", "serve"]
 
 
-def test_init_pipeline_receives_paths_not_party_or_scene_bodies(
+def test_init_uses_one_json_stdin_create_for_the_opening(
     helper: ModuleType, tmp_path: Path
 ) -> None:
     adventure = tmp_path / "project" / "adventure.md"
@@ -688,19 +701,18 @@ def test_init_pipeline_receives_paths_not_party_or_scene_bodies(
         playtest_inventory=None,
         opening_scene="opening",
         runner=runner,
-        jq_path=Path("/usr/bin/jq"),
     )
 
     assert result["encounter_id"] == "enc-9"
     assert result["adventure_version"] == "2"
-    assert len(runner.openings) == 1
-    opening = runner.openings[0]
+    create_index = next(
+        index for index, call in enumerate(runner.calls) if "adventure.create" in call
+    )
+    assert sum("adventure.create" in call for call in runner.calls) == 1
+    opening = json.loads(runner.inputs[create_index] or "")["opening"]
     assert opening["scene_id"] == "opening"
-    assert opening["party_engine_path"].name == "party-engine.json"
-    assert opening["selected_names"] == ["Thora", "Kesh"]
-    assert "mode" not in opening
-    assert "combatants" not in opening
-    assert "max_hp" not in repr(opening)
+    assert [member["name"] for member in opening["party"]] == ["Thora", "Kesh"]
+    assert opening["seed"] == 42
 
 
 def test_init_retry_reuses_saved_run_without_rewriting_artifacts(
@@ -726,10 +738,9 @@ def test_init_retry_reuses_saved_run_without_rewriting_artifacts(
         "playtest_inventory": None,
         "opening_scene": "opening",
         "runner": runner,
-        "jq_path": Path("/usr/bin/jq"),
     }
     first = helper.init_play(**arguments)
-    run = tmp_path / "project" / ".fivee-sim" / "plays" / "adv-7"
+    run = tmp_path / "project" / ".fivee-sim" / "plays" / "run-3"
     transcript = run / "transcript.md"
     seat_memory = run / "seats" / "thora.md"
     transcript.write_text("existing transcript\n", encoding="utf-8")
@@ -743,7 +754,7 @@ def test_init_retry_reuses_saved_run_without_rewriting_artifacts(
     assert second["encounter_id"] == "enc-9"
     assert transcript.read_text(encoding="utf-8") == "existing transcript\n"
     assert seat_memory.read_text(encoding="utf-8") == "existing memory\n"
-    assert len(runner.openings) == 1
+    assert sum("adventure.create" in call for call in runner.calls) == 2
 
 
 def test_init_refuses_nonfinal_configured_inputs_before_engine_calls(
@@ -768,9 +779,8 @@ def test_init_refuses_nonfinal_configured_inputs_before_engine_calls(
             selected_names=None,
             prepared_index=None,
             playtest_inventory=None,
-            opening_scene=None,
+            opening_scene="opening",
             runner=runner,
-            jq_path=Path("/usr/bin/jq"),
         )
 
     assert runner.calls == []

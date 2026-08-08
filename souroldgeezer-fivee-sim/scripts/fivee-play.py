@@ -15,7 +15,6 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import stat
 import subprocess
 import sys
@@ -25,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 INDEXER_VERSION = 2
-ROSTER_VERSION = 2
+ROSTER_VERSION = 3
 MANIFEST_VERSION = 1
 ADVENTURE_SOURCE_FORMAT = "fivee-sim-adventure-source"
 ADVENTURE_SOURCE_VERSION = 1
@@ -600,10 +599,11 @@ def _referenced_json(run_dir: Path, relative: str) -> dict[str, Any]:
 def load_roster(path: Path) -> dict[str, Any]:
     roster = _json_object(path.resolve(), "roster")
     version = roster.get("schema_version", 1)
-    if version == 1:
-        return roster
     if version != ROSTER_VERSION:
-        raise PlaySetupError(f"unsupported roster schema_version {version!r}")
+        raise PlaySetupError(
+            f"unsupported workspace roster schema_version {version!r}; "
+            "adv-* engine workspaces cannot be resumed"
+        )
     loaded = copy.deepcopy(roster)
     run_dir = path.resolve().parent
     for field in ("party_engine", "party_gm"):
@@ -615,10 +615,10 @@ def load_roster(path: Path) -> dict[str, Any]:
         gm["input_data"] = _referenced_json(run_dir, gm["input"])
     seats = loaded.get("seats")
     if not isinstance(seats, list):
-        raise PlaySetupError("roster v2 seats must be a list")
+        raise PlaySetupError("roster v3 seats must be a list")
     for seat in seats:
         if not isinstance(seat, dict) or not isinstance(seat.get("input"), str):
-            raise PlaySetupError("each roster v2 seat needs an input reference")
+            raise PlaySetupError("each roster v3 seat needs an input reference")
         seat["input_data"] = _referenced_json(run_dir, seat["input"])
     return loaded
 
@@ -701,17 +701,18 @@ def _required_strings(document: dict[str, Any], fields: tuple[str, ...], operati
 class FiveeRunner:
     """The only subprocess boundary; results remain private until projected."""
 
-    def __init__(self, launcher: Path, config_path: Path, jq_path: Path) -> None:
+    def __init__(self, launcher: Path, config_path: Path) -> None:
         self.launcher = launcher.resolve()
         self.config_path = config_path.resolve()
-        self.jq_path = jq_path.resolve()
 
     def _base(self) -> list[str]:
         return [sys.executable, str(self.launcher), "--config", str(self.config_path)]
 
-    def run(self, tokens: list[str]) -> dict[str, Any]:
+    def run(self, tokens: list[str], *, stdin: str | None = None) -> dict[str, Any]:
         command = [*self._base(), *tokens, "--compact"]
-        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+        completed = subprocess.run(
+            command, input=stdin, text=True, capture_output=True, check=False
+        )
         if completed.returncode:
             detail = completed.stderr.strip() or f"exit status {completed.returncode}"
             raise PlaySetupError(f"fivee command failed ({tokens[0]}): {detail}")
@@ -724,119 +725,6 @@ class FiveeRunner:
         if not isinstance(value, dict):
             raise PlaySetupError(f"fivee command returned a non-object ({tokens[0]})")
         return value
-
-    def opening_chapter(
-        self,
-        *,
-        adventure_id: str,
-        adventure_version: str,
-        scene_id: str,
-        party_engine_path: Path,
-        selected_names: list[str],
-        seed: int,
-        idempotency_key: str,
-    ) -> dict[str, Any]:
-        scene_command = [
-            *self._base(),
-            "--run",
-            adventure_id,
-            "scene.get",
-            scene_id,
-            "--compact",
-        ]
-        jq_program = r"""
-          ($party[0] | map(.name)) as $selected
-          | del(.name, .content_paths)
-          | .combatants = (
-              $party[0]
-              + [.combatants[]
-                 | (.name // .label // "") as $name
-                 | select(($selected | index($name)) == null)]
-            )
-        """
-        jq_command = [
-            str(self.jq_path),
-            "-e",
-            "--slurpfile",
-            "party",
-            str(party_engine_path.resolve()),
-            jq_program,
-        ]
-        encounter_command = [
-            *self._base(),
-            "--run",
-            adventure_id,
-            "adventure.encounter",
-            adventure_id,
-            "--if-match",
-            adventure_version,
-            "--idempotency-key",
-            idempotency_key,
-            "--seed",
-            str(seed),
-            "--json",
-            "-",
-            "--select",
-            "adventure_id=/adventure_id",
-            "--select",
-            "encounter_id=/encounter_id",
-            "--select",
-            "index=/index",
-            "--select",
-            "version=/version",
-            "--select",
-            "state_sha256=/encounter/state_sha256",
-            "--select",
-            "map_sha256=/encounter/map_source/sha256",
-            "--compact",
-        ]
-        with (
-            tempfile.TemporaryFile() as scene_error,
-            tempfile.TemporaryFile() as jq_error,
-            tempfile.TemporaryFile() as encounter_error,
-        ):
-            scene = subprocess.Popen(scene_command, stdout=subprocess.PIPE, stderr=scene_error)
-            assert scene.stdout is not None
-            jq = subprocess.Popen(
-                jq_command, stdin=scene.stdout, stdout=subprocess.PIPE, stderr=jq_error
-            )
-            scene.stdout.close()
-            assert jq.stdout is not None
-            encounter = subprocess.Popen(
-                encounter_command,
-                stdin=jq.stdout,
-                stdout=subprocess.PIPE,
-                stderr=encounter_error,
-            )
-            jq.stdout.close()
-            output, _ = encounter.communicate()
-            jq_status = jq.wait()
-            scene_status = scene.wait()
-            statuses = (scene_status, jq_status, encounter.returncode)
-            errors: list[str] = []
-            for label, status, stream in zip(
-                ("scene.get", "jq", "adventure.encounter"),
-                statuses,
-                (scene_error, jq_error, encounter_error),
-                strict=True,
-            ):
-                stream.seek(0)
-                detail = stream.read().decode("utf-8", errors="replace").strip()
-                if status:
-                    errors.append(f"{label}: {detail or f'exit status {status}'}")
-            if errors:
-                raise PlaySetupError("opening scene pipeline failed: " + "; ".join(errors))
-        try:
-            value = json.loads(output)
-        except json.JSONDecodeError as error:
-            raise PlaySetupError(
-                f"opening scene pipeline returned invalid JSON: {error}"
-            ) from error
-        if not isinstance(value, dict):
-            raise PlaySetupError("opening scene pipeline returned a non-object")
-        _required_strings(value, ("adventure_id", "encounter_id", "version"), "opening scene")
-        return value
-
 
 def _operation_key(label: str, values: dict[str, Any]) -> str:
     digest = hashlib.sha256(_canonical_json(values).encode("utf-8")).hexdigest()
@@ -872,7 +760,6 @@ def init_play(
     playtest_inventory: Path | None,
     opening_scene: str | None,
     runner: Any,
-    jq_path: Path,
 ) -> dict[str, Any]:
     if mode not in {"play", "playtest"}:
         raise PlaySetupError("mode must be play or playtest")
@@ -880,8 +767,8 @@ def init_play(
         raise PlaySetupError("game-master kind must be agent or human")
     if type(seed) is not int:
         raise PlaySetupError("seed must be a whole number")
-    if not jq_path.is_file():
-        raise PlaySetupError("jq is required for play setup; install jq and retry")
+    if not isinstance(opening_scene, str) or not opening_scene.strip():
+        raise PlaySetupError("--opening-scene is required for play setup")
     configuration = validate_final_inputs(config_path)
     adventure = adventure_path.resolve()
     if not adventure.is_file():
@@ -933,32 +820,58 @@ def init_play(
             "seed": seed,
             "party_id": party_id,
             "members": names,
+            "opening_scene": opening_scene,
         },
     )
     created = runner.run(
         [
             "adventure.create",
-            "--name",
-            adventure.stem,
             "--idempotency-key",
             create_key,
+            "--json",
+            "-",
             "--select",
-            "adventure_id=/id",
+            "run_id=/run_id",
+            "--select",
+            "adventure_id=/adventure_id",
+            "--select",
+            "encounter_id=/encounter_id",
             "--select",
             "version=/version",
             "--select",
-            "status=/status",
-        ]
+            "state_sha256=/encounter/state_sha256",
+            "--select",
+            "map_sha256=/encounter/map_source/sha256",
+        ],
+        stdin=_canonical_json(
+            {
+                "name": adventure.stem,
+                "opening": {"scene_id": opening_scene, "party": party_engine, "seed": seed},
+            }
+        ),
     )
-    _required_strings(created, ("adventure_id", "version"), "adventure.create")
+    _required_strings(
+        created, ("run_id", "adventure_id", "encounter_id", "version"), "adventure.create"
+    )
+    run_id = created["run_id"]
     adventure_id = created["adventure_id"]
     adventure_version = created["version"]
-    run_dir = configuration["project_dir"] / ".fivee-sim" / "plays" / adventure_id
+    encounter_id = created["encounter_id"]
+    state_sha256 = created.get("state_sha256")
+    map_sha256 = created.get("map_sha256")
+    runner.run(
+        ["--run", run_id, "serve", "--select", "runtime_dir=/runtime_dir", "--select",
+         "already_running=/already_running"]
+    )
+    run_dir = configuration["project_dir"] / ".fivee-sim" / "plays" / run_id
     roster_path = run_dir / "roster.json"
     if roster_path.is_file():
         existing = _json_object(roster_path, "existing roster")
-        if existing.get("schema_version", 1) != ROSTER_VERSION:
-            raise PlaySetupError("existing v1 play is resume-only and will not be rewritten")
+        if existing.get("schema_version") != ROSTER_VERSION:
+            raise PlaySetupError(
+                "existing workspace uses an unsupported roster schema; "
+                "adv-* engine workspaces cannot be resumed"
+            )
         if existing.get("source_sha256") != source_digest:
             raise PlaySetupError(
                 "existing play source digest differs; refusing to rewrite saved run"
@@ -983,8 +896,9 @@ def init_play(
             "schema_version": 1,
             "status": "reused",
             "mode": mode,
+            "run_id": run_id,
             "adventure_id": adventure_id,
-            "artifact_id": adventure_id,
+            "artifact_id": run_id,
             "adventure_version": existing.get("adventure_version", adventure_version),
             "source_sha256": source_digest,
             "module_index_sha256": sha256_file(module_path),
@@ -1032,38 +946,11 @@ def init_play(
     _atomic_write_json(run_dir / "council.json", {"schema_version": 1, "status": "empty"})
     _atomic_write_json(run_dir / "brief-cursors.json", {"schema_version": 1, "seats": {}})
 
-    encounter_id: str | None = None
-    state_sha256: str | None = None
-    map_sha256: str | None = None
-    if opening_scene is not None:
-        opening_key = _operation_key(
-            "opening",
-            {
-                "adventure_id": adventure_id,
-                "scene_id": opening_scene,
-                "seed": seed,
-                "members": names,
-            },
-        )
-        opened = runner.opening_chapter(
-            adventure_id=adventure_id,
-            adventure_version=adventure_version,
-            scene_id=opening_scene,
-            party_engine_path=inputs / "party-engine.json",
-            selected_names=names,
-            seed=seed,
-            idempotency_key=opening_key,
-        )
-        _required_strings(opened, ("encounter_id", "version"), "opening scene")
-        encounter_id = opened["encounter_id"]
-        adventure_version = opened["version"]
-        state_sha256 = opened.get("state_sha256")
-        map_sha256 = opened.get("map_sha256")
-
     roster = {
         "schema_version": ROSTER_VERSION,
         "mode": mode,
         "seed": seed,
+        "run_id": run_id,
         "adventure_id": adventure_id,
         "source_path": str(adventure),
         "source_sha256": source_digest,
@@ -1094,8 +981,9 @@ def init_play(
         "schema_version": 1,
         "status": "ready",
         "mode": mode,
+        "run_id": run_id,
         "adventure_id": adventure_id,
-        "artifact_id": adventure_id,
+        "artifact_id": run_id,
         "adventure_version": adventure_version,
         "source_sha256": source_digest,
         "module_index_sha256": module_digest,
@@ -1108,14 +996,13 @@ def init_play(
             "checkpoint": str(run_dir / "checkpoint.json"),
         },
     }
-    if encounter_id is not None:
-        result.update(
-            {
-                "encounter_id": encounter_id,
-                "state_sha256": state_sha256,
-                "map_sha256": map_sha256,
-            }
-        )
+    result.update(
+        {
+            "encounter_id": encounter_id,
+            "state_sha256": state_sha256,
+            "map_sha256": map_sha256,
+        }
+    )
     return result
 
 
@@ -1144,7 +1031,7 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--member", action="append", default=[])
     init.add_argument("--prepared-index", type=Path)
     init.add_argument("--playtest-inventory", type=Path)
-    init.add_argument("--opening-scene")
+    init.add_argument("--opening-scene", required=True)
     return parser
 
 
@@ -1171,9 +1058,6 @@ def main(argv: list[str]) -> int:
                 arguments.adventure,
             )
         elif arguments.command == "init":
-            jq = shutil.which("jq")
-            if jq is None:
-                raise PlaySetupError("jq is required for play setup; install jq and retry")
             result = init_play(
                 config_path=arguments.config,
                 adventure_path=arguments.adventure,
@@ -1187,10 +1071,7 @@ def main(argv: list[str]) -> int:
                 prepared_index=arguments.prepared_index,
                 playtest_inventory=arguments.playtest_inventory,
                 opening_scene=arguments.opening_scene,
-                runner=FiveeRunner(
-                    Path(__file__).with_name("fivee.py"), arguments.config, Path(jq)
-                ),
-                jq_path=Path(jq),
+                runner=FiveeRunner(Path(__file__).with_name("fivee.py"), arguments.config),
             )
         else:  # pragma: no cover - argparse owns this refusal
             raise PlaySetupError(f"unsupported command {arguments.command!r}")

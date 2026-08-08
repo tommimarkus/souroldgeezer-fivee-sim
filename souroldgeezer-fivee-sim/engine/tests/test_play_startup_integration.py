@@ -1,4 +1,4 @@
-"""One real temporary-project startup through fivee, jq, and carry state."""
+"""One real temporary-project startup through fivee and carry state."""
 
 from __future__ import annotations
 
@@ -19,7 +19,10 @@ pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="fivee serve is 
 
 def _run(command: list[str], *, stdin: bytes | None = None) -> dict[str, Any]:
     completed = subprocess.run(command, input=stdin, capture_output=True, check=False)
-    assert completed.returncode == 0, completed.stderr.decode("utf-8", errors="replace")
+    assert completed.returncode == 0, (
+        completed.stderr.decode("utf-8", errors="replace")
+        + completed.stdout.decode("utf-8", errors="replace")
+    )
     value = json.loads(completed.stdout)
     assert isinstance(value, dict)
     return value
@@ -33,6 +36,18 @@ def _scene(name: str, foe: str) -> dict[str, Any]:
     return {
         "name": name,
         "content_paths": [],
+        "map": {
+            "format": "fivee-sim-map",
+            "format_version": 1,
+            "name": f"{name} ground",
+            "grid": {"width": 8, "height": 8, "cell_feet": 5},
+            "legend": {".": "normal"},
+            "tiles": ["........"] * 8,
+            "features": [{"id": "party", "kind": "spawn", "at": [0, 0], "team": "party"}],
+            "provenance": {
+                "generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"
+            },
+        },
         "combatants": [
             {
                 "name": "Thora",
@@ -119,6 +134,7 @@ runs = "runs"
         encoding="utf-8",
     )
 
+    run_id = ""
     adventure_id = ""
     try:
         started = _run(
@@ -148,6 +164,7 @@ runs = "runs"
             "schema_version",
             "status",
             "mode",
+            "run_id",
             "adventure_id",
             "artifact_id",
             "adventure_version",
@@ -163,12 +180,13 @@ runs = "runs"
         }
         assert set(started) == allowed
         adventure_id = started["adventure_id"]
-        assert started["artifact_id"] == adventure_id
+        run_id = started["run_id"]
+        assert started["artifact_id"] == run_id
 
         opening = _fivee(
             config,
             "--run",
-            adventure_id,
+            run_id,
             "encounter.state",
             started["encounter_id"],
         )
@@ -179,7 +197,7 @@ runs = "runs"
         _fivee(
             config,
             "--run",
-            adventure_id,
+            run_id,
             "encounter.finalize",
             started["encounter_id"],
             "--if-match",
@@ -188,7 +206,7 @@ runs = "runs"
         version = _fivee(
             config,
             "--run",
-            adventure_id,
+            run_id,
             "adventure.state",
             adventure_id,
             "--select",
@@ -203,7 +221,7 @@ runs = "runs"
                 "--config",
                 str(config),
                 "--run",
-                adventure_id,
+                run_id,
                 "scene.get",
                 "second",
                 "--compact",
@@ -240,7 +258,7 @@ runs = "runs"
                 "--config",
                 str(config),
                 "--run",
-                adventure_id,
+                run_id,
                 "adventure.encounter",
                 adventure_id,
                 "--if-match",
@@ -264,14 +282,14 @@ runs = "runs"
             stdin=jq.stdout,
         )
         assert linked["carried"] == ["Thora"]
-        second = _fivee(config, "--run", adventure_id, "encounter.state", linked["encounter_id"])
+        second = _fivee(config, "--run", run_id, "encounter.state", linked["encounter_id"])
         second_by_name = {entry["name"]: entry for entry in second["combatants"]}
         assert set(second_by_name) == {"Thora", "Second Goblin"}
         assert second_by_name["Thora"]["max_hp"] == 12
-        state = _fivee(config, "--run", adventure_id, "adventure.state", adventure_id)
+        state = _fivee(config, "--run", run_id, "adventure.state", adventure_id)
         assert len(state["members"]) == 2
     finally:
-        if adventure_id:
+        if run_id:
             subprocess.run(
                 [
                     sys.executable,
@@ -279,7 +297,7 @@ runs = "runs"
                     "--config",
                     str(config),
                     "--run",
-                    adventure_id,
+                    run_id,
                     "stop",
                 ],
                 capture_output=True,
