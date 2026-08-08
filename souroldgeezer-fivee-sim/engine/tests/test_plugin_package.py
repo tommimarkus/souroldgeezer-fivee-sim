@@ -191,10 +191,10 @@ def test_map_adventure_replay_guidance_is_conditionally_packaged() -> None:
     )
     for obligation in (
         "# A whole adventure as one replay",
-        "fivee --run <adv-id> adventure.replay <adv-id>",
+        "fivee --run <run-id> adventure.replay <adv-id>",
         "nested verbatim, in order",
         "chapter record carries its mode",
-        "fivee --run adv-1 adventure.list",
+        "fivee --run run-1 adventure.list",
         "Every chapter must be finalized first",
         "adventure.finalize",
         "not a precondition",
@@ -204,8 +204,8 @@ def test_map_adventure_replay_guidance_is_conditionally_packaged() -> None:
         "replay.list will not list it",
         "no viewer_url comes back",
         "Chapter picker",
-        "fivee --run adv-1 replay.validate",
-        "fivee --run adv-1 replay.validate --json -",
+        "fivee --run run-1 replay.validate",
+        "fivee --run run-1 replay.validate --json -",
     ):
         assert obligation in guidance_plain
 
@@ -255,6 +255,20 @@ def test_opening_adventure_contract_is_documented_across_guidance() -> None:
         "old adv-* workspace",
     ):
         assert obligation in plain
+
+
+def test_shipped_run_guidance_never_selects_an_old_adventure_workspace() -> None:
+    for path in (
+        "../README.md",
+        "docs/MAPS.md",
+        "skills/play/SKILL.md",
+        "skills/map-forge/SKILL.md",
+        "skills/map-forge/references/adventure-replay.md",
+        "skills/encounter-sim/SKILL.md",
+    ):
+        guidance = _text(path)
+        assert "--run adv-" not in guidance, path
+        assert "runs/<adv-id>" not in guidance, path
 
 
 def test_host_manifests_identify_the_same_plugin() -> None:

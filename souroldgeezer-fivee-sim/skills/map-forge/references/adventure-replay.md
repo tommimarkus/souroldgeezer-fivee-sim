@@ -1,9 +1,9 @@
 # A whole adventure as one replay
 
 Several encounters can belong to one **adventure** — an ordered run that carries
-the party between them, which the encounter-sim skill drives. Keep its id as the
-global selector: **`fivee --run <adv-id> adventure.replay <adv-id>`** composes
-that run into a single bundle: the
+the party between them, which the encounter-sim skill drives. Keep the run id as
+the global selector: **`fivee --run <run-id> adventure.replay <adv-id>`** composes
+that adventure into a single bundle: the
 adventure's identity, then every member encounter's finalized replay nested
 verbatim, in order. It reports the chapter count, the encounters, the path, and
 the SHA-256.
@@ -28,9 +28,9 @@ omit `recovery` have no extra boundary; an explicit empty recovery still has one
 because the caller recorded that the story boundary happened.
 
 ```bash
-fivee --run adv-1 adventure.list                      # this run on disk
-fivee --run adv-1 adventure.replay adv-1              # into this run's replays root
-fivee --run adv-1 adventure.replay adv-1 --path /abs/somewhere.json
+fivee --run run-1 adventure.list                      # this run on disk
+fivee --run run-1 adventure.replay adv-1              # into this run's replays root
+fivee --run run-1 adventure.replay adv-1 --path /abs/somewhere.json
 ```
 
 Four things to say when you hand one over, because each is something a reader
@@ -39,7 +39,7 @@ will otherwise assume:
 - **Every chapter must be finalized first.** The composer reads
   `encounter.finalize`'s artifact off disk, so a fight that was never finalized —
   or whose artifact has since been removed — is refused by name, never substituted.
-  Run `fivee --run <adv-id> encounter.finalize <id>` on each and compose again. The *run* need not
+  Run `fivee --run <run-id> encounter.finalize <id>` on each and compose again. The *run* need not
   be closed: `adventure.finalize` stops new encounters being linked and is not a
   precondition here.
 - **Nothing is re-derived, and that is correctness rather than economy.** No
@@ -61,7 +61,7 @@ will otherwise assume:
   shows the recorded pre-chapter transition; choosing its chapter plays the
   fight or interlude. Continuous playback visits the transition before beginning
   that chapter. That works with no server at all, which is just as well, since
-  the chooser will never offer it. `fivee --run <adv-id> replay.validate`
+  the chooser will never offer it. `fivee --run <run-id> replay.validate`
   understands it too, and the composer validates before publishing a byte, so a
   chapter corrupted on disk is refused rather than shipped inside the run.
 
@@ -70,5 +70,5 @@ large to fit on a command line — pipe it in rather than substituting it:
 
 ```bash
 { printf '{"bundle":'; cat /abs/somewhere.json; printf '}'; } |
-  fivee --run adv-1 replay.validate --json -
+  fivee --run run-1 replay.validate --json -
 ```

@@ -53,9 +53,9 @@ fields, or add **`--raw`** when exactly one selected scalar should print without
 JSON quotes:
 
 ```bash
-fivee --run adv-1 encounter.state enc-1 --select turn=/turn --select over=/over
-fivee --run adv-1 encounter.state enc-1 --select turn=/turn --raw
-fivee --run adv-1 encounter.act enc-1 --kind dodge --select events=/events \
+fivee --run run-1 encounter.state enc-1 --select turn=/turn --select over=/over
+fivee --run run-1 encounter.state enc-1 --select turn=/turn --raw
+fivee --run run-1 encounter.act enc-1 --kind dodge --select events=/events \
   --select view=/view --select delta=/state_delta --select full=/state
 ```
 
@@ -124,7 +124,7 @@ narrating from memory puts it straight back.
    every-second-diagonal-costs-double variant.
 
    ```bash
-   fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 41 --json '{"combatants": [
+   fivee --run run-1 adventure.encounter adv-1 --if-match <version> --seed 41 --json '{"combatants": [
      {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [0, 0],
       "attacks": [{"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3",
                    "damage_type": "slashing", "kind": "melee"}]},
@@ -156,8 +156,8 @@ narrating from memory puts it straight back.
    events it generated plus fresh state.
 
    ```bash
-   fivee --run adv-1 encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
-   fivee --run adv-1 encounter.act enc-1 --kind move --to-position '[10, 0]'
+   fivee --run run-1 encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
+   fivee --run run-1 encounter.act enc-1 --kind move --to-position '[10, 0]'
    ```
 4. **`fivee --run <adv-id> encounter.advance <id>`** to end the turn. Death saves for dying
    creatures are rolled automatically at the start of their turn.
@@ -309,7 +309,7 @@ written exactly as `encounter.create` takes them. Every later chapter carries th
 previous fight's cast forward:
 
 ```bash
-fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 20260806 --json '{
+fivee --run run-1 adventure.encounter adv-1 --if-match <version> --seed 20260806 --json '{
   "carry": ["Thora"],
   "recovery": {"Thora": {"hp": 30, "conditions": []}},
   "recovery_note": "Long rest at the abbey",
@@ -368,13 +368,13 @@ a fight. Without it those beats leave no engine artifact at all and the only
 record of them is prose.
 
 ```bash
-fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 20260809 \
+fivee --run run-1 adventure.encounter adv-1 --if-match <version> --seed 20260809 \
   --mode exploration --carry-map --json '{"carry": ["Thora", "Bran"]}'
-fivee --run adv-1 encounter.act enc-3 --kind move --actor Thora --to-position '[25, 25]'
-fivee --run adv-1 encounter.note enc-3 --speaker Kettle --category dialogue \
+fivee --run run-1 encounter.act enc-3 --kind move --actor Thora --to-position '[25, 25]'
+fivee --run run-1 encounter.note enc-3 --speaker Kettle --category dialogue \
   --text "Nobody crosses the mill after dark."
-fivee --run adv-1 dice.check --modifier 3 --dc 12 --skill perception --encounter-id enc-3
-fivee --run adv-1 encounter.finalize enc-3
+fivee --run run-1 dice.check --modifier 3 --dc 12 --skill perception --encounter-id enc-3
+fivee --run run-1 encounter.finalize enc-3
 ```
 
 Five differences from a fight, and each is the absence of something a fight has:
@@ -536,7 +536,7 @@ combatant name or a point). On a map, a sphere or cube also needs its point of
 origin in the caster's sight.
 
 ```bash
-fivee --run adv-1 encounter.act enc-1 --kind cast --spell Fireball --center '[20, 15]' --slot-level 3
+fivee --run run-1 encounter.act enc-1 --kind cast --spell Fireball --center '[20, 15]' --slot-level 3
 ```
 
 `--center` is what makes a Fireball a Fireball. Named targets are each hit
@@ -643,7 +643,7 @@ engine does not model, or an input you only later learn was wrong — a fight
 holding a number nobody at the table believes.
 
 ```bash
-fivee --run adv-1 encounter.correct <id> --json '{
+fivee --run run-1 encounter.correct <id> --json '{
   "state": {"Thora": {"hp": 12}, "Bram": {"conditions": ["prone"]}},
   "reason": "the fireball never landed"
 }'

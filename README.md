@@ -157,9 +157,9 @@ reported as `null` without changing a successful operation's exit code, and
 `--raw` prints one selected scalar without JSON quotes:
 
 ```bash
-fivee --run adv-1 encounter.state enc-1 --select turn=/turn --select over=/over
-fivee --run adv-1 encounter.state enc-1 --select turn=/turn --raw
-fivee --run adv-1 encounter.act enc-1 --kind dodge --select events=/events
+fivee --run run-1 encounter.state enc-1 --select turn=/turn --select over=/over
+fivee --run run-1 encounter.state enc-1 --select turn=/turn --raw
+fivee --run run-1 encounter.act enc-1 --kind dodge --select events=/events
 ```
 
 Selection is local output projection after the server answers. It never adds a
@@ -184,7 +184,7 @@ applies only to the opening. Old adv-* workspace selectors deliberately break.
 
 ```bash
 fivee adventure.create --name "The Sunken Bell"              # returns adv-1
-fivee --run adv-1 adventure.encounter adv-1 --if-match <version> --seed 41 --json '{"combatants": [
+fivee --run run-1 adventure.encounter adv-1 --if-match <version> --seed 41 --json '{"combatants": [
   {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [0, 0],
    "attacks": [{"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3",
                 "damage_type": "slashing", "kind": "melee"}]},
@@ -199,11 +199,11 @@ seed it used, and the full state including initiative order and whose turn it is
 From there:
 
 ```bash
-fivee --run adv-1 encounter.state enc-1                                    # authoritative
-fivee --run adv-1 encounter.act enc-1 --kind move --to-position '[5, 0]'
-fivee --run adv-1 encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
-fivee --run adv-1 encounter.advance enc-1                                  # end the turn
-fivee --run adv-1 encounter.finalize enc-1                                 # freeze replay v3
+fivee --run run-1 encounter.state enc-1                                    # authoritative
+fivee --run run-1 encounter.act enc-1 --kind move --to-position '[5, 0]'
+fivee --run run-1 encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
+fivee --run run-1 encounter.advance enc-1                                  # end the turn
+fivee --run run-1 encounter.finalize enc-1                                 # freeze replay v3
 ```
 
 The two calls a fight makes hundreds of times answer with what *changed*:
@@ -358,7 +358,7 @@ The resulting project layout is:
 | `.fivee-sim/config.toml` | project configuration |
 | `.fivee-sim/content/` | your own content packs |
 | `.fivee-sim/maps/`, `scenes/`, `replays/` | project inputs; shared and immutable to a run |
-| `.fivee-sim/runs/<adv-id>/` | one isolated mutable workspace, with its own `maps/`, `scenes/`, `replays/`, `encounters/`, `adventures/<adv-id>.json`, and `blobs/` |
+| `.fivee-sim/runs/<run-id>/` | one isolated mutable workspace, with `run.json`, its own `maps/`, `scenes/`, `replays/`, `encounters/`, `adventures/<adv-id>.json`, and `blobs/` |
 | `.fivee-sim/runtime/control/` | rendezvous for unscoped reads and `adventure.create` |
 | `.fivee-sim/runtime/<adv-id>/` | rendezvous for the server bound to that run |
 | `.fivee-sim/encounters/`, `adventures/`, `blobs/` | pre-run stores, readable only through `--run legacy` |

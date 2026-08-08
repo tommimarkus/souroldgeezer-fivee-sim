@@ -70,8 +70,8 @@ export explicitly names another path.
    in use is refused rather than replaced.
 
    ```bash
-   fivee --run adv-1 map.generate --kind dungeon --seed 71203941 --params '{"width": 40, "height": 30}'
-   fivee --run adv-1 map.generate --kind caves --save-as goblin-warren
+   fivee --run run-1 map.generate --kind dungeon --seed 71203941 --params '{"width": 40, "height": 30}'
+   fivee --run run-1 map.generate --kind caves --save-as goblin-warren
    ```
 2. **`fivee --run <adv-id> map.render`** to look at it — `--map-id <id>` for a saved map or
    `--json '{"document": {...}}'` for one you have not kept. Respect the viewport
@@ -90,7 +90,7 @@ export explicitly names another path.
    result back so the user sees what changed.
 
    ```bash
-   fivee --run adv-1 map.edit goblin-warren --json '{"operations": [
+   fivee --run run-1 map.edit goblin-warren --json '{"operations": [
      {"op": "set_terrain", "rect": [4, 2, 6, 1], "terrain": "wall"}
    ]}'
    ```
@@ -111,8 +111,8 @@ export explicitly names another path.
    version actually on disk, and put again.
 
    ```bash
-   fivee --run adv-1 map.get goblin-warren > /tmp/warren.json     # keep etag
-   fivee --run adv-1 map.put goblin-warren --if-match <etag> --json - < /tmp/warren-edited.json
+   fivee --run run-1 map.get goblin-warren > /tmp/warren.json     # keep etag
+   fivee --run run-1 map.put goblin-warren --if-match <etag> --json - < /tmp/warren-edited.json
    ```
 
    **The listing carries no hash on purpose**, so the version a write is
@@ -235,7 +235,8 @@ Omitted values default to its sibling `maps/`, `replays/`, `scenes/`,
 `encounters/`, `adventures/`, `blobs/`, and `runs/` directories.
 
 Configured maps, scenes, and replays are shared overlay inputs. The selected
-`runs/<adv-id>/` workspace receives writes and exports. `fivee content.status`
+`runs/<run-id>/` workspace receives writes and exports; its `run.json` identifies
+the run, while an adventure document remains `adventures/<adv-id>.json`. `fivee content.status`
 names the configuration source and path;
 `fivee --run <adv-id> serve` and `fivee --run <adv-id> server.ping` report the resolved roots — read them rather
 than assuming. A selected file owns these settings. Deprecated legacy `FIVEE_SIM_PROJECT_DIR`,

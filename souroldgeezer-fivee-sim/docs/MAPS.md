@@ -86,8 +86,9 @@ blob is shared by every journal that names it, so moving a journal without it
 leaves that fight unable to recover.
 
 Those old mutable roots are readable only through `--run legacy`. Ordinary
-writes require an adventure run and land under
-`runs/<adv-id>/{maps,scenes,replays,encounters,adventures,blobs}`. There is no
+writes require a selected run and land under
+`runs/<run-id>/` with `run.json`, `{maps,scenes,replays,encounters,blobs}`, and
+`adventures/<adv-id>.json`. There is no
 engine publish or promotion operation; artifacts stay run-local unless an
 explicit export names another path.
 
