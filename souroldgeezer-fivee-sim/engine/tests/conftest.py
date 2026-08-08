@@ -75,7 +75,10 @@ MILL: dict[str, Any] = {
     "grid": {"width": 12, "height": 12, "cell_feet": 5},
     "legend": {".": "normal"},
     "tiles": ["." * 12 for _ in range(12)],
-    "features": [],
+    "features": [
+        {"id": "party-one", "kind": "spawn", "at": [1, 1], "team": "party"},
+        {"id": "party-two", "kind": "spawn", "at": [1, 3], "team": "party"},
+    ],
     "provenance": {
         "generator": "hand",
         "seed": 0,
@@ -145,12 +148,14 @@ def _isolate_server_state(
     sessions = dict(api.STATE.sessions)
     content = api.STATE.content
     next_id = api.STATE.next_id
+    storage = api.STATE.storage
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path / "encounters"))
     monkeypatch.setenv("FIVEE_SIM_ADVENTURES", str(tmp_path / "adventures"))
     monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
     monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(tmp_path / "replays"))
     monkeypatch.setenv("FIVEE_SIM_SCENES", str(tmp_path / "scenes"))
     monkeypatch.setenv("FIVEE_SIM_BLOBS", str(tmp_path / "blobs"))
+    monkeypatch.setenv("FIVEE_SIM_RUNS", str(tmp_path / "runs"))
     try:
         yield
     finally:
@@ -158,6 +163,7 @@ def _isolate_server_state(
         api.STATE.sessions.update(sessions)
         api.STATE.content = content
         api.STATE.next_id = next_id
+        api.STATE.storage = storage
 
 
 class FixedRandom(Random):

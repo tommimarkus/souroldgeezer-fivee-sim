@@ -183,7 +183,7 @@ def test_start_rolls_back_encounter_when_adventure_write_fails(
     scenes.save("opening", _scene(), root=control.shared_scenes_dir)
     monkeypatch.setattr(
         adventures,
-        "_write",
+        "_render",
         lambda *args, **kwargs: (_ for _ in ()).throw(RequestError("write failed")),
     )
 

@@ -6,9 +6,10 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.service.errors import NotFoundError, RequestError
+from fivee_sim.service.errors import NotFoundError
 
 from . import api
+from .opening import start_adventure
 
 HERO: dict[str, Any] = {
     "name": "Thora",
@@ -66,9 +67,10 @@ def _forbidden_keys(value: Any) -> set[str]:
 
 class TestAdventureBrief:
     def test_it_is_an_allowlisted_view_of_the_last_linked_chapter(self) -> None:
-        adventure_id = str(api.adventure_create("The Drowned Mill")["id"])
-        api.adventure_encounter(
-            adventure_id, combatants=[HERO, FOE], seed=31, mode="exploration"
+        adventure_id = str(
+            start_adventure(
+                "The Drowned Mill", combatants=[HERO, FOE], seed=31, mode="exploration"
+            )["adventure_id"]
         )
         latest = api.adventure_encounter(
             adventure_id,
@@ -98,15 +100,12 @@ class TestAdventureBrief:
         assert "recovery_note" not in brief["chapter"]
         assert _forbidden_keys(brief) == set()
 
-    def test_an_empty_adventure_is_a_named_refusal(self) -> None:
-        adventure_id = str(api.adventure_create("No chapters yet")["id"])
-
-        with pytest.raises(RequestError, match="has no current chapter"):
-            api.adventure_brief(adventure_id, "Thora")
-
     def test_an_unknown_seat_reuses_the_encounter_briefs_not_found(self) -> None:
-        adventure_id = str(api.adventure_create("The Drowned Mill")["id"])
-        api.adventure_encounter(adventure_id, combatants=[HERO, FOE], seed=33)
+        adventure_id = str(
+            start_adventure("The Drowned Mill", combatants=[HERO, FOE], seed=33)[
+                "adventure_id"
+            ]
+        )
 
         with pytest.raises(NotFoundError, match="Nobody Here"):
             api.adventure_brief(adventure_id, "Nobody Here")

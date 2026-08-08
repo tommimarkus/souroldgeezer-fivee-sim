@@ -37,13 +37,13 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.paths import adventures_root, encounters_root, replays_root
 from fivee_sim.service import adventures
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, ReplayError, RequestError
 
 from . import api
 from .conftest import AMBUSHER, LOOKOUT, MILL, REPLAY_GOBLIN, REPLAY_HERO, SCOUT
+from .opening import start_adventure
 
 #: Envelope keys the integrity block does **not** cover, with the reason each
 #: is exempt. Written out so a new *data* block added to the envelope without a
@@ -72,20 +72,23 @@ def artifact_of(encounter_id: str) -> Path:
     nobody meant to make. Where the layout itself is the claim is
     ``test_encounter_journal``'s own siblings case.
     """
-    return encounters_root() / encounter_id / "replay.json"
+    assert api.STATE.storage is not None
+    return api.STATE.storage.encounters_dir / encounter_id / "replay.json"
 
 
 def run_of(chapters: int, name: str = "The Sunless Citadel") -> str:
     """An adventure of ``chapters`` linked, finalized encounters."""
-    adventure_id = str(api.adventure_create(name)["id"])
-    for index in range(chapters):
-        linked = api.adventure_encounter(
-            adventure_id,
-            combatants=(
-                [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)] if index == 0 else None
-            ),
-            seed=700 + index,
-        )
+    if chapters < 1:
+        raise AssertionError("persisted adventures always have chapter zero")
+    opened = start_adventure(
+        name,
+        combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+        seed=700,
+    )
+    adventure_id = str(opened["adventure_id"])
+    api.encounter_finalize(str(opened["encounter_id"]))
+    for index in range(1, chapters):
+        linked = api.adventure_encounter(adventure_id, seed=700 + index)
         api.encounter_finalize(str(linked["encounter_id"]))
     return adventure_id
 
@@ -98,14 +101,14 @@ def run_of_a_walk_then_a_fight(name: str = "The Drowned Mill") -> str:
     compose at all until the bundle said which kind of chapter it was.
     """
     api.map_save("mill", MILL, "*")
-    adventure_id = str(api.adventure_create(name)["id"])
-    interlude = api.adventure_encounter(
-        adventure_id,
+    interlude = start_adventure(
+        name,
         combatants=[dict(SCOUT), dict(LOOKOUT)],
         seed=730,
         map_id="mill",
         mode="exploration",
     )
+    adventure_id = str(interlude["adventure_id"])
     walked = str(interlude["encounter_id"])
     api.encounter_act(walked, "move", to_position=[25, 25], actor="Kettle")
     api.encounter_finalize(walked)
@@ -161,10 +164,12 @@ class TestComposingTheRun:
         # engine's answer rather than a second spelling of it here. This is the
         # claim the whole design rests on: a fight is composed as it was
         # recorded, never replayed again under whatever kernel is loaded now.
-        adventure_id = str(api.adventure_create("Barrow of the Forgotten King")["id"])
-        linked = api.adventure_encounter(
-            adventure_id, combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=710
+        linked = start_adventure(
+            "Barrow of the Forgotten King",
+            combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+            seed=710,
         )
+        adventure_id = str(linked["adventure_id"])
         finalized = api.encounter_finalize(str(linked["encounter_id"]))
         frozen = json.loads(
             Path(str(finalized["replay_path"])).read_text(encoding="utf-8")
@@ -197,12 +202,12 @@ class TestComposingTheRun:
     def test_a_recovery_boundary_is_frozen_beside_the_chapter_it_precedes(
         self,
     ) -> None:
-        adventure_id = str(api.adventure_create("The Sunless Citadel")["id"])
-        first = api.adventure_encounter(
-            adventure_id,
+        first = start_adventure(
+            "The Sunless Citadel",
             combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
             seed=711,
         )
+        adventure_id = str(first["adventure_id"])
         api.encounter_finalize(str(first["encounter_id"]))
         second = api.adventure_encounter(
             adventure_id,
@@ -303,18 +308,21 @@ class TestComposingTheRun:
         result = api.adventure_replay(run_of(1))
 
         assert "viewer_url" not in result
-        assert Path(str(result["path"])).parent == replays_root()
-        assert replay_service.list_replays([replays_root()]) == []
+        assert api.STATE.storage is not None
+        assert Path(str(result["path"])).parent == api.STATE.storage.replays_dir
+        assert replay_service.list_replays([api.STATE.storage.replays_dir]) == []
 
 
 class TestWhatCompositionRefuses:
     """Every chapter is a frozen file, and a missing one is never invented."""
 
     def test_an_encounter_that_was_never_finalized_is_refused_by_name(self) -> None:
-        adventure_id = str(api.adventure_create("The Sunless Citadel")["id"])
-        first = api.adventure_encounter(
-            adventure_id, combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=720
+        first = start_adventure(
+            "The Sunless Citadel",
+            combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+            seed=720,
         )
+        adventure_id = str(first["adventure_id"])
         api.encounter_finalize(str(first["encounter_id"]))
         unfinished = api.adventure_encounter(adventure_id, seed=721)
 
@@ -341,7 +349,10 @@ class TestWhatCompositionRefuses:
         with pytest.raises(RequestError, match="has no finalized replay"):
             api.adventure_replay(adventure_id)
 
-        assert not replays_root().exists() or not list(replays_root().glob("*.json"))
+        assert api.STATE.storage is not None
+        assert not api.STATE.storage.replays_dir.exists() or not list(
+            api.STATE.storage.replays_dir.glob("*.json")
+        )
 
     def test_a_member_artifact_that_is_not_json_is_refused_not_embedded(self) -> None:
         adventure_id = run_of(1)
@@ -352,22 +363,11 @@ class TestWhatCompositionRefuses:
         with pytest.raises(RequestError, match="is not valid JSON"):
             api.adventure_replay(adventure_id)
 
-    def test_a_run_with_no_encounters_has_nothing_to_compose(self) -> None:
-        # Refused rather than answered with an empty envelope: a replay of no
-        # fights is a file that says nothing, and the validator refuses one for
-        # the same reason.
-        api.adventure_create("The Sunless Citadel")
-
-        with pytest.raises(
-            RequestError, match="adventure 'adv-1' has no encounters to compose"
-        ):
-            api.adventure_replay("adv-1")
-
     def test_an_unknown_adventure_names_what_is_actually_there(self) -> None:
-        api.adventure_create("The Sunless Citadel")
+        start_adventure("The Sunless Citadel")
 
         with pytest.raises(
-            NotFoundError, match="no adventure 'adv-9'; adventures here: adv-1"
+            NotFoundError, match="no adventure 'adv-9' in run 'run-1'"
         ):
             api.adventure_replay("adv-9")
 
@@ -389,7 +389,10 @@ class TestWhatCompositionRefuses:
             diagnostic["path"].startswith("chapters.0.replay.")
             for diagnostic in refusal.value.diagnostics
         )
-        assert not replays_root().exists() or not list(replays_root().glob("*.json"))
+        assert api.STATE.storage is not None
+        assert not api.STATE.storage.replays_dir.exists() or not list(
+            api.STATE.storage.replays_dir.glob("*.json")
+        )
 
 
 class TestTheEnvelopeValidator:
@@ -613,9 +616,11 @@ class TestTheGlobInTheAdventuresRoot:
         # a listing that trusted the glob would report the run's own replay as a
         # corrupt adventure. The id grammar is what decides, not the glob.
         adventure_id = run_of(1)
+        assert api.STATE.storage is not None
 
         api.adventure_replay(
-            adventure_id, path=str(adventures_root() / f"{adventure_id}.replay.json")
+            adventure_id,
+            path=str(api.STATE.storage.adventures_dir / f"{adventure_id}.replay.json"),
         )
 
         listed = api.adventure_list("all")["adventures"]
@@ -630,13 +635,13 @@ class TestTheGlobInTheAdventuresRoot:
         # Asserted on the refusal's own words because that is where a reader
         # meets the listing, and a count would pass against a name it invented.
         adventure_id = run_of(1)
+        assert api.STATE.storage is not None
         api.adventure_replay(
-            adventure_id, path=str(adventures_root() / f"{adventure_id}.replay.json")
+            adventure_id,
+            path=str(api.STATE.storage.adventures_dir / f"{adventure_id}.replay.json"),
         )
 
-        with pytest.raises(
-            NotFoundError, match="no adventure 'adv-9'; adventures here: adv-1$"
-        ):
+        with pytest.raises(NotFoundError, match="no adventure 'adv-9' in run 'run-1'"):
             api.adventure_state("adv-9")
 
 
@@ -683,7 +688,8 @@ class TestARunOfWalksAndFights:
         # the artifact says. Re-deriving is exactly what chapter freezing exists
         # to prevent, and this is the same rule applied to one field.
         adventure_id = run_of_a_walk_then_a_fight()
-        path = adventures.adventure_path(adventure_id)
+        assert api.STATE.storage is not None
+        path = api.STATE.storage.adventures_dir / f"{adventure_id}.json"
         document = json.loads(path.read_text(encoding="utf-8"))
         document["members"][0]["mode"] = "combat"
         path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")

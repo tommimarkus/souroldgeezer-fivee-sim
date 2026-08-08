@@ -9,7 +9,7 @@ import pytest
 from fivee_sim.client import discovery
 from fivee_sim.client.cli import EXIT_USAGE
 from fivee_sim.client.cli import main as client_main
-from fivee_sim.configuration import load_config
+from fivee_sim.configuration import Configuration, load_config
 from fivee_sim.paths import RunSelectionError, StorageLayout, storage_layout
 from fivee_sim.service import adventures, scenes
 from fivee_sim.service.errors import RequestError
@@ -18,7 +18,7 @@ from fivee_sim.web import http_server
 from fivee_sim.web.http_server import EngineServer
 
 
-def _configuration(tmp_path: Path):
+def _configuration(tmp_path: Path) -> Configuration:
     config = tmp_path / ".fivee-sim" / "config.toml"
     config.parent.mkdir()
     config.write_text(
@@ -103,12 +103,14 @@ def test_a_manifest_run_layout_is_an_immutable_overlay_workspace(tmp_path: Path)
 
     assert layout.run_id == "run-7"
     assert layout.run_root == configuration.runs_dir / "run-7"
-    assert layout.maps_dir == layout.run_root / "maps"
-    assert layout.scenes_dir == layout.run_root / "scenes"
-    assert layout.replays_dir == layout.run_root / "replays"
-    assert layout.encounters_dir == layout.run_root / "encounters"
-    assert layout.adventures_dir == layout.run_root / "adventures"
-    assert layout.blobs_dir == layout.run_root / "blobs"
+    run_root = layout.run_root
+    assert run_root is not None
+    assert layout.maps_dir == run_root / "maps"
+    assert layout.scenes_dir == run_root / "scenes"
+    assert layout.replays_dir == run_root / "replays"
+    assert layout.encounters_dir == run_root / "encounters"
+    assert layout.adventures_dir == run_root / "adventures"
+    assert layout.blobs_dir == run_root / "blobs"
     assert layout.shared_map_paths == configuration.map_paths
     assert layout.shared_replay_paths == configuration.replay_paths
     assert layout.runtime_dir == configuration.path.parent / "runtime" / "run-7"
@@ -344,15 +346,15 @@ def test_discovery_reports_run_identity_from_the_live_ping(
         discovery,
         "ping",
         lambda port, token: {
-            "run_id": "adv-7",
-            "run_root": str(tmp_path / "runs" / "adv-7"),
-            "runtime_dir": str(tmp_path / "runtime" / "adv-7"),
+            "run_id": "run-7",
+            "run_root": str(tmp_path / "runs" / "run-7"),
+            "runtime_dir": str(tmp_path / "runtime" / "run-7"),
         },
     )
 
     server = discovery.find_running(tmp_path / "state.json")
 
     assert server is not None
-    assert server.run_id == "adv-7"
-    assert server.run_root == str(tmp_path / "runs" / "adv-7")
-    assert server.runtime_dir == str(tmp_path / "runtime" / "adv-7")
+    assert server.run_id == "run-7"
+    assert server.run_root == str(tmp_path / "runs" / "run-7")
+    assert server.runtime_dir == str(tmp_path / "runtime" / "run-7")

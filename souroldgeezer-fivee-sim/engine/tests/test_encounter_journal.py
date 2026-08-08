@@ -29,6 +29,7 @@ from .conftest import (
     advance_encounter_to,
     mapless_fight,
 )
+from .opening import start_adventure
 
 
 def journal_path(root: Path, encounter_id: str) -> Path:
@@ -888,10 +889,14 @@ class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
         """
         root = tmp_path / "journal"
         monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
-        adventure_id = str(api.adventure_create("The Broken Build")["id"])
-        first = api.adventure_encounter(
-            adventure_id, combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=197
+        first = start_adventure(
+            "The Broken Build",
+            combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+            seed=197,
         )
+        adventure_id = str(first["adventure_id"])
+        assert api.STATE.storage is not None
+        root = api.STATE.storage.encounters_dir
         encounter_id = str(first["encounter_id"])
         advance_encounter_to(encounter_id, "Thora")
         api.encounter_act(encounter_id, "attack", target="Goblin", attack="Longsword")
@@ -904,7 +909,7 @@ class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
         assert isinstance(arguments, dict)
         del arguments["target"]
         journal_path(root, encounter_id).unlink()
-        rechained(encounter_id, saved)
+        rechained(encounter_id, saved, root=root)
         api.STATE.sessions.clear()
 
         with pytest.raises(
@@ -1052,12 +1057,14 @@ def result_position(saved: list[dict[str, Any]], operation: str) -> int:
     raise AssertionError(f"no recorded {operation!r} result to amend")
 
 
-def rechained(encounter_id: str, saved: list[dict[str, Any]]) -> None:
+def rechained(
+    encounter_id: str, saved: list[dict[str, Any]], *, root: Path | None = None
+) -> None:
     """Append these records under ``encounter_id``, letting ``append`` re-hash."""
     for entry in saved:
         entry.pop("previous_sha256", None)
         entry.pop("sha256", None)
-        encounter_journal.append(encounter_id, entry)
+        encounter_journal.append(encounter_id, entry, root=root)
 
 
 #: An interlude's roster: two of the party, nobody opposing them. What makes it

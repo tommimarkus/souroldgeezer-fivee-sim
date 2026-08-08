@@ -1200,13 +1200,17 @@ class _Handler(BaseHTTPRequestHandler):
 
     # -- runs: control-state allocation and inspection ----------------------
     def _h_run_list(self, request: _Request) -> None:
+        storage = self.state.storage
+        assert storage is not None
         self._send_json(
-            HTTPStatus.OK, run_service.list_runs(runs_dir=self.state.storage.runs_dir)
+            HTTPStatus.OK, run_service.list_runs(runs_dir=storage.runs_dir)
         )
 
     def _h_run_create(self, request: _Request) -> None:
+        storage = self.state.storage
+        assert storage is not None
         result = run_service.create(
-            self._idempotency_key(), {}, runs_dir=self.state.storage.runs_dir
+            self._idempotency_key(), {}, runs_dir=storage.runs_dir
         )
         version = str(result["version"])
         payload = {key: value for key, value in result.items() if key != "version"}
@@ -1220,7 +1224,9 @@ class _Handler(BaseHTTPRequestHandler):
         )
 
     def _h_run_state(self, request: _Request) -> None:
-        result = run_service.state_of(request.id, runs_dir=self.state.storage.runs_dir)
+        storage = self.state.storage
+        assert storage is not None
+        result = run_service.state_of(request.id, runs_dir=storage.runs_dir)
         version = str(result["version"])
         payload = {key: value for key, value in result.items() if key != "version"}
         self._send_json(HTTPStatus.OK, payload, headers={"ETag": _etag_of(version)})

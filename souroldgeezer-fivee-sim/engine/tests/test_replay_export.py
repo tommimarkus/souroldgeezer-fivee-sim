@@ -628,12 +628,12 @@ class TestSizeGate:
     def test_a_selected_run_owns_the_default_replay_output(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        run_root = tmp_path / "runs" / "adv-1"
+        run_root = tmp_path / "runs" / "run-1"
         run_root.mkdir(parents=True)
         storage = StorageLayout(
-            run_id="adv-1",
+            run_id="run-1",
             runs_dir=tmp_path / "runs",
-            runtime_dir=tmp_path / "runtime" / "adv-1",
+            runtime_dir=tmp_path / "runtime" / "run-1",
             shared_map_paths=(tmp_path / "maps",),
             shared_replay_paths=(tmp_path / "shared-replays",),
             shared_scenes_dir=tmp_path / "scenes",

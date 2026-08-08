@@ -20,9 +20,8 @@ stale version is refused rather than merged, and a retried link under one
 from __future__ import annotations
 
 import json
-from concurrent.futures import ThreadPoolExecutor
+import os
 from pathlib import Path
-from threading import Barrier, Lock
 from typing import Any
 
 import pytest
@@ -31,8 +30,6 @@ from fivee_sim.paths import (
     RUNS_ENV,
     RunSelectionError,
     StorageLayout,
-    adventures_root,
-    encounters_root,
     storage_layout,
 )
 from fivee_sim.service import adventures, specs
@@ -45,6 +42,7 @@ from fivee_sim.service.errors import (
 
 from . import api
 from .conftest import AMBUSHER, LOOKOUT, MILL, SCOUT
+from .opening import start_adventure
 
 #: Two hand-written combatants standing next to each other, each swinging at a
 #: bonus that beats the other's AC on all but a natural 1. The fight only has to
@@ -102,7 +100,7 @@ def _run_storage(tmp_path: Path, run_id: str | None) -> StorageLayout:
 
 
 class TestAdventureRunIsolation:
-    def test_create_allocates_the_whole_workspace_and_retries_idempotently(
+    def test_start_allocates_the_whole_workspace_and_opening_atomically(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         storage = _run_storage(tmp_path, None)
@@ -111,72 +109,34 @@ class TestAdventureRunIsolation:
         (storage.legacy_adventures_dir / "adv-1.json").write_text("{}", encoding="utf-8")
         (storage.runs_dir / "adv-2").mkdir(parents=True)
 
-        created = api.adventure_create("The Isolated Mill", request_id="create-run")
-        retried = api.adventure_create("The Isolated Mill", request_id="create-run")
+        created = start_adventure(
+            "The Isolated Mill", combatants=[BRAWLER, RUFFIAN], request_id="create-run"
+        )
 
-        assert created["id"] == "adv-3"
-        assert retried == created
-        run = storage.runs_dir / "adv-3"
+        assert created["run_id"] == "run-1"
+        assert created["adventure_id"] == "adv-1"
+        run = storage.runs_dir / "run-1"
         assert {path.name for path in run.iterdir()} == {
-            "maps", "scenes", "replays", "encounters", "adventures", "blobs"
+            "run.json", "maps", "scenes", "replays", "encounters", "adventures", "blobs"
         }
         assert json.loads(
-            (run / "adventures" / "adv-3.json").read_text(encoding="utf-8")
-        )["id"] == "adv-3"
+            (run / "adventures" / "adv-1.json").read_text(encoding="utf-8")
+        )["members"][0]["encounter_id"] == created["encounter_id"]
         assert (storage.runs_dir / "adv-2").is_dir(), "a stranded allocation stays visible"
-        with pytest.raises(RunSelectionError, match="incomplete"):
+        with pytest.raises(RunSelectionError, match="not a safe run id"):
             storage_layout(run_id="adv-2", env={RUNS_ENV: str(storage.runs_dir)})
-
-    def test_concurrent_retries_under_one_request_id_allocate_one_run(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        storage = _run_storage(tmp_path, None)
-        monkeypatch.setattr(api.STATE, "storage", storage)
-        arrived = Barrier(2)
-        calls_lock = Lock()
-        calls = 0
-        real_lookup = adventures._by_request_id
-
-        def synchronized_lookup(
-            request_id: str,
-            arguments: dict[str, Any],
-            state: Any = None,
-        ) -> dict[str, Any] | None:
-            nonlocal calls
-            with calls_lock:
-                calls += 1
-                call = calls
-            if call <= 2:
-                arrived.wait(timeout=5)
-            return real_lookup(request_id, arguments, state)
-
-        monkeypatch.setattr(adventures, "_by_request_id", synchronized_lookup)
-        with ThreadPoolExecutor(max_workers=2) as workers:
-            results = list(
-                workers.map(
-                    lambda _: api.adventure_create("The Isolated Mill", "same-create"),
-                    range(2),
-                )
-            )
-
-        assert results[0] == results[1]
-        assert [path.name for path in storage.runs_dir.glob("adv-*")] == ["adv-1"]
 
     def test_selected_run_owns_adventure_encounter_journal_and_blob_writes(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         control = _run_storage(tmp_path, None)
         monkeypatch.setattr(api.STATE, "storage", control)
-        created = api.adventure_create("The Isolated Mill")
-        run_id = str(created["id"])
-        monkeypatch.setattr(api.STATE, "storage", _run_storage(tmp_path, run_id))
-
-        linked = api.adventure_encounter(
-            run_id, combatants=[BRAWLER, RUFFIAN], seed=801
+        created = start_adventure(
+            "The Isolated Mill", combatants=[BRAWLER, RUFFIAN], seed=801
         )
 
-        run = control.runs_dir / run_id
-        encounter_id = str(linked["encounter_id"])
+        run = control.runs_dir / str(created["run_id"])
+        encounter_id = str(created["encounter_id"])
         assert (run / "encounters" / encounter_id / "journal.jsonl").is_file()
         assert list((run / "blobs").glob("*.json"))
         assert not control.legacy_encounters_dir.exists()
@@ -455,19 +415,22 @@ class TestCarryForward:
 class TestTheAdventureDocument:
     """A guarded document, not a journal: one small write per encounter."""
 
-    def test_a_new_adventure_is_an_empty_run_written_in_its_own_root(self) -> None:
-        created = api.adventure_create("The Sunless Citadel")
+    def test_a_new_adventure_has_chapter_zero_in_its_run_root(self) -> None:
+        created = start_adventure(
+            "The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=51
+        )
+        document = created["adventure"]
 
-        assert created["format"] == "fivee-sim-adventure"
-        assert created["format_version"] == 1
-        assert created["id"] == "adv-1"
-        assert created["name"] == "The Sunless Citadel"
-        assert created["status"] == "active"
-        assert created["members"] == []
+        assert document["format"] == "fivee-sim-adventure"
+        assert document["format_version"] == 1
+        assert document["id"] == "adv-1"
+        assert document["name"] == "The Sunless Citadel"
+        assert document["status"] == "active"
+        assert document["members"][0]["encounter_id"] == created["encounter_id"]
         assert created["version"]
 
-        path = adventures.adventure_path("adv-1")
-        assert path.parent == adventures_root()
+        assert api.STATE.storage is not None
+        path = api.STATE.storage.adventures_dir / "adv-1.json"
         assert json.loads(path.read_text(encoding="utf-8"))["id"] == "adv-1"
 
     def test_an_adventure_and_a_fight_do_not_share_a_root_at_all(self) -> None:
@@ -475,17 +438,17 @@ class TestTheAdventureDocument:
         # apart by two id grammars and two globs — a scheme that had to stay
         # true in four places at once. They are two roots now, so a listing
         # cannot report the other's files because it cannot reach them.
-        adventure = api.adventure_create("Separate Roots")
-        api.adventure_encounter(
-            str(adventure["id"]), combatants=[BRAWLER, RUFFIAN], seed=52
+        start_adventure(
+            "Separate Roots", combatants=[BRAWLER, RUFFIAN], seed=52
         )
 
-        assert adventures_root() != encounters_root()
+        assert api.STATE.storage is not None
+        assert api.STATE.storage.adventures_dir != api.STATE.storage.encounters_dir
         # The document and the lock guarding it, and nothing a fight left here.
-        assert {path.name for path in adventures_root().iterdir()} == {
+        assert {path.name for path in api.STATE.storage.adventures_dir.iterdir()} == {
             "adv-1.json", "adv-1.json.lock",
         }
-        assert [path.name for path in encounters_root().iterdir()] == ["enc-1"]
+        assert [path.name for path in api.STATE.storage.encounters_dir.iterdir()] == ["enc-1"]
 
         listed = {entry["encounter_id"] for entry in api.encounter_list("all")["encounters"]}
         assert listed == {"enc-1"}
@@ -494,7 +457,7 @@ class TestTheAdventureDocument:
         }
 
     def test_reading_one_back_answers_the_document_and_its_version(self) -> None:
-        created = api.adventure_create("Barrow of the Forgotten King")
+        created = start_adventure("Barrow of the Forgotten King")
 
         read = api.adventure_state("adv-1")
 
@@ -502,9 +465,9 @@ class TestTheAdventureDocument:
         assert read["version"] == created["version"]
 
     def test_an_unknown_adventure_names_what_is_actually_there(self) -> None:
-        api.adventure_create("The Sunless Citadel")
+        start_adventure("The Sunless Citadel")
 
-        with pytest.raises(NotFoundError, match="no adventure 'adv-9'; adventures here: adv-1"):
+        with pytest.raises(NotFoundError, match="no adventure 'adv-9' in run 'run-1'"):
             api.adventure_state("adv-9")
 
     def test_an_id_outside_the_grammar_is_an_unknown_adventure_not_a_path(self) -> None:
@@ -513,27 +476,14 @@ class TestTheAdventureDocument:
 
     def test_a_blank_name_is_refused_rather_than_written(self) -> None:
         with pytest.raises(RequestError, match="adventure name must not be blank"):
-            api.adventure_create("   ")
-
-    def test_the_listing_filters_by_status_the_way_encounters_do(self) -> None:
-        api.adventure_create("One")
-        api.adventure_create("Two")
-        api.adventure_finalize("adv-1")
-
-        assert [entry["adventure_id"] for entry in api.adventure_list()["adventures"]] == [
-            "adv-2"
-        ]
-        assert [
-            entry["adventure_id"] for entry in api.adventure_list("finalized")["adventures"]
-        ] == ["adv-1"]
-        assert len(api.adventure_list("all")["adventures"]) == 2
+            start_adventure("   ")
 
     def test_an_unknown_status_filter_names_the_three_that_work(self) -> None:
         with pytest.raises(RequestError, match="status must be active, finalized, or all"):
             api.adventure_list("halfway")
 
     def test_finalizing_closes_the_run_and_saying_so_twice_is_the_same_answer(self) -> None:
-        api.adventure_create("Tomb of Horrors")
+        start_adventure("Tomb of Horrors")
 
         first = api.adventure_finalize("adv-1")
         second = api.adventure_finalize("adv-1")
@@ -543,40 +493,40 @@ class TestTheAdventureDocument:
         assert first["version"] == second["version"], "a second finalize must not rewrite it"
 
     def test_a_finalized_adventure_takes_no_further_encounters(self) -> None:
-        api.adventure_create("Tomb of Horrors")
+        start_adventure("Tomb of Horrors")
         api.adventure_finalize("adv-1")
 
         with pytest.raises(RequestError, match="adventure 'adv-1' is finalized"):
             api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=53)
 
     def test_a_writer_holding_a_version_someone_else_replaced_is_refused(self) -> None:
-        created = api.adventure_create("Against the Giants")
+        created = start_adventure(
+            "Against the Giants", combatants=[BRAWLER, RUFFIAN], seed=54
+        )
         stale = str(created["version"])
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=54)
+        api.adventure_encounter("adv-1", carry=[], combatants=[BRAWLER, RUFFIAN], seed=55)
 
         with pytest.raises(StaleWriteError, match="the adventure 'adv-1' has advanced"):
             api.adventure_encounter(
                 "adv-1",
                 carry=[],
                 combatants=[dict(BRAWLER), dict(RUFFIAN)],
-                seed=55,
+                seed=56,
                 expected_version=stale,
             )
-        assert len(api.adventure_state("adv-1")["members"]) == 1
+        assert len(api.adventure_state("adv-1")["members"]) == 2
         # Refused before the fight was started, not after. A link that created
         # its encounter and only then found itself stale would leave a whole
         # journal on disk belonging to no run at all.
-        assert len(api.encounter_list("all")["encounters"]) == 1
+        assert len(api.encounter_list("all")["encounters"]) == 2
 
 
 class TestLinkingEncounters:
     """The link call is where an adventure is more than a name."""
 
-    def test_the_first_encounter_is_created_and_recorded_in_order(self) -> None:
-        api.adventure_create("Keep on the Borderlands")
-
-        linked = api.adventure_encounter(
-            "adv-1", combatants=[BRAWLER, RUFFIAN], seed=56
+    def test_the_opening_encounter_is_recorded_as_chapter_zero(self) -> None:
+        linked = start_adventure(
+            "Keep on the Borderlands", combatants=[BRAWLER, RUFFIAN], seed=56
         )
 
         assert linked["index"] == 0
@@ -590,8 +540,7 @@ class TestLinkingEncounters:
         # The headline claim, end to end and through the engine's own state
         # rather than through the join in isolation: fight until somebody is
         # hurt, link the next encounter, and read what they walked in on.
-        api.adventure_create("The Sunless Citadel")
-        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=57)
+        first = start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=57)
         first_id = str(first["encounter_id"])
         ending_hp = land_a_hit(first_id, attacker="Bram", victim="Thora")
 
@@ -609,8 +558,7 @@ class TestLinkingEncounters:
         assert second["index"] == 1 and second["carried"] == ["Thora"]
 
     def test_carrying_nobody_by_name_leaves_the_last_fights_cast_behind(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=59)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=59)
 
         second = api.adventure_encounter(
             "adv-1",
@@ -626,8 +574,7 @@ class TestLinkingEncounters:
         assert names == {"Thora", "Skeleton"}
 
     def test_carrying_nothing_by_default_brings_the_whole_previous_cast(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=61)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=61)
 
         second = api.adventure_encounter("adv-1", seed=62)
         names = {
@@ -639,8 +586,7 @@ class TestLinkingEncounters:
         assert names == {"Thora", "Bram"}
 
     def test_a_recovery_delta_is_applied_before_the_carry_over(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=63)
+        first = start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=63)
         ending_hp = land_a_hit(str(first["encounter_id"]), attacker="Bram", victim="Thora")
 
         second = api.adventure_encounter(
@@ -663,8 +609,7 @@ class TestLinkingEncounters:
         assert member["recovery_note"] == "Short rest beneath the gatehouse"
 
     def test_an_empty_recovery_is_still_a_recorded_boundary(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=64)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=64)
 
         api.adventure_encounter(
             "adv-1",
@@ -678,8 +623,7 @@ class TestLinkingEncounters:
         assert member["recovery_note"] == "A quiet long rest"
 
     def test_an_ordinary_link_does_not_invent_recovery_metadata(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=66)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=66)
 
         api.adventure_encounter("adv-1", seed=67)
 
@@ -691,8 +635,7 @@ class TestLinkingEncounters:
     def test_a_blank_recovery_note_is_refused_before_an_encounter_is_created(
         self, note: str
     ) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=68)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=68)
 
         with pytest.raises(RequestError, match="recovery_note must not be blank"):
             api.adventure_encounter("adv-1", recovery={}, recovery_note=note, seed=69)
@@ -700,8 +643,7 @@ class TestLinkingEncounters:
         assert len(api.adventure_state("adv-1")["members"]) == 1
 
     def test_a_recovery_note_without_a_recovery_is_refused(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=70)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=70)
 
         with pytest.raises(RequestError, match="recovery_note requires recovery"):
             api.adventure_encounter("adv-1", recovery_note="Long rest", seed=71)
@@ -709,8 +651,7 @@ class TestLinkingEncounters:
         assert len(api.adventure_state("adv-1")["members"]) == 1
 
     def test_an_oversized_recovery_note_is_refused_by_the_service(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=71)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=71)
 
         with pytest.raises(RequestError, match="recovery_note must be at most"):
             api.adventure_encounter(
@@ -723,8 +664,7 @@ class TestLinkingEncounters:
         assert len(api.adventure_state("adv-1")["members"]) == 1
 
     def test_a_recovery_note_at_the_declared_maximum_is_preserved(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=72)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=72)
         note = "x" * adventures.RECOVERY_NOTE_MAX
 
         api.adventure_encounter(
@@ -733,21 +673,10 @@ class TestLinkingEncounters:
 
         assert api.adventure_state("adv-1")["members"][1]["recovery_note"] == note
 
-    def test_even_an_empty_recovery_is_refused_on_the_first_chapter(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-
-        with pytest.raises(RequestError, match="has no encounter to recover from yet"):
-            api.adventure_encounter(
-                "adv-1", combatants=[BRAWLER, RUFFIAN], recovery={}, seed=72
-            )
-
-        assert api.adventure_state("adv-1")["members"] == []
-
     def test_a_recovery_hp_exceeding_max_hp_is_refused(self) -> None:
         # SRD 5.2.1 Rules Glossary: "You can't have more Hit Points than your Hit
         # Point maximum." The recovery door must validate this too.
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=65)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=65)
 
         with pytest.raises(
             RequestError, match="combatant Thora: hp 500 cannot exceed max_hp"
@@ -761,8 +690,7 @@ class TestLinkingEncounters:
             )
 
     def test_a_recovery_key_that_is_not_carried_state_is_refused(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=65)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=65)
 
         with pytest.raises(RequestError, match="unknown recovery key 'max_hp' for 'Thora'"):
             api.adventure_encounter(
@@ -771,8 +699,7 @@ class TestLinkingEncounters:
             )
 
     def test_a_recovery_for_somebody_who_is_not_coming_is_refused(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=67)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=67)
 
         with pytest.raises(RequestError, match="cannot recover 'Bram': it is not being carried"):
             api.adventure_encounter(
@@ -781,20 +708,13 @@ class TestLinkingEncounters:
             )
 
     def test_carrying_somebody_the_last_fight_never_had_is_refused(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=69)
+        start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=69)
 
         with pytest.raises(RequestError, match="cannot carry 'Wren'"):
             api.adventure_encounter("adv-1", carry=["Wren"], seed=70)
 
-    def test_carrying_from_an_adventure_with_no_encounters_yet_is_refused(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-
-        with pytest.raises(RequestError, match="has no encounter to carry from yet"):
-            api.adventure_encounter("adv-1", carry=["Thora"], seed=71)
-
     def test_a_retried_link_under_one_request_id_links_once(self) -> None:
-        api.adventure_create("The Sunless Citadel")
+        start_adventure("The Sunless Citadel")
 
         first = api.adventure_encounter(
             "adv-1", combatants=[BRAWLER, RUFFIAN], seed=72, request_id="link-1"
@@ -804,13 +724,13 @@ class TestLinkingEncounters:
         )
 
         assert again["encounter_id"] == first["encounter_id"]
-        assert again["index"] == first["index"] == 0
+        assert again["index"] == first["index"] == 1
         assert again["encounter"]["seed"] == first["encounter"]["seed"]
-        assert len(api.adventure_state("adv-1")["members"]) == 1
-        assert len(api.encounter_list("all")["encounters"]) == 1
+        assert len(api.adventure_state("adv-1")["members"]) == 2
+        assert len(api.encounter_list("all")["encounters"]) == 2
 
     def test_a_retried_link_rejects_changed_semantic_arguments(self) -> None:
-        api.adventure_create("The Sunless Citadel")
+        start_adventure("The Sunless Citadel")
         api.adventure_encounter(
             "adv-1", combatants=[BRAWLER, RUFFIAN], seed=72, request_id="link-1"
         )
@@ -820,40 +740,28 @@ class TestLinkingEncounters:
                 "adv-1", combatants=[BRAWLER, RUFFIAN], seed=73,
                 request_id="link-1",
             )
-        assert len(api.adventure_state("adv-1")["members"]) == 1
+        assert len(api.adventure_state("adv-1")["members"]) == 2
 
     def test_a_retried_creation_under_one_request_id_makes_one_adventure(self) -> None:
-        first = api.adventure_create("The Sunless Citadel", request_id="new-1")
-        again = api.adventure_create("The Sunless Citadel", request_id="new-1")
+        first = start_adventure("The Sunless Citadel", request_id="new-1")
+        again = start_adventure("The Sunless Citadel", request_id="new-1")
 
-        assert again["id"] == first["id"]
+        assert again["adventure_id"] == first["adventure_id"]
         assert len(api.adventure_list("all")["adventures"]) == 1
 
     def test_a_retried_creation_rejects_a_different_name(self) -> None:
-        api.adventure_create("The Sunless Citadel", request_id="new-1")
+        start_adventure("The Sunless Citadel", request_id="new-1")
 
         with pytest.raises(IdempotencyConflictError, match="different request"):
-            api.adventure_create("The Drowned Mill", request_id="new-1")
-        assert len(api.adventure_list("all")["adventures"]) == 1
-
-    def test_a_legacy_creation_record_without_a_fingerprint_still_replays(self) -> None:
-        first = api.adventure_create("The Sunless Citadel", request_id="legacy-new")
-        path = adventures.adventure_path("adv-1")
-        document = json.loads(path.read_text(encoding="utf-8"))
-        document["request_ids"]["legacy-new"].pop("idempotency_fingerprint")
-        path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-
-        again = api.adventure_create("The Sunless Citadel", request_id="legacy-new")
-
-        assert again["id"] == first["id"]
-        assert len(api.adventure_list("all")["adventures"]) == 1
+            start_adventure("The Drowned Mill", request_id="new-1")
+        assert len(list(Path(os.environ[RUNS_ENV]).glob("run-*"))) == 1
 
     def test_a_key_a_creation_already_spent_cannot_be_reused_on_a_link(self) -> None:
         # The other direction, and the one that has to refuse rather than
         # sidestep: the key is recorded in *this* document, so linking under it
         # would overwrite the record the creation left and quietly make a later
         # retried creation start a second run.
-        api.adventure_create("The Sunless Citadel", request_id="shared-key")
+        start_adventure("The Sunless Citadel", request_id="shared-key")
 
         with pytest.raises(
             IdempotencyConflictError, match="different request"
@@ -861,31 +769,15 @@ class TestLinkingEncounters:
             api.adventure_encounter(
                 "adv-1", combatants=[BRAWLER, RUFFIAN], seed=76, request_id="shared-key"
             )
-        assert api.adventure_state("adv-1")["members"] == []
-
-    def test_a_key_a_link_recorded_does_not_answer_for_a_creation(self) -> None:
-        # A request id is the caller's string and nothing stops one being reused
-        # across operations. Matching the key alone would make this second call
-        # answer with the adventure the *link* recorded, so the caller would be
-        # handed a run they did not ask to start and never learn that the one
-        # they did ask for was never created.
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter(
-            "adv-1", combatants=[BRAWLER, RUFFIAN], seed=75, request_id="shared-key"
-        )
-
-        with pytest.raises(IdempotencyConflictError, match="different request"):
-            api.adventure_create(
-                "Barrow of the Forgotten King", request_id="shared-key"
-            )
-        assert len(api.adventure_list("all")["adventures"]) == 1
+        assert len(api.adventure_state("adv-1")["members"]) == 1
 
     def test_two_combatants_of_the_same_name_are_refused_by_the_fight_itself(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=73)
-
         with pytest.raises(RequestError, match="combatant names must be unique"):
-            api.adventure_encounter("adv-1", combatants=[dict(BRAWLER)], seed=74)
+            start_adventure(
+                "The Sunless Citadel",
+                combatants=[BRAWLER, dict(BRAWLER) | {"position": [5, 0]}],
+                seed=74,
+            )
 
 
 class TestInterludeChapters:
@@ -903,9 +795,8 @@ class TestInterludeChapters:
     def link_the_mill(self, seed: int = 80) -> str:
         """An adventure whose first chapter is an interlude on a saved map."""
         api.map_save("mill", MILL, "*")
-        api.adventure_create("The Drowned Mill")
-        linked = api.adventure_encounter(
-            "adv-1",
+        linked = start_adventure(
+            "The Drowned Mill",
             combatants=[dict(SCOUT), dict(LOOKOUT)],
             seed=seed,
             map_id="mill",
@@ -983,38 +874,39 @@ class TestInterludeChapters:
     def test_a_link_that_says_nothing_about_the_mode_still_starts_a_fight(self) -> None:
         # Omission keeps meaning exactly what it meant, which is what lets every
         # caller written before interludes existed stay correct.
-        api.adventure_create("Keep on the Borderlands")
+        start_adventure("Keep on the Borderlands")
         linked = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=86)
 
         assert api.encounter_state(str(linked["encounter_id"]))["mode"] == "combat"
         assert api.adventure_state("adv-1")["members"][0]["mode"] == "combat"
 
     def test_a_mode_nobody_declared_is_refused_by_the_one_declaration(self) -> None:
-        api.adventure_create("The Drowned Mill")
+        start_adventure("The Drowned Mill")
 
         with pytest.raises(RequestError, match="mode must be one of: combat, exploration"):
             api.adventure_encounter(
                 "adv-1", combatants=[dict(SCOUT)], seed=87, mode="wandering"
             )
-        assert api.adventure_state("adv-1")["members"] == []
+        assert len(api.adventure_state("adv-1")["members"]) == 1
 
 
     def test_a_member_that_is_not_a_record_at_all_is_a_corrupt_document(self) -> None:
         # The listing now reads a field off every member rather than counting
         # them, so a document whose members are not records has to be refused
         # by name instead of raising out of the middle of a listing.
-        api.adventure_create("The Sunless Citadel")
-        path = adventures.adventure_path("adv-1")
+        start_adventure("The Sunless Citadel")
+        assert api.STATE.storage is not None
+        path = api.STATE.storage.adventures_dir / "adv-1.json"
         document = json.loads(path.read_text(encoding="utf-8"))
         document["members"] = ["enc-1"]
         path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
-        with pytest.raises(RequestError, match="member 0 is not a record"):
+        with pytest.raises(RequestError, match="has no chapter-zero member"):
             api.adventure_state("adv-1")
 
         listed = api.adventure_list("all")["adventures"]
         assert [entry["status"] for entry in listed] == ["corrupt"]
-        assert "member 0 is not a record" in listed[0]["problem"]
+        assert "has no chapter-zero member" in listed[0]["problem"]
 
 
 class TestCarryingTheGround:
@@ -1022,7 +914,7 @@ class TestCarryingTheGround:
 
     def link_the_mill(self, seed: int = 88) -> str:
         api.map_save("mill", MILL, "*")
-        api.adventure_create("The Drowned Mill")
+        start_adventure("The Drowned Mill")
         linked = api.adventure_encounter(
             "adv-1",
             combatants=[dict(SCOUT), dict(LOOKOUT)],
@@ -1081,28 +973,15 @@ class TestCarryingTheGround:
                 carry_map=True, map=dict(MILL),
             )
 
-    def test_carrying_a_map_before_there_is_a_chapter_to_carry_from_is_refused(
-        self,
-    ) -> None:
-        api.adventure_create("The Drowned Mill")
-
-        with pytest.raises(
-            RequestError,
-            match="adventure 'adv-1' has no encounter to carry a map from yet",
-        ):
-            api.adventure_encounter(
-                "adv-1", combatants=[dict(SCOUT), dict(LOOKOUT)], seed=96,
-                carry_map=True,
-            )
-        assert api.adventure_state("adv-1")["members"] == []
-
     def test_carrying_from_a_chapter_that_was_never_on_a_map_is_refused(self) -> None:
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=97)
+        start_adventure("The Sunless Citadel")
+        api.adventure_encounter(
+            "adv-1", carry=[], combatants=[BRAWLER, RUFFIAN], seed=97
+        )
 
         with pytest.raises(
             RequestError,
-            match="cannot carry the map of encounter 'enc-1': it was not on a map",
+            match="cannot carry the map of encounter 'enc-2': it was not on a map",
         ):
             api.adventure_encounter("adv-1", seed=98, carry_map=True)
 
@@ -1112,10 +991,12 @@ class TestCarryingTheGround:
         # id to reuse and the remedy is to send the document again rather than
         # to put the chapter on a map at all. One message for both would send
         # the caller to the wrong fix.
-        api.adventure_create("The Drowned Mill")
-        api.adventure_encounter(
-            "adv-1", combatants=[dict(SCOUT), dict(LOOKOUT)], seed=99,
-            map=dict(MILL), mode="exploration",
+        start_adventure(
+            "The Drowned Mill",
+            combatants=[dict(SCOUT), dict(LOOKOUT)],
+            seed=99,
+            map=dict(MILL),
+            mode="exploration",
         )
 
         with pytest.raises(
@@ -1133,14 +1014,16 @@ class TestCarryingTheGround:
         # Refused before anything durable happens, the way a stale version is:
         # a link that created its fight and only then found it had no map to
         # carry would leave a whole journal belonging to no run at all.
-        api.adventure_create("The Sunless Citadel")
-        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=101)
+        start_adventure("The Sunless Citadel")
+        api.adventure_encounter(
+            "adv-1", carry=[], combatants=[BRAWLER, RUFFIAN], seed=101
+        )
 
         with pytest.raises(RequestError, match="was not on a map"):
             api.adventure_encounter("adv-1", seed=102, carry_map=True)
 
-        assert len(api.adventure_state("adv-1")["members"]) == 1
-        assert len(api.encounter_list("all")["encounters"]) == 1
+        assert len(api.adventure_state("adv-1")["members"]) == 2
+        assert len(api.encounter_list("all")["encounters"]) == 2
 
 class TestTempHpCarryForward:
     """``temp_hp`` joined ``CARRIED_STATE_KEYS`` in the same wave as
@@ -1210,8 +1093,7 @@ class TestConditionLevelsCarryForward:
         self,
     ) -> None:
         api.content_configure([self.PACK], add=True)
-        api.adventure_create("The Sunless Citadel")
-        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=76)
+        first = start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=76)
         first_id = str(first["encounter_id"])
         for index in range(3):
             api.encounter_condition(
@@ -1237,8 +1119,7 @@ class TestConditionLevelsCarryForward:
         # lost the condition mid-fight must not arrive at the next chapter
         # still carrying the level a stale, non-empty capture would leave.
         api.content_configure([self.PACK], add=True)
-        api.adventure_create("The Sunless Citadel")
-        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=78)
+        first = start_adventure("The Sunless Citadel", combatants=[BRAWLER, RUFFIAN], seed=78)
         first_id = str(first["encounter_id"])
         api.encounter_condition(
             first_id, "Thora", "ashfall-ember-marked", request_id="mark-0"

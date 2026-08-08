@@ -18,12 +18,12 @@ from pathlib import Path
 
 import pytest
 
-from fivee_sim.paths import adventures_root
 from fivee_sim.service import adventures, durable, encounter_journal, sessions
 from fivee_sim.service.errors import RequestError, StaleWriteError
 
 from . import api
 from .conftest import REPLAY_GOBLIN, REPLAY_HERO, mapless_fight
+from .opening import start_adventure
 
 #: Each child re-reads and retries, so a refusal costs progress but never the file.
 _APPENDER = """
@@ -185,17 +185,26 @@ def test_a_second_process_acting_on_a_live_encounter_is_refused_not_merged(
 #: own head check. Giving each child its own id space keeps that separate defect
 #: out of this measurement.
 _LINKER = """
-import os, sys
-os.environ["FIVEE_SIM_ENCOUNTERS"] = {root!r}
-os.environ["FIVEE_SIM_ADVENTURES"] = {adventures!r}
+import sys
+from pathlib import Path
+from fivee_sim.paths import StorageLayout
 from fivee_sim.service import adventures, sessions
 from fivee_sim.service.errors import StaleWriteError
 tag, rounds, start_id = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-state = sessions.EngineState()
+state = sessions.EngineState(storage=StorageLayout(
+    run_id={run_id!r}, runs_dir=Path({runs_dir!r}),
+    runtime_dir=Path({runtime_dir!r}),
+    shared_map_paths=(Path({maps_dir!r}),),
+    shared_replay_paths=(Path({replays_dir!r}),),
+    shared_scenes_dir=Path({scenes_dir!r}),
+    legacy_encounters_dir=Path({legacy_encounters!r}),
+    legacy_adventures_dir=Path({legacy_adventures!r}),
+    legacy_blobs_dir=Path({legacy_blobs!r}),
+))
 state.next_id = start_id
 wins = refusals = 0
 for index in range(rounds):
-    document = adventures.state_of({adventure_id!r})
+    document = adventures.state_of({adventure_id!r}, state=state)
     try:
         adventures.link_encounter(
             state,
@@ -220,9 +229,18 @@ def _run_linker(
     # ``FIVEE_SIM_ENCOUNTERS``, so a child setting only that one would be
     # writing to whatever root the parent's environment happened to carry —
     # correct here by luck, and silent about the seam under test.
+    assert api.STATE.storage is not None
+    storage = api.STATE.storage
     code = _LINKER.format(
-        root=str(root),
-        adventures=str(adventures_root()),
+        run_id=storage.run_id,
+        runs_dir=str(storage.runs_dir),
+        runtime_dir=str(storage.runtime_dir),
+        maps_dir=str(storage.shared_map_paths[0]),
+        replays_dir=str(storage.shared_replay_paths[0]),
+        scenes_dir=str(storage.shared_scenes_dir),
+        legacy_encounters=str(storage.legacy_encounters_dir),
+        legacy_adventures=str(storage.legacy_adventures_dir),
+        legacy_blobs=str(storage.legacy_blobs_dir),
         adventure_id=adventure_id,
         combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
     )
@@ -254,8 +272,12 @@ def test_two_processes_linking_one_adventure_never_interleave_its_members(
     """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
-    adventure = api.adventure_create("Against the Giants")
-    adventure_id = str(adventure["id"])
+    adventure = start_adventure(
+        "Against the Giants",
+        combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+        seed=5,
+    )
+    adventure_id = str(adventure["adventure_id"])
     rounds = 6
 
     workers = [
@@ -264,17 +286,20 @@ def test_two_processes_linking_one_adventure_never_interleave_its_members(
     ]
     tallies = [_tally(worker) for worker in workers]
 
-    document = adventures.state_of(adventure_id)
+    document = adventures.state_of(adventure_id, state=api.STATE)
     members = document["members"]
     # Every acknowledged link landed exactly once, and none was overwritten by
     # the other process's copy of the document.
-    assert len(members) == sum(wins for wins, _refusals in tallies)
+    assert len(members) == 1 + sum(wins for wins, _refusals in tallies)
     assert [entry["index"] for entry in members] == list(range(len(members)))
     assert len({entry["encounter_id"] for entry in members}) == len(members)
     assert sum(wins + refusals for wins, refusals in tallies) == 2 * rounds
     # And the file is still one document rather than two spliced together.
+    assert api.STATE.storage is not None
     assert json.loads(
-        adventures.adventure_path(adventure_id).read_text(encoding="utf-8")
+        (api.STATE.storage.adventures_dir / f"{adventure_id}.json").read_text(
+            encoding="utf-8"
+        )
     )["members"] == members
 
 
@@ -283,35 +308,28 @@ def test_a_second_process_linking_from_a_stale_version_is_refused_not_merged(
 ) -> None:
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
-    created = api.adventure_create("Against the Giants")
+    created = start_adventure(
+        "Against the Giants",
+        combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
+        seed=6,
+    )
     stale = str(created["version"])
 
-    elsewhere = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            f"import os\nos.environ['FIVEE_SIM_ENCOUNTERS'] = {str(root)!r}\n"
-            "from fivee_sim.service import adventures, sessions\n"
-            "adventures.link_encounter(\n"
-            f"    sessions.EngineState(), {str(created['id'])!r},\n"
-            f"    combatants={[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)]!r},\n"
-            "    seed=7,\n"
-            ")\n",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=120,
+    wins, refusals = _tally(
+        _run_linker(root, str(created["adventure_id"]), "elsewhere", 1, 500)
     )
-    assert elsewhere.returncode == 0, elsewhere.stderr
+    assert (wins, refusals) == (1, 0)
 
     with pytest.raises(StaleWriteError, match="the adventure 'adv-1' has advanced"):
         api.adventure_encounter(
-            str(created["id"]),
+            str(created["adventure_id"]),
             combatants=[dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
             seed=8,
             expected_version=stale,
         )
-    assert len(adventures.state_of(str(created["id"]))["members"]) == 1
+    assert len(
+        adventures.state_of(str(created["adventure_id"]), state=api.STATE)["members"]
+    ) == 2
 
 
 def test_atomic_write_never_exposes_a_half_written_file(tmp_path: Path) -> None:

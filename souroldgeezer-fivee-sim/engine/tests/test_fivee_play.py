@@ -242,7 +242,7 @@ def test_index_cache_keys_source_digest_and_indexer_version(
 
 def _fivee_adventure_source(tmp_path: Path) -> Path:
     path = tmp_path / "adventure-source.json"
-    entries = [
+    entries: list[dict[str, Any]] = [
         {
             "id": "chapter:running",
             "kind": "section",

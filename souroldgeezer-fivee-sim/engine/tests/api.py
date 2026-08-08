@@ -269,10 +269,6 @@ def encounter_prune(apply: bool = False) -> dict[str, Any]:
 
 
 # --- adventures ---------------------------------------------------------------
-def adventure_create(name: str, request_id: str | None = None) -> dict[str, Any]:
-    return _adventures.create(name, request_id, state=STATE)
-
-
 def adventure_state(adventure_id: str) -> dict[str, Any]:
     return _adventures.state_of(adventure_id, state=STATE)
 

@@ -431,7 +431,8 @@ def _response(document: Mapping[str, Any], version: str) -> dict[str, Any]:
 def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
           *, state: EngineState) -> dict[str, Any]:
     """Atomically publish a run, adventure document, and chapter-zero fight."""
-    if state.storage is None or state.storage.run_id is not None:
+    control_storage = state.storage
+    if control_storage is None or control_storage.run_id is not None:
         raise RequestError("adventure.start allocates a new run; omit --run for this operation")
     titled = name.strip()
     scene_id, party = opening.get("scene_id"), opening.get("party")
@@ -445,7 +446,7 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
         adventure_id = _next_free_id(state)
         for part in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
             (stage / part).mkdir(parents=True, exist_ok=True)
-        prior = state.storage
+        prior = control_storage
         state.storage = StorageLayout(
             run_id=stage.name, runs_dir=stage.parent, runtime_dir=prior.runtime_dir,
             shared_map_paths=prior.shared_map_paths, shared_replay_paths=prior.shared_replay_paths,
@@ -496,14 +497,14 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
             state.storage = prior
 
     published = runs.create(request_id, identity, initialize, "adventure.start",
-                            runs_dir=state.storage.runs_dir)
+                            runs_dir=control_storage.runs_dir)
     bound = str(published["adventure_id"])
     data = published.get("initialized")
     if not isinstance(data, Mapping):
-        path = state.storage.runs_dir / str(published["id"]) / "adventures" / f"{bound}.json"
+        path = control_storage.runs_dir / str(published["id"]) / "adventures" / f"{bound}.json"
         text = path.read_text(encoding="utf-8")
         document = _parsed(text, path)
-        temporary = state.storage
+        temporary = control_storage
         state.storage = StorageLayout(
             run_id=bound, runs_dir=path.parent.parent.parent, runtime_dir=temporary.runtime_dir,
             shared_map_paths=temporary.shared_map_paths,
@@ -570,7 +571,7 @@ def _opening_roster(state: EngineState, scene: Mapping[str, Any], party: list[An
         raise RequestError("opening map has insufficient free party spawn positions")
     for member, (position, level) in zip(checked, free, strict=False):
         member["position"], member["level"] = list(square_center(position)), level
-    inline = deepcopy(map_spec) if isinstance(map_spec, Mapping) else None
+    inline = deepcopy(dict(map_spec)) if isinstance(map_spec, Mapping) else None
     return [*checked, *cast], inline, map_id if isinstance(map_id, str) else None
 
 

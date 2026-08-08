@@ -1062,9 +1062,8 @@ ROUTES: tuple[Route, ...] = (
                 },
             },
         },
-        # The first encounter of a run, which is the one a reader meets first
-        # and the only one whose whole roster has to be written out.
-        example={"combatants": _COMBATANTS_EXAMPLE, "seed": 20260805},
+        # Replace rather than carry the opening cast when giving a whole roster.
+        example={"combatants": _COMBATANTS_EXAMPLE, "carry": [], "seed": 20260805},
         handler="adventure_encounter", success=201, errors=(409, 428),
     ),
     Route(

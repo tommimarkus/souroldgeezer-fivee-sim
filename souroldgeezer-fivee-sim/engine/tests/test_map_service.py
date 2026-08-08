@@ -72,12 +72,12 @@ def document() -> MapDocument:
 
 
 def run_state(tmp_path: Path) -> EngineState:
-    run = tmp_path / "runs" / "adv-1"
+    run = tmp_path / "runs" / "run-1"
     run.mkdir(parents=True, exist_ok=True)
     return EngineState(storage=StorageLayout(
-        run_id="adv-1",
+        run_id="run-1",
         runs_dir=tmp_path / "runs",
-        runtime_dir=tmp_path / "runtime" / "adv-1",
+        runtime_dir=tmp_path / "runtime" / "run-1",
         shared_map_paths=(tmp_path / "shared-maps",),
         shared_replay_paths=(tmp_path / "shared-replays",),
         shared_scenes_dir=tmp_path / "shared-scenes",

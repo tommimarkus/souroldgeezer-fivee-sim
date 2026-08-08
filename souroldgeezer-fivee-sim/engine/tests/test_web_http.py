@@ -135,6 +135,34 @@ def scene_payload() -> dict[str, Any]:
     }
 
 
+def opening_scene_payload() -> dict[str, Any]:
+    """The fixture server's mandatory chapter-zero scene."""
+    return {
+        "name": "Opening",
+        "combatants": [dict(GOBLIN)],
+        "seed": 20260808,
+        "movement_rule": "5-5-5",
+        "map": {
+            "format": "fivee-sim-map",
+            "format_version": 1,
+            "name": "Opening ground",
+            "grid": {"width": 4, "height": 4, "cell_feet": 5},
+            "legend": {".": "floor"},
+            "tiles": ["...."] * 4,
+            "features": [
+                {"id": "party", "kind": "spawn", "at": [0, 0], "team": "party"}
+            ],
+            "provenance": {
+                "generator": "hand",
+                "seed": 0,
+                "params": {},
+                "edited": False,
+                "source": "Authored for the test suite; 5E-compatible original content",
+            },
+        },
+    }
+
+
 def replay_bundle() -> dict[str, Any]:
     """A real v2 bundle, built by the exporter that writes them for real.
 
@@ -288,7 +316,19 @@ def editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Editor]:
         maps_dir=maps_dir,
         replays_dir=replays_dir,
     ))
-    run_id = str(adventure_service.create("The Sunless Citadel", state=control)["id"])
+    assert control.storage is not None
+    scene_service.save(
+        "fixture-opening",
+        opening_scene_payload(),
+        root=control.storage.shared_scenes_dir,
+    )
+    opened = adventure_service.start(
+        "The Sunless Citadel",
+        {"scene_id": "fixture-opening", "party": [dict(HERO)]},
+        state=control,
+    )
+    (control.storage.shared_scenes_dir / "fixture-opening.json").unlink()
+    run_id = str(opened["run_id"])
     server = EngineServer(
         maps_dir=maps_dir,
         replays_dir=replays_dir,
@@ -1646,8 +1686,16 @@ class TestDeclaredExamples:
                     "name": "example ground",
                     "grid": {"width": 5, "height": 4, "cell_feet": 5},
                     "legend": {".": "floor"}, "tiles": ["....."] * 4,
-                    "features": [{"id": "example-spawn", "kind": "spawn", "at": [1, 1], "team": "party"}],
-                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"},
+                    "features": [
+                        {
+                            "id": "example-spawn", "kind": "spawn",
+                            "at": [1, 1], "team": "party",
+                        }
+                    ],
+                    "provenance": {
+                        "generator": "hand", "seed": 1, "params": {},
+                        "edited": False, "source": "test",
+                    },
                 },
             },
             editor.server.storage.shared_scenes_dir,
@@ -1676,7 +1724,11 @@ class TestDeclaredExamples:
                 for param in route.params
                 if param.example is not None
             }
-            call = editor.control_request if route.operation == "adventure.create" else editor.request
+            call = (
+                editor.control_request
+                if route.operation == "adventure.create"
+                else editor.request
+            )
             response = call(route.method, path, json_body=route.example, headers=headers)
             assert response.status < 400, (
                 f"the example {route.operation} declares is refused by the "
@@ -2602,7 +2654,9 @@ class TestEncountersOverHttp:
     def test_the_listing_finds_the_fight_on_disk(self, editor: Editor) -> None:
         encounter_id = self.create(editor).json()["encounter_id"]
         listed = editor.request("GET", "/api/v1/encounters").json()
-        assert [entry["encounter_id"] for entry in listed["encounters"]] == [encounter_id]
+        assert [entry["encounter_id"] for entry in listed["encounters"]] == [
+            "enc-1", encounter_id
+        ]
         assert listed["encounters"][0]["status"] == "active"
 
     def test_pruning_lists_the_stranded_ids_and_then_reclaims_them(
@@ -3417,7 +3471,7 @@ class TestThePlayerBriefOnTheWrites:
 
         assert_problem(refused, 404, "no combatant named 'Nobody'")
         listed = editor.request("GET", "/api/v1/encounters?status=all").json()
-        assert listed["encounters"] == [], listed
+        assert [entry["encounter_id"] for entry in listed["encounters"]] == ["enc-1"]
 
     def test_a_briefed_write_still_carries_the_encounters_etag(
         self, editor: Editor
@@ -3957,7 +4011,7 @@ class TestIdempotencyKey:
         again = self.create(editor, key="fight-1").json()
         assert again["encounter_id"] == first["encounter_id"]
         listed = editor.request("GET", "/api/v1/encounters").json()["encounters"]
-        assert len(listed) == 1
+        assert len(listed) == 2
 
     def test_a_key_on_a_roll_needs_a_fight_to_be_audited_against(
         self, editor: Editor
@@ -4041,7 +4095,7 @@ class TestRunsOverHttp:
     ) -> None:
         empty = editor.control_request("GET", "/api/v1/runs")
         assert empty.status == 200
-        assert empty.json() == {"runs": []}
+        assert empty.json() == {"runs": [{"id": "run-1", "adventure_id": "adv-1"}]}
 
         headers = {"Idempotency-Key": "scratch-run"}
         created = editor.control_request(
@@ -4049,10 +4103,10 @@ class TestRunsOverHttp:
         )
         assert created.status == 201, created.body
         body = created.json()
-        assert body["id"] == "run-1"
+        assert body["id"] == "run-2"
         assert body["adventure_id"] is None
         assert "version" not in body
-        assert created.headers["Location"] == "/api/v1/runs/run-1"
+        assert created.headers["Location"] == "/api/v1/runs/run-2"
         assert created.headers["ETag"]
 
         repeated = editor.control_request(
@@ -4064,9 +4118,14 @@ class TestRunsOverHttp:
 
         listed = editor.control_request("GET", "/api/v1/runs")
         assert listed.status == 200
-        assert listed.json() == {"runs": [{"id": "run-1", "adventure_id": None}]}
+        assert listed.json() == {
+            "runs": [
+                {"id": "run-1", "adventure_id": "adv-1"},
+                {"id": "run-2", "adventure_id": None},
+            ]
+        }
 
-        read = editor.control_request("GET", "/api/v1/runs/run-1")
+        read = editor.control_request("GET", "/api/v1/runs/run-2")
         assert read.status == 200
         assert read.json() == body
         assert read.headers["ETag"] == created.headers["ETag"]
@@ -4101,8 +4160,16 @@ class TestAdventuresOverHttp:
                     "grid": {"width": 5, "height": 4, "cell_feet": 5},
                     "legend": {".": "floor"},
                     "tiles": ["....."] * 4,
-                    "features": [{"id": "party-arrival", "kind": "spawn", "at": [1, 1], "team": "party"}],
-                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"},
+                    "features": [
+                        {
+                            "id": "party-arrival", "kind": "spawn",
+                            "at": [1, 1], "team": "party",
+                        }
+                    ],
+                    "provenance": {
+                        "generator": "hand", "seed": 1, "params": {},
+                        "edited": False, "source": "test",
+                    },
                 },
             },
             editor.server.storage.shared_scenes_dir,
@@ -4119,14 +4186,14 @@ class TestAdventuresOverHttp:
 
         assert response.status == 201, response.body
         body = response.json()
-        assert body["run_id"] == "run-1"
+        assert body["run_id"] == "run-2"
         assert body["adventure_id"] == "adv-2"
         assert body["chapter_index"] == 0
         assert body["encounter_id"] == "enc-1"
-        assert body["run"]["id"] == "run-1"
+        assert body["run"]["id"] == "run-2"
         assert body["adventure"]["members"][0]["encounter_id"] == "enc-1"
         assert body["encounter"]["encounter_id"] == "enc-1"
-        assert response.headers["Location"] == "/api/v1/runs/run-1"
+        assert response.headers["Location"] == "/api/v1/runs/run-2"
         assert response.headers["ETag"] == f'"{body["version"]}"'
 
         selected = EngineServer(
@@ -4140,7 +4207,10 @@ class TestAdventuresOverHttp:
         )
         thread.start()
         try:
-            live = Editor(selected, thread, selected.maps_dir, selected.replays_dir, editor.log).request(
+            selected_editor = Editor(
+                selected, thread, selected.maps_dir, selected.replays_dir, editor.log
+            )
+            live = selected_editor.request(
                 "GET", "/api/v1/adventures/adv-2/brief?as=Thora"
             )
         finally:
@@ -4165,8 +4235,16 @@ class TestAdventuresOverHttp:
                     "name": "occupied ground",
                     "grid": {"width": 5, "height": 4, "cell_feet": 5},
                     "legend": {".": "floor"}, "tiles": ["....."] * 4,
-                    "features": [{"id": "occupied-spawn", "kind": "spawn", "at": [1, 0], "team": "party"}],
-                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"},
+                    "features": [
+                        {
+                            "id": "occupied-spawn", "kind": "spawn",
+                            "at": [1, 0], "team": "party",
+                        }
+                    ],
+                    "provenance": {
+                        "generator": "hand", "seed": 1, "params": {},
+                        "edited": False, "source": "test",
+                    },
                 },
             },
             editor.server.storage.shared_scenes_dir,
@@ -4196,14 +4274,9 @@ class TestAdventuresOverHttp:
         self, editor: Editor
     ) -> None:
         self.start(editor, "The Drowned Mill")
-        linked = editor.request(
-            "POST",
-            "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
-            headers={"If-Match": "*"},
-        )
-        assert linked.status == 201, linked.body
-        encounter_id = linked.json()["encounter_id"]
+        encounter_id = editor.request(
+            "GET", "/api/v1/adventures/adv-1"
+        ).json()["members"][0]["encounter_id"]
 
         response = editor.request("GET", "/api/v1/adventures/adv-1/brief?as=Thora")
 
@@ -4306,24 +4379,8 @@ class TestAdventuresOverHttp:
             "GET", f"/api/v1/encounters/{current_id}"
         ).headers["ETag"] == encounter_etag
 
-    def test_an_empty_adventures_live_brief_is_409(self, editor: Editor) -> None:
-        self.start(editor)
-
-        assert_problem(
-            editor.request("GET", "/api/v1/adventures/adv-1/brief?as=Thora"),
-            409,
-            "adventure 'adv-1' has no current chapter",
-        )
-
     def test_an_unknown_live_brief_seat_is_404(self, editor: Editor) -> None:
         self.start(editor)
-        linked = editor.request(
-            "POST",
-            "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": 7},
-            headers={"If-Match": "*"},
-        )
-        assert linked.status == 201, linked.body
 
         assert_problem(
             editor.request("GET", "/api/v1/adventures/adv-1/brief?as=Nobody"),
@@ -4339,7 +4396,7 @@ class TestAdventuresOverHttp:
         assert_problem(
             editor.request("GET", "/api/v1/adventures/adv-9"),
             404,
-            "no adventure 'adv-9' in run 'adv-1'",
+            "no adventure 'adv-9' in run 'run-1'",
         )
 
     def test_linking_an_encounter_without_if_match_is_428(self, editor: Editor) -> None:
@@ -4349,7 +4406,7 @@ class TestAdventuresOverHttp:
             editor.request(
                 "POST",
                 "/api/v1/adventures/adv-1/encounters",
-                json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+                json_body={"combatants": [HERO, GOBLIN], "carry": [], "seed": 5},
             ),
             428,
             "If-Match is required",
@@ -4363,13 +4420,13 @@ class TestAdventuresOverHttp:
         linked = editor.request(
             "POST",
             "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            json_body={"combatants": [HERO, GOBLIN], "carry": [], "seed": 5},
             headers={"If-Match": "*"},
         )
 
         assert linked.status == 201, linked.body
         body = linked.json()
-        assert body["index"] == 0
+        assert body["index"] == 1
         assert body["encounter"]["seed"] == 5
         assert linked.headers["Location"] == (
             f"/api/v1/encounters/{body['encounter_id']}"
@@ -4380,14 +4437,6 @@ class TestAdventuresOverHttp:
         self, editor: Editor
     ) -> None:
         self.start(editor)
-        first = editor.request(
-            "POST",
-            "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
-            headers={"If-Match": "*"},
-        )
-        assert first.status == 201, first.body
-
         second = editor.request(
             "POST",
             "/api/v1/adventures/adv-1/encounters",
@@ -4411,7 +4460,7 @@ class TestAdventuresOverHttp:
         first = editor.request(
             "POST",
             "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            json_body={"combatants": [HERO, GOBLIN], "carry": [], "seed": 5},
             headers={"If-Match": "*"},
         )
         assert first.status == 201, first.body
@@ -4420,13 +4469,13 @@ class TestAdventuresOverHttp:
             editor.request(
                 "POST",
                 "/api/v1/adventures/adv-1/encounters",
-                json_body={"combatants": [HERO, GOBLIN], "seed": 6},
+                json_body={"combatants": [HERO, GOBLIN], "carry": [], "seed": 6},
                 headers={"If-Match": stale},
             ),
             409,
             "the adventure 'adv-1' has advanced since you read it",
         )
-        assert len(editor.request("GET", "/api/v1/adventures/adv-1").json()["members"]) == 1
+        assert len(editor.request("GET", "/api/v1/adventures/adv-1").json()["members"]) == 2
 
     def test_the_listing_shows_the_run_and_its_status_filter_is_the_encounters_one(
         self, editor: Editor
@@ -4458,7 +4507,7 @@ class TestAdventuresOverHttp:
         self, editor: Editor
     ) -> None:
         self.start(editor)
-        body = {"combatants": [HERO, GOBLIN], "seed": 5}
+        body = {"combatants": [HERO, GOBLIN], "carry": [], "seed": 5}
         headers = {"If-Match": "*", "Idempotency-Key": "link-1"}
 
         first = editor.request(
@@ -4470,7 +4519,7 @@ class TestAdventuresOverHttp:
 
         assert first.status == 201 and again.status == 201, again.body
         assert again.json()["encounter_id"] == first.json()["encounter_id"]
-        assert len(editor.request("GET", "/api/v1/adventures/adv-1").json()["members"]) == 1
+        assert len(editor.request("GET", "/api/v1/adventures/adv-1").json()["members"]) == 2
 
     def test_a_finalized_run_refuses_a_further_encounter(self, editor: Editor) -> None:
         self.start(editor)
@@ -4485,7 +4534,7 @@ class TestAdventuresOverHttp:
             editor.request(
                 "POST",
                 "/api/v1/adventures/adv-1/encounters",
-                json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+                json_body={"combatants": [HERO, GOBLIN], "carry": [], "seed": 5},
                 headers={"If-Match": "*"},
             ),
             400,
@@ -4493,14 +4542,10 @@ class TestAdventuresOverHttp:
         )
 
     def link(self, editor: Editor, seed: int = 5) -> str:
-        linked = editor.request(
-            "POST",
-            "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": seed},
-            headers={"If-Match": "*"},
-        )
-        assert linked.status == 201, linked.body
-        return str(linked.json()["encounter_id"])
+        del seed
+        document = editor.request("GET", "/api/v1/adventures/adv-1")
+        assert document.status == 200, document.body
+        return str(document.json()["members"][0]["encounter_id"])
 
     def test_composing_the_runs_replay_answers_the_file_it_wrote(
         self, editor: Editor
@@ -4541,15 +4586,6 @@ class TestAdventuresOverHttp:
             f"encounter '{encounter_id}' of adventure 'adv-1' has no finalized replay",
         )
 
-    def test_composing_a_run_that_has_no_fights_yet_is_400(self, editor: Editor) -> None:
-        self.start(editor)
-
-        assert_problem(
-            editor.request("POST", "/api/v1/adventures/adv-1/replay", json_body={}),
-            400,
-            "adventure 'adv-1' has no encounters to compose",
-        )
-
 
 class TestLinkingAnInterludeOverHttp:
     """``mode`` and ``carry_map`` on the link, the way a caller reaches them.
@@ -4570,6 +4606,8 @@ class TestLinkingAnInterludeOverHttp:
         assert saved.status == 201, saved.body
 
     def link(self, editor: Editor, **body: Any) -> Response:
+        if "combatants" in body and not body.get("carry_map"):
+            body.setdefault("carry", [])
         return editor.request(
             "POST", "/api/v1/adventures/adv-1/encounters",
             json_body=body,
@@ -4610,9 +4648,11 @@ class TestLinkingAnInterludeOverHttp:
         listed = editor.request("GET", "/api/v1/adventures?status=all").json()
 
         assert [member["mode"] for member in document["members"]] == [
-            "exploration", "combat"
+            "combat", "exploration", "combat"
         ]
-        assert listed["adventures"][0]["modes"] == ["exploration", "combat"]
+        assert listed["adventures"][0]["modes"] == [
+            "combat", "exploration", "combat"
+        ]
 
     def test_a_carried_map_puts_the_next_chapter_on_the_same_ground(
         self, editor: Editor
@@ -4943,16 +4983,12 @@ class TestReplayValidation:
         version check, so the answer would be a wall of diagnostics about fields
         an adventure replay has never had.
         """
-        linked = editor.request(
-            "POST",
-            "/api/v1/adventures/adv-1/encounters",
-            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
-            headers={"If-Match": "*"},
-        )
-        assert linked.status == 201, linked.body
+        encounter_id = editor.request(
+            "GET", "/api/v1/adventures/adv-1"
+        ).json()["members"][0]["encounter_id"]
         editor.request(
             "POST",
-            f"/api/v1/encounters/{linked.json()['encounter_id']}/finalize",
+            f"/api/v1/encounters/{encounter_id}/finalize",
             json_body={},
         )
         composed = editor.request(
