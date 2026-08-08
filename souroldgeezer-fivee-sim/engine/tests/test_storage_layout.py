@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -45,6 +46,24 @@ def _complete_run_at(root: Path, run_id: str) -> None:
     (root / "adventures" / f"{run_id}.json").write_text("{}", encoding="utf-8")
 
 
+def _complete_manifest_run_at(root: Path, run_id: str) -> None:
+    for name in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
+        (root / name).mkdir(parents=True, exist_ok=True)
+    (root / "run.json").write_text(
+        json.dumps(
+            {
+                "format": "fivee-sim-run",
+                "format_version": 1,
+                "id": run_id,
+                "created_at": "2026-08-08T00:00:00Z",
+                "adventure_id": None,
+                "request_ids": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_an_adventure_run_layout_is_an_immutable_overlay_workspace(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
     _complete_run(configuration, "adv-7")
@@ -64,6 +83,21 @@ def test_an_adventure_run_layout_is_an_immutable_overlay_workspace(tmp_path: Pat
     assert layout.runtime_dir == configuration.path.parent / "runtime" / "adv-7"
     with pytest.raises(FrozenInstanceError):
         layout.run_id = "adv-8"  # type: ignore[misc]
+
+
+def test_a_published_manifest_run_is_selectable_alongside_the_legacy_adventure_run(
+    tmp_path: Path,
+) -> None:
+    configuration = _configuration(tmp_path)
+    _complete_manifest_run_at(configuration.runs_dir / "run-1", "run-1")
+    _complete_run(configuration, "adv-7")
+
+    manifest_layout = storage_layout(configuration=configuration, run_id="run-1")
+    legacy_layout = storage_layout(configuration=configuration, run_id="adv-7")
+
+    assert manifest_layout.run_root == configuration.runs_dir / "run-1"
+    assert manifest_layout.adventures_dir == configuration.runs_dir / "run-1" / "adventures"
+    assert legacy_layout.run_root == configuration.runs_dir / "adv-7"
 
 
 def test_control_and_legacy_have_separate_rendezvous_and_legacy_roots(tmp_path: Path) -> None:
