@@ -406,6 +406,30 @@ def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
         flags=re.IGNORECASE | re.DOTALL,
     )
 
+    copilot = _packaged_reference(
+        "skills/play/SKILL.md", dispatch, "references/dispatch-copilot.md"
+    )
+    assert "task" in copilot.lower()
+    assert "list_agents" in copilot
+    assert "read_agent" in copilot
+    assert "write_agent" in copilot
+    assert "souroldgeezer-fivee-sim:play-controller" in copilot
+    assert "souroldgeezer-fivee-sim:game-master" in copilot
+    assert "souroldgeezer-fivee-sim:typical-player" in copilot
+    assert "souroldgeezer-fivee-sim:play-mechanics" in copilot
+    assert "souroldgeezer-fivee-sim:adventure-prep" in copilot
+    assert re.search(
+        r"Tool Access Model.{0,500}categorized",
+        copilot,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"Fallback.{0,300}plugin namespace",
+        copilot,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert "800 stable-proxy tokens" in copilot or "800.*token" in copilot
+
 
 def test_play_skill_has_a_bounded_participant_scoped_party_council() -> None:
     skill = _text("skills/play/SKILL.md")

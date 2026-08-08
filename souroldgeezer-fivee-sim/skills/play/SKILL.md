@@ -94,9 +94,16 @@ The packaged [play-controller](../../agents/play-controller.md),
 [game-master](../../agents/game-master.md),
 [typical-player](../../agents/typical-player.md), and
 [play-mechanics](../../agents/play-mechanics.md) files are the shared canonical
-role profiles. Identify the active host and load exactly one dispatch reference:
-[Claude Code](references/dispatch-claude-code.md) or
-[Codex](references/dispatch-codex.md). Never load both.
+role profiles. 
+
+### Host detection
+
+Identify the active host and load exactly one dispatch reference:
+[Claude Code](references/dispatch-claude-code.md),
+[Codex](references/dispatch-codex.md), or
+[Copilot](references/dispatch-copilot.md). Never load more than one.
+
+All three hosts share identical roles and use the same six agent profiles. The dispatch guides only host-specific agent orchestration (scoped tools, `fork_turns`, or categorized task API).
 
 Startup owns deterministic [module preparation](references/module-prep.md),
 including native `fivee-sim-adventure-source` JSON. Only a fallback requirement
