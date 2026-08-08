@@ -248,7 +248,7 @@ def _fivee_adventure_source(tmp_path: Path) -> Path:
             "kind": "section",
             "role": "chapter",
             "title": "Running the adventure",
-            "locator": {"line_start": 7, "line_end": 7},
+            "locator": {"line_start": 0, "line_end": 0},
             "related_ids": ["scene:A"],
             "content": [{"type": "paragraph", "text": "Private GM context."}],
         },
@@ -257,36 +257,45 @@ def _fivee_adventure_source(tmp_path: Path) -> Path:
             "kind": "area",
             "role": "area",
             "title": "The yard",
-            "locator": {"line_start": 9, "line_end": 9},
+            "locator": {"line_start": 0, "line_end": 0},
             "related_ids": ["chapter:running"],
             "content": [{"type": "boxed", "text": "A rain-dark yard."}],
-            "play": {"exits": []},
+            "play": {"light": "none"},
         },
         {
             "id": "reference:handout",
             "kind": "furniture",
             "role": "reference",
             "title": "The slate",
-            "locator": {"line_start": 11, "line_end": 11},
+            "locator": {"line_start": 0, "line_end": 0},
             "related_ids": ["scene:A"],
             "content": {"handout_title": "The slate", "entries": "One, two."},
         },
     ]
-    lines = [
+    header = [
         "{",
         '  "format": "fivee-sim-adventure-source",',
         '  "format_version": 1,',
         '  "title": "Fixture Adventure",',
         '  "slug": "fixture-adventure",',
         '  "entries": [',
-        f"    {json.dumps(entries[0], ensure_ascii=False, separators=(',', ':'))}",
-        "    ,",
-        f"    {json.dumps(entries[1], ensure_ascii=False, separators=(',', ':'))}",
-        "    ,",
-        f"    {json.dumps(entries[2], ensure_ascii=False, separators=(',', ':'))}",
-        "  ]",
-        "}",
     ]
+    cursor = len(header) + 1
+    for entry in entries:
+        rendered = json.dumps(entry, ensure_ascii=False, indent=2).splitlines()
+        entry["locator"] = {
+            "line_start": cursor,
+            "line_end": cursor + len(rendered) - 1,
+        }
+        cursor += len(rendered) + 1
+    lines = list(header)
+    for position, entry in enumerate(entries):
+        lines.extend(
+            f"    {line}" for line in json.dumps(entry, ensure_ascii=False, indent=2).splitlines()
+        )
+        if position < len(entries) - 1:
+            lines.append("    ,")
+    lines.extend(["  ]", "}"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -305,6 +314,7 @@ def test_native_fivee_source_builds_existing_private_index_without_markdown_prep
 
     assert status == "built"
     assert index["source_format"] == "fivee-sim-adventure-source"
+    source_document = json.loads(source.read_text(encoding="utf-8"))
     assert [entry["id"] for entry in index["entries"]] == [
         "chapter:running",
         "scene:A",
@@ -314,9 +324,12 @@ def test_native_fivee_source_builds_existing_private_index_without_markdown_prep
         "id": "scene:A",
         "kind": "scene",
         "title": "The yard",
-        "locator": {"line_start": 9, "line_end": 9},
+        "locator": source_document["entries"][1]["locator"],
         "related_ids": ["chapter:running"],
     }
+    assert index["entries"][0]["locator"]["line_end"] > index["entries"][0]["locator"][
+        "line_start"
+    ]
     assert index["entries"][2]["kind"] == "reference"
     assert helper.INDEXER_VERSION == 2
 
@@ -346,9 +359,16 @@ def test_native_source_locator_must_exactly_cover_its_serialized_entry(
 ) -> None:
     source = _fivee_adventure_source(tmp_path)
     lines = source.read_text(encoding="utf-8").splitlines()
-    first = json.loads(lines[6].strip())
-    first["locator"]["line_end"] = 8
-    lines[6] = f"    {json.dumps(first, ensure_ascii=False, separators=(',', ':'))}"
+    document = json.loads(source.read_text(encoding="utf-8"))
+    first = document["entries"][0]
+    start = first["locator"]["line_start"]
+    end = first["locator"]["line_end"]
+    first["locator"]["line_end"] = end + 1
+    replacement = [
+        f"    {line}" for line in json.dumps(first, ensure_ascii=False, indent=2).splitlines()
+    ]
+    assert len(replacement) == end - start + 1
+    lines[start - 1 : end] = replacement
     source.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     with pytest.raises(helper.PlaySetupError, match="locator.*exact serialized entry"):
