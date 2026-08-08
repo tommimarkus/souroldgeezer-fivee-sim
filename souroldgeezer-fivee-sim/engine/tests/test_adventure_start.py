@@ -262,3 +262,45 @@ def test_start_preserves_saved_map_reference_and_scene_defaults(
     assert opened["encounter"]["seed"] == 7
     assert opened["encounter"]["state"]["movement_rule"] == "5-5-5"
     assert opened["encounter"]["map_source"]["map_id"] == "opening-map"
+
+
+def test_start_assigns_ground_then_stored_level_order(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    control = _storage(tmp_path)
+    monkeypatch.setattr(api.STATE, "storage", control)
+    scene = _scene()
+    scene["combatants"] = [
+        {"name": "Ground placeholder", "team": "party", "ac": 10, "max_hp": 8}
+    ]
+    scene["map"]["features"] = [
+        {"id": "ground", "kind": "spawn", "at": [0, 0], "team": "party"}
+    ]
+    scene["map"]["levels"] = [
+        {
+            "index": 2,
+            "name": "second stored",
+            "tiles": ["...."] * 4,
+            "elevation": {"default": 0, "squares": []},
+            "features": [{"id": "two", "kind": "spawn", "at": [1, 0], "team": "party"}],
+        },
+        {
+            "index": 1,
+            "name": "first stored",
+            "tiles": ["...."] * 4,
+            "elevation": {"default": 0, "squares": []},
+            "features": [{"id": "one", "kind": "spawn", "at": [2, 0], "team": "party"}],
+        },
+    ]
+    scenes.save("ordered", scene, root=control.shared_scenes_dir)
+    party = [
+        {"name": "Ground", "team": "party", "ac": 10, "max_hp": 8},
+        {"name": "Second", "team": "party", "ac": 10, "max_hp": 8},
+        {"name": "First", "team": "party", "ac": 10, "max_hp": 8},
+    ]
+
+    opened = adventures.start("Ordered", {"scene_id": "ordered", "party": party}, state=api.STATE)
+
+    roster = {entry["name"]: (entry["position"], entry["level"])
+              for entry in opened["encounter"]["state"]["combatants"]}
+    assert roster == {"Ground": ([0, 0], 0), "Second": ([5, 0], 2), "First": ([10, 0], 1)}
