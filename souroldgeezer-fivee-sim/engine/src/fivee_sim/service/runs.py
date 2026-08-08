@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -98,7 +99,7 @@ def _run_paths(runs_dir: Path) -> list[Path]:
 
 
 def _existing_request(
-    runs_dir: Path, request_id: str, identity: dict[str, Any]
+    runs_dir: Path, request_id: str, identity: dict[str, Any], operation: str
 ) -> dict[str, Any] | None:
     for path in _run_paths(runs_dir):
         try:
@@ -108,7 +109,7 @@ def _existing_request(
         recorded = document["request_ids"].get(request_id)
         if not isinstance(recorded, dict):
             continue
-        sessions.ensure_idempotency_identity(request_id, recorded, "run.create", identity)
+        sessions.ensure_idempotency_identity(request_id, recorded, operation, identity)
         return _response(document, version)
     return None
 
@@ -124,6 +125,8 @@ def _next_id(runs_dir: Path) -> str:
 def create(
     request_id: str | None = None,
     request_identity: dict[str, Any] | None = None,
+    initializer: Callable[[Path, str], tuple[str, Any]] | None = None,
+    operation: str = "run.create",
     *,
     runs_dir: Path,
 ) -> dict[str, Any]:
@@ -137,44 +140,56 @@ def create(
         runs_dir.mkdir(parents=True, exist_ok=True)
         with durable.file_lock(runs_dir / ".allocation"):
             if request_id is not None:
-                existing = _existing_request(runs_dir, request_id, identity)
+                existing = _existing_request(runs_dir, request_id, identity, operation)
                 if existing is not None:
                     return existing
             run_id = _next_id(runs_dir)
             root = runs_dir / run_id
             staging = Path(tempfile.mkdtemp(prefix=f".{run_id}.stage-", dir=runs_dir))
             try:
-                for name in _WORKSPACE_DIRS:
-                    (staging / name).mkdir()
+                workspace = staging
+                adventure_id = None
+                initialized: Any = None
+                if initializer is None:
+                    for name in _WORKSPACE_DIRS:
+                        (staging / name).mkdir()
+                else:
+                    adventure_id, initialized = initializer(staging, run_id)
+                    workspace = staging / adventure_id
                 document: dict[str, Any] = {
                     "format": FORMAT,
                     "format_version": FORMAT_VERSION,
                     "id": run_id,
                     "created_at": sessions.utc_now(),
-                    "adventure_id": None,
+                    "adventure_id": adventure_id,
                     "request_ids": (
                         {}
                         if request_id is None
                         else {
                             request_id: {
-                                "operation": "run.create",
+                                "operation": operation,
                                 "idempotency_fingerprint": sessions.idempotency_fingerprint(
-                                    "run.create", identity
+                                    operation, identity
                                 ),
                             }
                         }
                     ),
                 }
                 text = _render(document)
-                durable.atomic_write(staging / MANIFEST, text)
-                os.replace(staging, root)
+                durable.atomic_write(workspace / MANIFEST, text)
+                os.replace(workspace, root)
+                if workspace != staging:
+                    shutil.rmtree(staging, ignore_errors=True)
                 durable.fsync_directory(runs_dir)
             except BaseException:
                 shutil.rmtree(staging, ignore_errors=True)
                 raise
     except OSError as error:
         raise RequestError(f"cannot create a run under {runs_dir}: {error}") from error
-    return _response(document, _version(text))
+    result = _response(document, _version(text))
+    if initializer is not None:
+        result["initialized"] = initialized
+    return result
 
 
 def list_runs(*, runs_dir: Path) -> dict[str, list[dict[str, Any]]]:

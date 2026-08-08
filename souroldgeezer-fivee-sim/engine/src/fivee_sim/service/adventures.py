@@ -65,9 +65,10 @@ from pathlib import Path
 from typing import Any
 
 from .. import __version__
+from ..kernel.grid import square_center
 from ..model.encounter import EncounterMode
-from ..paths import adventures_root
-from . import durable, encounters, sessions
+from ..paths import StorageLayout, adventures_root
+from . import durable, encounters, runs, scenes, sessions
 from . import encounter_journal as journal_service
 from . import replay as replay_service
 from .common import canonical_json, sha256_of, slugify
@@ -87,6 +88,7 @@ __all__ = [
     "carry_forward",
     "compose_replay",
     "create",
+    "start",
     "finalize",
     "link_encounter",
     "list_adventures",
@@ -470,6 +472,140 @@ def create(
                 f"cannot allocate an adventure run under {storage.runs_dir}: {error}"
             ) from error
     return _create_new(titled, request_id, state)
+
+
+def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
+          *, state: EngineState) -> dict[str, Any]:
+    """Atomically publish a run, adventure document, and chapter-zero fight."""
+    if state.storage is None or state.storage.run_id is not None:
+        raise RequestError("adventure.start allocates a new run; omit --run for this operation")
+    titled = name.strip()
+    scene_id, party = opening.get("scene_id"), opening.get("party")
+    if not titled:
+        raise RequestError("adventure name must not be blank")
+    if not isinstance(scene_id, str) or not isinstance(party, list):
+        raise RequestError("opening requires scene_id and party")
+    identity = {"name": titled, "opening": deepcopy(dict(opening))}
+
+    def initialize(stage: Path, _run_id: str) -> tuple[str, Any]:
+        adventure_id = _next_free_id(state)
+        workspace = stage / adventure_id
+        for part in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
+            (workspace / part).mkdir(parents=True, exist_ok=True)
+        prior = state.storage
+        state.storage = StorageLayout(
+            run_id=adventure_id, runs_dir=stage, runtime_dir=prior.runtime_dir,
+            shared_map_paths=prior.shared_map_paths, shared_replay_paths=prior.shared_replay_paths,
+            shared_scenes_dir=prior.shared_scenes_dir,
+            legacy_encounters_dir=prior.legacy_encounters_dir,
+            legacy_adventures_dir=prior.legacy_adventures_dir,
+            legacy_blobs_dir=prior.legacy_blobs_dir,
+        )
+        created: dict[str, Any] | None = None
+        try:
+            scene = scenes.load(scene_id, root=prior.shared_scenes_dir)["document"]
+            roster, map_spec, map_id = _opening_roster(state, scene, party)
+            created = encounters.create(
+                state, roster, opening.get("seed", scene.get("seed")),
+                str(scene.get("movement_rule", "5-5-5")), map_spec, map_id, request_id,
+                mode=str(scene.get("mode", EncounterMode.COMBAT.value)),
+            )
+            member = {"index": 0, "encounter_id": str(created["encounter_id"]),
+                      "linked_at": sessions.utc_now(), "carried": [],
+                      "mode": str(created["state"]["mode"])}
+            document: dict[str, Any] = {
+                "format": FORMAT, "format_version": FORMAT_VERSION, "id": adventure_id,
+                "name": titled, "created_at": sessions.utc_now(), "status": "active",
+                "members": [member], "request_ids": {},
+            }
+            if request_id is not None:
+                document["request_ids"][request_id] = {
+                    "operation": "adventure.start",
+                    "idempotency_fingerprint": sessions.idempotency_fingerprint(
+                        "adventure.start", identity), **member,
+                }
+            version = _write(adventure_id, document, expected=_ABSENT, state=state)
+            return adventure_id, {"adventure": document, "version": version, "encounter": created}
+        except BaseException:
+            if created is not None:
+                state.sessions.pop(str(created["encounter_id"]), None)
+            raise
+        finally:
+            state.storage = prior
+
+    published = runs.create(request_id, identity, initialize, "adventure.start",
+                            runs_dir=state.storage.runs_dir)
+    bound = str(published["adventure_id"])
+    data = published.get("initialized")
+    if not isinstance(data, Mapping):
+        path = state.storage.runs_dir / str(published["id"]) / "adventures" / f"{bound}.json"
+        text = path.read_text(encoding="utf-8")
+        document = _parsed(text, path)
+        temporary = state.storage
+        state.storage = StorageLayout(
+            run_id=bound, runs_dir=path.parent.parent.parent, runtime_dir=temporary.runtime_dir,
+            shared_map_paths=temporary.shared_map_paths,
+            shared_replay_paths=temporary.shared_replay_paths,
+            shared_scenes_dir=temporary.shared_scenes_dir,
+            legacy_encounters_dir=temporary.legacy_encounters_dir,
+            legacy_adventures_dir=temporary.legacy_adventures_dir,
+            legacy_blobs_dir=temporary.legacy_blobs_dir,
+        )
+        try:
+            encounter_id = str(document["members"][0]["encounter_id"])
+            created = encounters.creation_response(
+                state, encounter_id, sessions.session_for(state, encounter_id))
+        finally:
+            state.storage = temporary
+        data = {"adventure": document, "version": sha256_of(text), "encounter": created}
+    member = data["adventure"]["members"][0]
+    return {"run_id": published["id"], "adventure_id": bound,
+            "encounter_id": member["encounter_id"], "chapter_index": 0,
+            "run": {key: value for key, value in published.items() if key != "initialized"},
+            "adventure": deepcopy(data["adventure"]), "version": data["version"],
+            "encounter": data["encounter"]}
+
+
+def _opening_roster(state: EngineState, scene: Mapping[str, Any], party: list[Any]
+                    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None, str | None]:
+    map_spec, map_id = scene.get("map"), scene.get("map_id")
+    if map_spec is None and map_id is None:
+        raise RequestError("opening scene requires a map")
+    if map_spec is not None and map_id is not None:
+        raise RequestError("opening scene names both map and map_id")
+    checked = []
+    for member in party:
+        if not isinstance(member, Mapping) or member.get("team") != "party":
+            raise RequestError("every opening party member must have team 'party'")
+        checked.append(deepcopy(dict(member)))
+    resolved = sessions.resolve_battle_map(
+        state, map_spec if isinstance(map_spec, dict) else None,
+        map_id if isinstance(map_id, str) else None)
+    if resolved is None:
+        raise RequestError("opening scene requires a map")
+    planes = [(resolved.document.features, 0)] + [
+        (level.features, level.index) for level in resolved.document.levels.values()
+        if level.index != 0]
+    hints, seen = [], set()
+    for features, level in planes:
+        for feature in features:
+            if feature.kind == "spawn" and feature.team == "party":
+                hint = (feature.at, level)
+                if hint in seen:
+                    raise RequestError("opening map has duplicate party spawn positions")
+                seen.add(hint)
+                hints.append(hint)
+    cast = [deepcopy(dict(entry)) for entry in scene.get("combatants", [])
+            if isinstance(entry, Mapping) and entry.get("team") != "party"]
+    occupied = {(tuple(entry["position"]), int(entry.get("level", 0))) for entry in cast
+                if isinstance(entry.get("position"), list)}
+    free = [hint for hint in hints if (tuple(square_center(hint[0])), hint[1]) not in occupied]
+    if len(free) < len(checked):
+        raise RequestError("opening map has insufficient free party spawn positions")
+    for member, (position, level) in zip(checked, free, strict=False):
+        member["position"], member["level"] = list(square_center(position)), level
+    inline = deepcopy(map_spec) if isinstance(map_spec, Mapping) else None
+    return [*checked, *cast], inline, map_id if isinstance(map_id, str) else None
 
 
 def _create_new(
