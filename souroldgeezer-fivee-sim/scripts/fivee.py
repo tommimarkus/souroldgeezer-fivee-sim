@@ -86,11 +86,29 @@ def resolve_plugin_data(env: dict[str, str]) -> Path | None:
     """Durable host storage for this plugin, or None for a plain checkout.
 
     A variable exported empty is *unset*, not the filesystem root.
+
+    Precedence (first match wins):
+    1. PLUGIN_DATA — generic, host-agnostic variable (wins unconditionally)
+    2. COPILOT_PLUGIN_DATA — Copilot-specific variable
+    3. CLAUDE_PLUGIN_DATA — Claude-specific variable (compatibility alias)
+    4. CODEX_HOME — Codex fallback (derives path from CODEX_HOME)
     """
-    for name in ("PLUGIN_DATA", "CLAUDE_PLUGIN_DATA"):
-        value = env.get(name, "").strip()
-        if value:
-            return Path(value).expanduser()
+    # 1. Generic PLUGIN_DATA wins unconditionally
+    value = env.get("PLUGIN_DATA", "").strip()
+    if value:
+        return Path(value).expanduser()
+
+    # 2. Copilot-specific variable
+    value = env.get("COPILOT_PLUGIN_DATA", "").strip()
+    if value:
+        return Path(value).expanduser()
+
+    # 3. Claude-specific variable (compatibility alias)
+    value = env.get("CLAUDE_PLUGIN_DATA", "").strip()
+    if value:
+        return Path(value).expanduser()
+
+    # 4. Codex fallback
     codex_home = env.get("CODEX_HOME", "").strip()
     if codex_home:
         return Path(codex_home).expanduser() / "plugins" / "data" / CODEX_PLUGIN_SLUG
