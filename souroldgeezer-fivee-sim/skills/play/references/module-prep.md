@@ -4,12 +4,18 @@
 whose source SHA-256 matches. Otherwise reuse the cache keyed by source SHA-256
 and indexer version, or index structured Markdown deterministically from
 ATX/Setext headings, explicit Chapter/Scene/Encounter prefixes, hierarchy, and
-resolvable local links. Ordinary play is structural only and never performs gap
-or omission analysis.
+resolvable local links. A `fivee-sim-adventure-source` JSON document at format
+version 1 is a second deterministic source: the helper validates its unique IDs,
+relationships, source-ordered exact line locators, content payloads, and
+optional play facts, then adapts its structural fields to module-index v1.
+Arbitrary JSON still needs fallback preparation, and a recognized unsupported
+version is refused. Ordinary play is structural only and never performs gap or
+omission analysis.
 
 PDF, unstructured text, unresolved structure, or ambiguous locators require the
 fallback `adventure-prep` role. In playtest, prefer a matching semantic
-inventory; otherwise retain one full semantic inventory pass for scenes,
+inventory; native source JSON is not a substitute for that inventory. Otherwise
+retain one full semantic inventory pass for scenes,
 encounters, NPCs, treasure, stated DCs, assumed route, and omissions.
 
 ## Stable module-index v1

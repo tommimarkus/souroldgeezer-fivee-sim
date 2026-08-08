@@ -88,8 +88,9 @@ role profiles. Identify the active host and load exactly one dispatch reference:
 [Claude Code](references/dispatch-claude-code.md) or
 [Codex](references/dispatch-codex.md). Never load both.
 
-Startup owns deterministic [module preparation](references/module-prep.md).
-Only a fallback requirement spawns `adventure-prep`, which writes private
+Startup owns deterministic [module preparation](references/module-prep.md),
+including native `fivee-sim-adventure-source` JSON. Only a fallback requirement
+spawns `adventure-prep`, which writes private
 partials for helper validation/publication. Finish setup before granting the
 interval write lease.
 

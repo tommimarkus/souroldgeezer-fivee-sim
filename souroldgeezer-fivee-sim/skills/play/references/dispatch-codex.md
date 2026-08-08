@@ -1,7 +1,7 @@
 # Codex dispatch
 
-Load only on Codex. The common prepared Markdown path uses
-`scripts/fivee-play.py` and no `adventure-prep` model. If setup requests
+Load only on Codex. Prepared Markdown and native JSON use
+`scripts/fivee-play.py` with no `adventure-prep` model. If setup requests
 fallback, spawn one child with `fork_turns="none"`; it reads
 `../../agents/adventure-prep.md`, receives only source/digest/mode/staging, and
 no player or seat private memory.

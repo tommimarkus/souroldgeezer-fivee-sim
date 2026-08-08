@@ -21,12 +21,14 @@ play-artifact directory. It atomically publishes roster v2, checkpoint,
 transcript, council, cursor, module index, party projections, and seat memories.
 Its compact stdout contains metadata only.
 
-Prepared Markdown uses deterministic indexing or a cache keyed by source
-SHA-256 and indexer version, so the common prepared Markdown path spawns no
-`adventure-prep` model. A matching prepared index is accepted first. PDF,
+Prepared Markdown and Forge-produced `fivee-sim-adventure-source` JSON use
+deterministic indexing, so both common paths spawn no `adventure-prep` model.
+The JSON is validated and adapted to the same private index. Other JSON falls
+back; a recognized unsupported version is refused. A matching prepared index or
+digest-and-indexer-version cache is accepted first. PDF,
 unstructured Markdown, unresolved links, or ambiguous locators return a prep
 requirement. Playtest similarly accepts a matching semantic inventory; without
-one it retains one semantic prep pass.
+one it retains one semantic prep pass, including for native JSON.
 
 For fallback, give `adventure-prep` only the source, mode, digest, and a private
 `.fivee-sim/prep/<id>/` prep-staging directory. It writes `.partial` files and

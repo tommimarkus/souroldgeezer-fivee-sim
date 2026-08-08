@@ -24,9 +24,11 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-INDEXER_VERSION = 1
+INDEXER_VERSION = 2
 ROSTER_VERSION = 2
 MANIFEST_VERSION = 1
+ADVENTURE_SOURCE_FORMAT = "fivee-sim-adventure-source"
+ADVENTURE_SOURCE_VERSION = 1
 _HEX_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 _ATX_HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$")
 _SETEXT = re.compile(r"^[ \t]*(=+|-+)[ \t]*$")
@@ -292,6 +294,157 @@ def index_markdown(path: Path) -> dict[str, Any]:
     }
 
 
+def _recognized_adventure_source(path: Path) -> dict[str, Any] | None:
+    """Return the native Forge document, without claiming arbitrary JSON."""
+    if path.suffix.casefold() != ".json":
+        return None
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(document, dict) or document.get("format") != ADVENTURE_SOURCE_FORMAT:
+        return None
+    version = document.get("format_version")
+    if type(version) is not int or version != ADVENTURE_SOURCE_VERSION:
+        raise PlaySetupError(
+            f"unsupported {ADVENTURE_SOURCE_FORMAT} format_version {version!r}"
+        )
+    return document
+
+
+def index_adventure_source(path: Path, document: dict[str, Any]) -> dict[str, Any]:
+    """Validate a native Forge source and adapt it to private module-index v1."""
+    source = path.resolve()
+    for field in ("title", "slug"):
+        value = document.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise PlaySetupError(f"adventure source {field} must be a non-blank string")
+    entries = document.get("entries")
+    if not isinstance(entries, list) or not entries:
+        raise PlaySetupError("adventure source entries must be a non-empty list")
+    try:
+        lines = source.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError) as error:
+        raise PlaySetupError(f"adventure source is not readable UTF-8: {error}") from error
+
+    adapted: list[dict[str, Any]] = []
+    ids: set[str] = set()
+    previous_end: int | None = None
+    for position, entry in enumerate(entries, start=1):
+        if not isinstance(entry, dict):
+            raise PlaySetupError(f"adventure source entry {position} must be an object")
+        entry_id = entry.get("id")
+        if not isinstance(entry_id, str) or not entry_id.strip():
+            raise PlaySetupError(f"adventure source entry {position} needs an id")
+        if entry_id in ids:
+            raise PlaySetupError(f"adventure source contains duplicate id {entry_id!r}")
+        ids.add(entry_id)
+        for field in ("kind", "role", "title"):
+            value = entry.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise PlaySetupError(f"adventure source entry {entry_id!r} needs a {field}")
+        kind_role = {
+            ("section", "chapter"): ("chapter:", "scene"),
+            ("area", "area"): ("scene:", "scene"),
+            ("furniture", "reference"): ("reference:", "reference"),
+        }.get((entry["kind"], entry["role"]))
+        if kind_role is None or not entry_id.startswith(kind_role[0]):
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} has an invalid kind/role/id combination"
+            )
+        related = entry.get("related_ids")
+        if not isinstance(related, list) or not all(isinstance(value, str) for value in related):
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} related_ids must be strings"
+            )
+        if len(related) != len(set(related)):
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} contains duplicate related_ids"
+            )
+        content = entry.get("content")
+        if entry["role"] == "reference":
+            if not isinstance(content, dict) or not content:
+                raise PlaySetupError(
+                    f"adventure source reference {entry_id!r} content must be an object"
+                )
+        else:
+            if not isinstance(content, list) or not all(
+                isinstance(block, dict) for block in content
+            ):
+                raise PlaySetupError(
+                    f"adventure source entry {entry_id!r} content must be an ordered list "
+                    "of objects"
+                )
+            if not all(
+                isinstance(block.get("type"), str) and bool(block["type"].strip())
+                for block in content
+            ):
+                raise PlaySetupError(
+                    f"adventure source entry {entry_id!r} content blocks need a source type"
+                )
+        if "play" in entry and not isinstance(entry["play"], dict):
+            raise PlaySetupError(f"adventure source entry {entry_id!r} play must be an object")
+
+        locator = entry.get("locator")
+        if not isinstance(locator, dict) or set(locator) != {"line_start", "line_end"}:
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} needs a line_start/line_end locator"
+            )
+        start = locator["line_start"]
+        end = locator["line_end"]
+        if (
+            type(start) is not int
+            or type(end) is not int
+            or start < 1
+            or end < start
+            or end > len(lines)
+        ):
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} has an invalid line locator"
+            )
+        if previous_end is not None:
+            if start != previous_end + 2 or lines[previous_end].strip() != ",":
+                raise PlaySetupError(
+                    "adventure source entry locators need one comma-only separator line"
+                )
+        previous_end = end
+        serialized = "\n".join(lines[start - 1 : end])
+        try:
+            located = json.loads(serialized)
+        except json.JSONDecodeError as error:
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} locator must cover its exact serialized entry"
+            ) from error
+        if located != entry:
+            raise PlaySetupError(
+                f"adventure source entry {entry_id!r} locator must cover its exact serialized entry"
+            )
+        adapted.append(
+            {
+                "id": entry_id,
+                "kind": kind_role[1],
+                "title": entry["title"],
+                "locator": copy.deepcopy(locator),
+                "related_ids": copy.deepcopy(related),
+            }
+        )
+
+    for entry in entries:
+        for related_id in entry["related_ids"]:
+            if related_id not in ids:
+                raise PlaySetupError(
+                    f"adventure source entry {entry['id']!r} references unknown related id "
+                    f"{related_id!r}"
+                )
+    return {
+        "schema_version": 1,
+        "source_path": str(source),
+        "source_sha256": sha256_file(source),
+        "source_format": ADVENTURE_SOURCE_FORMAT,
+        "entries": adapted,
+    }
+
+
 def validate_module_index(document: dict[str, Any], source: Path) -> None:
     if document.get("schema_version") != 1:
         raise PlaySetupError("module index schema_version must be 1")
@@ -347,6 +500,10 @@ def validate_module_index(document: dict[str, Any], source: Path) -> None:
 def load_or_build_index(source: Path, cache_dir: Path) -> tuple[dict[str, Any], str]:
     digest = sha256_file(source.resolve())
     cache_path = cache_dir / f"{digest}-v{INDEXER_VERSION}.json"
+    native_document = _recognized_adventure_source(source.resolve())
+    native_index = (
+        index_adventure_source(source, native_document) if native_document is not None else None
+    )
     if cache_path.is_file():
         cached = _json_object(cache_path, "module index cache")
         try:
@@ -354,8 +511,9 @@ def load_or_build_index(source: Path, cache_dir: Path) -> tuple[dict[str, Any], 
         except PlaySetupError:
             pass
         else:
-            return cached, "cached"
-    built = index_markdown(source)
+            if native_index is None or cached == native_index:
+                return cached, "cached"
+    built = native_index if native_index is not None else index_markdown(source)
     validate_module_index(built, source)
     _atomic_write_json(cache_path, built)
     return built, "built"

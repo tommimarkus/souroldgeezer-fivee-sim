@@ -240,6 +240,148 @@ def test_index_cache_keys_source_digest_and_indexer_version(
     assert len(list(cache.glob("*.json"))) == 2
 
 
+def _fivee_adventure_source(tmp_path: Path) -> Path:
+    path = tmp_path / "adventure-source.json"
+    entries = [
+        {
+            "id": "chapter:running",
+            "kind": "section",
+            "role": "chapter",
+            "title": "Running the adventure",
+            "locator": {"line_start": 7, "line_end": 7},
+            "related_ids": ["scene:A"],
+            "content": [{"type": "paragraph", "text": "Private GM context."}],
+        },
+        {
+            "id": "scene:A",
+            "kind": "area",
+            "role": "area",
+            "title": "The yard",
+            "locator": {"line_start": 9, "line_end": 9},
+            "related_ids": ["chapter:running"],
+            "content": [{"type": "boxed", "text": "A rain-dark yard."}],
+            "play": {"exits": []},
+        },
+        {
+            "id": "reference:handout",
+            "kind": "furniture",
+            "role": "reference",
+            "title": "The slate",
+            "locator": {"line_start": 11, "line_end": 11},
+            "related_ids": ["scene:A"],
+            "content": {"handout_title": "The slate", "entries": "One, two."},
+        },
+    ]
+    lines = [
+        "{",
+        '  "format": "fivee-sim-adventure-source",',
+        '  "format_version": 1,',
+        '  "title": "Fixture Adventure",',
+        '  "slug": "fixture-adventure",',
+        '  "entries": [',
+        f"    {json.dumps(entries[0], ensure_ascii=False, separators=(',', ':'))}",
+        "    ,",
+        f"    {json.dumps(entries[1], ensure_ascii=False, separators=(',', ':'))}",
+        "    ,",
+        f"    {json.dumps(entries[2], ensure_ascii=False, separators=(',', ':'))}",
+        "  ]",
+        "}",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def test_native_fivee_source_builds_existing_private_index_without_markdown_prep(
+    helper: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = _fivee_adventure_source(tmp_path)
+    monkeypatch.setattr(
+        helper,
+        "index_markdown",
+        lambda path: (_ for _ in ()).throw(AssertionError(f"prep path called for {path}")),
+    )
+
+    index, status = helper.load_or_build_index(source, tmp_path / "cache")
+
+    assert status == "built"
+    assert index["source_format"] == "fivee-sim-adventure-source"
+    assert [entry["id"] for entry in index["entries"]] == [
+        "chapter:running",
+        "scene:A",
+        "reference:handout",
+    ]
+    assert index["entries"][1] == {
+        "id": "scene:A",
+        "kind": "scene",
+        "title": "The yard",
+        "locator": {"line_start": 9, "line_end": 9},
+        "related_ids": ["chapter:running"],
+    }
+    assert index["entries"][2]["kind"] == "reference"
+    assert helper.INDEXER_VERSION == 2
+
+
+def test_arbitrary_json_retains_prep_fallback(helper: ModuleType, tmp_path: Path) -> None:
+    source = tmp_path / "arbitrary.json"
+    source.write_text('{"chapters": []}\n', encoding="utf-8")
+
+    with pytest.raises(helper.PrepRequired, match="structured Markdown only"):
+        helper.load_or_build_index(source, tmp_path / "cache")
+
+
+def test_recognized_native_source_refuses_unsupported_version(
+    helper: ModuleType, tmp_path: Path
+) -> None:
+    source = _fivee_adventure_source(tmp_path)
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    payload["format_version"] = 2
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(helper.PlaySetupError, match="unsupported.*format_version 2"):
+        helper.load_or_build_index(source, tmp_path / "cache")
+
+
+def test_native_source_locator_must_exactly_cover_its_serialized_entry(
+    helper: ModuleType, tmp_path: Path
+) -> None:
+    source = _fivee_adventure_source(tmp_path)
+    lines = source.read_text(encoding="utf-8").splitlines()
+    first = json.loads(lines[6].strip())
+    first["locator"]["line_end"] = 8
+    lines[6] = f"    {json.dumps(first, ensure_ascii=False, separators=(',', ':'))}"
+    source.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(helper.PlaySetupError, match="locator.*exact serialized entry"):
+        helper.load_or_build_index(source, tmp_path / "cache")
+
+
+def test_native_source_does_not_bypass_playtest_semantic_inventory_gate(
+    helper: ModuleType, tmp_path: Path
+) -> None:
+    source = _fivee_adventure_source(tmp_path)
+    runner = FakeRunner()
+
+    with pytest.raises(helper.PrepRequired, match="matching semantic inventory"):
+        helper.init_play(
+            config_path=_project_config(tmp_path),
+            adventure_path=source,
+            mode="playtest",
+            seed=42,
+            gm_kind="agent",
+            seat_kinds={},
+            party_file=_party_file(tmp_path),
+            party_id="small",
+            selected_names=None,
+            prepared_index=None,
+            playtest_inventory=None,
+            opening_scene=None,
+            runner=runner,
+            jq_path=Path("/usr/bin/jq"),
+        )
+
+    assert runner.calls == []
+
+
 def test_publish_prep_validates_manifest_and_is_idempotent(
     helper: ModuleType, tmp_path: Path
 ) -> None:

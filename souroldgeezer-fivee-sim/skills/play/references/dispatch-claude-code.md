@@ -1,7 +1,7 @@
 # Claude Code dispatch
 
-Load only on Claude Code. Prepared Markdown setup uses `fivee-play.py` and no
-`adventure-prep` model. On a helper fallback only, spawn the named agent
+Load only on Claude Code. Prepared Markdown and native JSON use `fivee-play.py`
+with no `adventure-prep` model. On a helper fallback only, spawn the named agent
 `adventure-prep` with source/digest/mode/private staging and never player or
 seat private memory.
 
