@@ -81,13 +81,11 @@ __all__ = [
     "FORMAT",
     "FORMAT_VERSION",
     "LIST_STATUSES",
-    "NoCurrentChapterError",
     "RECOVERY_NOTE_MAX",
     "adventure_path",
     "brief_for",
     "carry_forward",
     "compose_replay",
-    "create",
     "start",
     "finalize",
     "link_encounter",
@@ -133,9 +131,6 @@ _SAFE_ID = re.compile(r"^adv-[A-Za-z0-9_-]+$")
 #: it is what makes id allocation safe against a second process.
 _ABSENT = ""
 
-
-class NoCurrentChapterError(RequestError):
-    """The adventure exists, but has no chapter a live view can follow."""
 
 #: The fields a combatant carries **out of the fight it just finished** and into
 #: the next one: everything a turn can change and a spec can state.
@@ -239,22 +234,12 @@ def adventure_path(adventure_id: str, state: EngineState | None = None) -> Path:
         raise NotFoundError(f"no adventure {adventure_id!r}")
     if state is not None and state.storage is not None:
         selected = state.storage.run_id
-        if selected is not None and selected != "legacy":
-            if selected.startswith("run-"):
-                manifest = runs.state_of(selected, runs_dir=state.storage.runs_dir)
-                if manifest["adventure_id"] != adventure_id:
-                    raise NotFoundError(
-                        f"no adventure {adventure_id!r} in run {selected!r}"
-                    )
-            elif selected != adventure_id:
+        if selected is None:
+            raise NotFoundError("select a run before addressing an adventure")
+        if selected != "legacy":
+            manifest = runs.state_of(selected, runs_dir=state.storage.runs_dir)
+            if manifest["adventure_id"] != adventure_id:
                 raise NotFoundError(f"no adventure {adventure_id!r} in run {selected!r}")
-    if state is not None and state.storage is not None and state.storage.run_id is None:
-        return (
-            state.storage.runs_dir
-            / adventure_id
-            / "adventures"
-            / f"{adventure_id}.json"
-        )
     return _adventures_dir(state) / f"{adventure_id}.json"
 
 
@@ -277,12 +262,7 @@ def _files(state: EngineState | None = None) -> list[Path]:
     the two kinds are no longer in reach of one listing.
     """
     if state is not None and state.storage is not None and state.storage.run_id is None:
-        return sorted(
-            path
-            for path in state.storage.runs_dir.glob("adv-*/adventures/adv-*.json")
-            if _SAFE_ID.fullmatch(path.stem) is not None
-            and path.parent.parent.name == path.stem
-        )
+        return []
     root = _adventures_dir(state)
     if not root.is_dir():
         return []
@@ -350,6 +330,12 @@ def _parsed(text: str, path: Path) -> dict[str, Any]:
             raise RequestError(f"{path} has no {key!r}")
     if not isinstance(payload.get("members"), list):
         raise RequestError(f"{path} has no 'members'")
+    if (
+        not payload["members"]
+        or not isinstance(payload["members"][0], dict)
+        or payload["members"][0].get("index") != 0
+    ):
+        raise RequestError(f"{path} has no chapter-zero member")
     if not isinstance(payload.get("request_ids"), dict):
         raise RequestError(f"{path} has no 'request_ids'")
     # Every member records which kind of chapter it is, and one written before
@@ -442,43 +428,6 @@ def _response(document: Mapping[str, Any], version: str) -> dict[str, Any]:
 
 
 # --- operations --------------------------------------------------------------
-def create(
-    name: str,
-    request_id: str | None = None,
-    *,
-    state: EngineState | None = None,
-) -> dict[str, Any]:
-    """Start an adventure: a named, empty, ordered run of encounters."""
-    titled = name.strip()
-    if not titled:
-        raise RequestError("adventure name must not be blank")
-    storage = None if state is None else state.storage
-    if storage is not None and storage.run_id is not None:
-        if storage.run_id == "legacy":
-            raise RequestError("adventure.create cannot write: legacy storage is read-only")
-        raise RequestError(
-            "adventure.create allocates a new run; omit --run for this operation"
-        )
-    if request_id is not None:
-        existing = _by_request_id(request_id, {"name": titled}, state)
-        if existing is not None:
-            return existing
-    if storage is not None:
-        try:
-            storage.runs_dir.mkdir(parents=True, exist_ok=True)
-            with durable.file_lock(storage.runs_dir / ".allocation"):
-                if request_id is not None:
-                    existing = _by_request_id(request_id, {"name": titled}, state)
-                    if existing is not None:
-                        return existing
-                return _create_new(titled, request_id, state)
-        except OSError as error:
-            raise RequestError(
-                f"cannot allocate an adventure run under {storage.runs_dir}: {error}"
-            ) from error
-    return _create_new(titled, request_id, state)
-
-
 def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
           *, state: EngineState) -> dict[str, Any]:
     """Atomically publish a run, adventure document, and chapter-zero fight."""
@@ -494,12 +443,11 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
 
     def initialize(stage: Path, _run_id: str) -> tuple[str, Any]:
         adventure_id = _next_free_id(state)
-        workspace = stage / adventure_id
         for part in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
-            (workspace / part).mkdir(parents=True, exist_ok=True)
+            (stage / part).mkdir(parents=True, exist_ok=True)
         prior = state.storage
         state.storage = StorageLayout(
-            run_id=adventure_id, runs_dir=stage, runtime_dir=prior.runtime_dir,
+            run_id=stage.name, runs_dir=stage.parent, runtime_dir=prior.runtime_dir,
             shared_map_paths=prior.shared_map_paths, shared_replay_paths=prior.shared_replay_paths,
             shared_scenes_dir=prior.shared_scenes_dir,
             legacy_encounters_dir=prior.legacy_encounters_dir,
@@ -529,7 +477,16 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
                     "idempotency_fingerprint": sessions.idempotency_fingerprint(
                         "adventure.start", identity), **member,
                 }
-            version = _write(adventure_id, document, expected=_ABSENT, state=state)
+            path = stage / "adventures" / f"{adventure_id}.json"
+            rendered = _render(document)
+            durable.guarded_write(
+                path,
+                lambda: rendered,
+                expected=_ABSENT,
+                current=lambda: _current_version(path),
+                subject=f"the adventure {adventure_id!r}",
+            )
+            version = sha256_of(rendered)
             return adventure_id, {"adventure": document, "version": version, "encounter": created}
         except BaseException:
             if created is not None:
@@ -617,139 +574,18 @@ def _opening_roster(state: EngineState, scene: Mapping[str, Any], party: list[An
     return [*checked, *cast], inline, map_id if isinstance(map_id, str) else None
 
 
-def _create_new(
-    titled: str, request_id: str | None, state: EngineState | None
-) -> dict[str, Any]:
-    """Allocate and initialize one run while the allocation lock is held."""
-    # Allocate by trying: the id is only free until somebody else takes it, and
-    # a write guarded on "nothing is there" is what turns that race into a retry
-    # instead of an overwrite. The bound is a defect guard, not a policy.
-    for _attempt in range(64):
-        adventure_id, run_root = _allocate_id(state)
-        document: dict[str, Any] = {
-            "format": FORMAT,
-            "format_version": FORMAT_VERSION,
-            "id": adventure_id,
-            "name": titled,
-            "created_at": sessions.utc_now(),
-            "status": "active",
-            "members": [],
-            "request_ids": (
-                {} if request_id is None else {
-                    request_id: {
-                        "operation": "adventure.create",
-                        "idempotency_fingerprint": sessions.idempotency_fingerprint(
-                            "adventure.create", {"name": titled}
-                        ),
-                    }
-                }
-            ),
-        }
-        try:
-            if run_root is None:
-                version = _write(adventure_id, document, expected=_ABSENT, state=state)
-            else:
-                for name_part in (
-                    "maps", "scenes", "replays", "encounters", "adventures", "blobs"
-                ):
-                    (run_root / name_part).mkdir()
-                path = run_root / "adventures" / f"{adventure_id}.json"
-                rendered = _render(document)
-
-                def render_run_document(value: str = rendered) -> str:
-                    return value
-
-                def current_run_version(target: Path = path) -> str:
-                    return _current_version(target)
-
-                durable.guarded_write(
-                    path,
-                    render_run_document,
-                    expected=_ABSENT,
-                    current=current_run_version,
-                    subject=f"the adventure {adventure_id!r}",
-                )
-                version = sha256_of(rendered)
-        except durable.StaleWriteError:
-            continue
-        except OSError as error:
-            raise RequestError(
-                f"could not initialize adventure run {adventure_id!r}: {error}"
-            ) from error
-        return _response(document, version)
-    raise RequestError("could not allocate an adventure id; too many exist here")
-
-
 def _next_free_id(state: EngineState | None = None) -> str:
     used = {path.stem for path in _files(state)}
     if state is not None and state.storage is not None:
-        used.update(path.name for path in state.storage.runs_dir.glob("adv-*") if path.is_dir())
-        legacy = state.storage.legacy_adventures_dir
-        if legacy.is_dir():
-            used.update(
-                path.stem for path in legacy.glob("adv-*.json")
-                if _SAFE_ID.fullmatch(path.stem) is not None
-            )
+        used.update(
+            str(entry["adventure_id"])
+            for entry in runs.list_runs(runs_dir=state.storage.runs_dir)["runs"]
+            if entry["adventure_id"] is not None
+        )
     index = 1
     while f"adv-{index}" in used:
         index += 1
     return f"adv-{index}"
-
-
-def _allocate_id(state: EngineState | None) -> tuple[str, Path | None]:
-    """Claim a run directory, or retain the legacy document claim for tests."""
-    if state is None or state.storage is None:
-        return _next_free_id(state), None
-    runs = state.storage.runs_dir
-    try:
-        runs.mkdir(parents=True, exist_ok=True)
-    except OSError as error:
-        raise RequestError(f"cannot create adventure runs root {runs}: {error}") from error
-    for _attempt in range(10_000):
-        adventure_id = _next_free_id(state)
-        root = runs / adventure_id
-        try:
-            root.mkdir()
-        except FileExistsError:
-            continue
-        except OSError as error:
-            raise RequestError(f"cannot allocate adventure run {root}: {error}") from error
-        return adventure_id, root
-    raise RequestError("could not allocate an adventure id; too many exist here")
-
-
-def _by_request_id(
-    request_id: str,
-    arguments: Mapping[str, Any],
-    state: EngineState | None = None,
-) -> dict[str, Any] | None:
-    """The adventure a previous call under this key created, if any.
-
-    The same scan ``encounters.creation_request`` does over journals, and for
-    the same reason: before the document exists there is nowhere else the key
-    could have been recorded.
-
-    Matched on the recorded *operation* as well as the key. A key is the
-    caller's to choose and nothing stops one being reused across operations, so
-    a bare key match would let a retried creation answer with the adventure some
-    earlier link happened to record under the same string.
-    """
-    for path in _files(state):
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
-        try:
-            document = _parsed(text, path)
-        except RequestError:
-            continue
-        recorded = document["request_ids"].get(request_id)
-        if isinstance(recorded, Mapping):
-            sessions.ensure_idempotency_identity(
-                request_id, recorded, "adventure.create", arguments
-            )
-            return _response(document, sha256_of(text))
-    return None
 
 
 def state_of(
@@ -782,10 +618,6 @@ def brief_for(
     """
     document, _adventure_version = _load(adventure_id, state)
     members = document["members"]
-    if not members:
-        raise NoCurrentChapterError(
-            f"adventure {adventure_id!r} has no current chapter; link an encounter first"
-        )
     member = members[-1]
     encounter_id = str(member["encounter_id"])
     session = sessions.session_for(state, encounter_id)

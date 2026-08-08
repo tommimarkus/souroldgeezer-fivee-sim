@@ -9,8 +9,11 @@ import pytest
 from fivee_sim.client import discovery
 from fivee_sim.client.cli import EXIT_USAGE
 from fivee_sim.client.cli import main as client_main
-from fivee_sim.configuration import Configuration, load_config
+from fivee_sim.configuration import load_config
 from fivee_sim.paths import RunSelectionError, StorageLayout, storage_layout
+from fivee_sim.service import adventures, scenes
+from fivee_sim.service.errors import RequestError
+from fivee_sim.service.sessions import EngineState
 from fivee_sim.web import http_server
 from fivee_sim.web.http_server import EngineServer
 
@@ -35,15 +38,10 @@ runs = "runs"
     return load_config(config)
 
 
-def _complete_run(configuration: Configuration, run_id: str) -> None:
-    root = configuration.runs_dir / run_id
-    _complete_run_at(root, run_id)
-
-
 def _complete_run_at(root: Path, run_id: str) -> None:
     for name in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
         (root / name).mkdir(parents=True, exist_ok=True)
-    (root / "adventures" / f"{run_id}.json").write_text("{}", encoding="utf-8")
+    (root / "adventures" / "adv-1.json").write_text("{}", encoding="utf-8")
 
 
 def _complete_manifest_run_at(root: Path, run_id: str) -> None:
@@ -64,14 +62,47 @@ def _complete_manifest_run_at(root: Path, run_id: str) -> None:
     )
 
 
-def test_an_adventure_run_layout_is_an_immutable_overlay_workspace(tmp_path: Path) -> None:
+def _bound_manifest_run_at(root: Path, run_id: str, members: list[object]) -> None:
+    _complete_manifest_run_at(root, run_id)
+    adventure_id = "adv-1"
+    (root / "run.json").write_text(
+        json.dumps(
+            {
+                "format": "fivee-sim-run",
+                "format_version": 1,
+                "id": run_id,
+                "created_at": "2026-08-08T00:00:00Z",
+                "adventure_id": adventure_id,
+                "request_ids": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "adventures" / f"{adventure_id}.json").write_text(
+        json.dumps(
+            {
+                "format": adventures.FORMAT,
+                "format_version": adventures.FORMAT_VERSION,
+                "id": adventure_id,
+                "name": "Opening",
+                "created_at": "2026-08-08T00:00:00Z",
+                "status": "active",
+                "members": members,
+                "request_ids": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_a_manifest_run_layout_is_an_immutable_overlay_workspace(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    _complete_run(configuration, "adv-7")
+    _complete_manifest_run_at(configuration.runs_dir / "run-7", "run-7")
 
-    layout = storage_layout(configuration=configuration, run_id="adv-7")
+    layout = storage_layout(configuration=configuration, run_id="run-7")
 
-    assert layout.run_id == "adv-7"
-    assert layout.run_root == configuration.runs_dir / "adv-7"
+    assert layout.run_id == "run-7"
+    assert layout.run_root == configuration.runs_dir / "run-7"
     assert layout.maps_dir == layout.run_root / "maps"
     assert layout.scenes_dir == layout.run_root / "scenes"
     assert layout.replays_dir == layout.run_root / "replays"
@@ -80,24 +111,104 @@ def test_an_adventure_run_layout_is_an_immutable_overlay_workspace(tmp_path: Pat
     assert layout.blobs_dir == layout.run_root / "blobs"
     assert layout.shared_map_paths == configuration.map_paths
     assert layout.shared_replay_paths == configuration.replay_paths
-    assert layout.runtime_dir == configuration.path.parent / "runtime" / "adv-7"
+    assert layout.runtime_dir == configuration.path.parent / "runtime" / "run-7"
     with pytest.raises(FrozenInstanceError):
-        layout.run_id = "adv-8"  # type: ignore[misc]
+        layout.run_id = "run-8"  # type: ignore[misc]
 
 
-def test_a_published_manifest_run_is_selectable_alongside_the_legacy_adventure_run(
-    tmp_path: Path,
-) -> None:
+def test_an_old_adventure_root_is_refused_without_modifying_its_contents(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    _complete_manifest_run_at(configuration.runs_dir / "run-1", "run-1")
-    _complete_run(configuration, "adv-7")
+    legacy_root = configuration.runs_dir / "adv-7"
+    _complete_run_at(legacy_root, "adv-7")
+    before = (legacy_root / "adventures" / "adv-1.json").read_bytes()
 
-    manifest_layout = storage_layout(configuration=configuration, run_id="run-1")
-    legacy_layout = storage_layout(configuration=configuration, run_id="adv-7")
+    with pytest.raises(RunSelectionError, match="safe run id"):
+        storage_layout(configuration=configuration, run_id="adv-7")
 
-    assert manifest_layout.run_root == configuration.runs_dir / "run-1"
-    assert manifest_layout.adventures_dir == configuration.runs_dir / "run-1" / "adventures"
-    assert legacy_layout.run_root == configuration.runs_dir / "adv-7"
+    assert (legacy_root / "adventures" / "adv-1.json").read_bytes() == before
+
+
+def test_a_bound_run_requires_a_chapter_zero_adventure_document(tmp_path: Path) -> None:
+    configuration = _configuration(tmp_path)
+    root = configuration.runs_dir / "run-1"
+    _bound_manifest_run_at(root, "run-1", [])
+
+    with pytest.raises(RunSelectionError, match="invalid adventure document"):
+        storage_layout(configuration=configuration, run_id="run-1")
+
+    _bound_manifest_run_at(
+        root,
+        "run-1",
+        [{"index": 0, "encounter_id": "enc-1", "mode": "combat"}],
+    )
+
+    assert storage_layout(configuration=configuration, run_id="run-1").run_root == root
+
+
+def test_the_adventure_document_parser_refuses_an_empty_persisted_run(tmp_path: Path) -> None:
+    path = tmp_path / "adv-1.json"
+    document = {
+        "format": adventures.FORMAT,
+        "format_version": adventures.FORMAT_VERSION,
+        "id": "adv-1",
+        "name": "Opening",
+        "created_at": "2026-08-08T00:00:00Z",
+        "status": "active",
+        "members": [],
+        "request_ids": {},
+    }
+
+    with pytest.raises(RequestError, match="chapter-zero member"):
+        adventures._parsed(json.dumps(document), path)
+
+
+def test_start_atomically_binds_a_run_to_a_chapter_zero_adventure(tmp_path: Path) -> None:
+    configuration = _configuration(tmp_path)
+    scenes.save(
+        "opening",
+        {
+            "name": "opening",
+            "combatants": [],
+            "seed": 1,
+            "mode": "exploration",
+            "map": {
+                "format": "fivee-sim-map",
+                "format_version": 1,
+                "name": "ground",
+                "grid": {"width": 3, "height": 3, "cell_feet": 5},
+                "legend": {".": "floor"},
+                "tiles": ["..."] * 3,
+                "features": [
+                    {"id": "party-arrival", "kind": "spawn", "at": [1, 1], "team": "party"}
+                ],
+                "provenance": {
+                    "generator": "hand", "seed": 1, "params": {}, "edited": False,
+                    "source": "test",
+                },
+            },
+        },
+        configuration.scenes_dir,
+        expected_sha256="*",
+    )
+    state = EngineState(storage=storage_layout(configuration=configuration))
+
+    started = adventures.start(
+        "Opening",
+        {
+            "scene_id": "opening",
+            "party": [{"name": "Thora", "team": "party", "ac": 10, "max_hp": 10}],
+        },
+        state=state,
+    )
+
+    run = configuration.runs_dir / str(started["run_id"])
+    manifest = json.loads((run / "run.json").read_text(encoding="utf-8"))
+    document = json.loads(
+        (run / "adventures" / f"{started['adventure_id']}.json").read_text(encoding="utf-8")
+    )
+    assert manifest["adventure_id"] == started["adventure_id"]
+    assert document["members"][0]["index"] == 0
+    assert document["members"][0]["encounter_id"] == started["encounter_id"]
 
 
 def test_control_and_legacy_have_separate_rendezvous_and_legacy_roots(tmp_path: Path) -> None:
@@ -124,26 +235,26 @@ def test_an_unknown_or_unsafe_run_is_refused(tmp_path: Path, run_id: str) -> Non
 
 def test_a_symlinked_run_root_is_refused(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    outside = tmp_path / "outside" / "adv-linked"
-    _complete_run_at(outside, "adv-linked")
+    outside = tmp_path / "outside" / "run-1"
+    _complete_manifest_run_at(outside, "run-1")
     configuration.runs_dir.mkdir(parents=True)
-    (configuration.runs_dir / "adv-linked").symlink_to(outside, target_is_directory=True)
+    (configuration.runs_dir / "run-1").symlink_to(outside, target_is_directory=True)
 
     with pytest.raises(RunSelectionError, match="symbolic link"):
-        storage_layout(configuration=configuration, run_id="adv-linked")
+        storage_layout(configuration=configuration, run_id="run-1")
 
 
 def test_a_symlinked_mutable_run_directory_is_refused(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    _complete_run(configuration, "adv-linked-child")
-    maps = configuration.runs_dir / "adv-linked-child" / "maps"
+    _complete_manifest_run_at(configuration.runs_dir / "run-1", "run-1")
+    maps = configuration.runs_dir / "run-1" / "maps"
     maps.rmdir()
     outside = tmp_path / "outside-maps"
     outside.mkdir()
     maps.symlink_to(outside, target_is_directory=True)
 
     with pytest.raises(RunSelectionError, match="symbolic link"):
-        storage_layout(configuration=configuration, run_id="adv-linked-child")
+        storage_layout(configuration=configuration, run_id="run-1")
 
 
 def test_storage_layout_can_be_constructed_directly_only_with_complete_roots(
@@ -168,7 +279,7 @@ def test_the_server_composition_root_owns_the_selected_layout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     configuration = _configuration(tmp_path)
-    _complete_run(configuration, "adv-7")
+    _complete_manifest_run_at(configuration.runs_dir / "run-7", "run-7")
 
     class BoundServer:
         server_address = ("127.0.0.1", 4312)
@@ -181,11 +292,11 @@ def test_the_server_composition_root_owns_the_selected_layout(
 
     monkeypatch.setattr(http_server, "_EngineHTTPServer", BoundServer)
 
-    server = EngineServer(configuration=configuration, run_id="adv-7")
+    server = EngineServer(configuration=configuration, run_id="run-7")
     try:
-        assert server.storage.run_id == "adv-7"
-        assert server.maps_dir == configuration.runs_dir / "adv-7" / "maps"
-        assert server.replays_dir == configuration.runs_dir / "adv-7" / "replays"
+        assert server.storage.run_id == "run-7"
+        assert server.maps_dir == configuration.runs_dir / "run-7" / "maps"
+        assert server.replays_dir == configuration.runs_dir / "run-7" / "replays"
         assert server.state.storage is server.storage
     finally:
         server.close()
@@ -193,7 +304,7 @@ def test_the_server_composition_root_owns_the_selected_layout(
 
 def test_discovery_uses_a_separate_state_file_for_every_selector(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
-    _complete_run(configuration, "adv-7")
+    _complete_manifest_run_at(configuration.runs_dir / "run-7", "run-7")
 
     assert discovery.state_path_for(configuration=configuration) == (
         configuration.path.parent / "runtime" / "control" / "fivee-sim-server.json"
@@ -201,8 +312,8 @@ def test_discovery_uses_a_separate_state_file_for_every_selector(tmp_path: Path)
     assert discovery.state_path_for(configuration=configuration, run_id="legacy") == (
         configuration.path.parent / "runtime" / "legacy" / "fivee-sim-server.json"
     )
-    assert discovery.state_path_for(configuration=configuration, run_id="adv-7") == (
-        configuration.path.parent / "runtime" / "adv-7" / "fivee-sim-server.json"
+    assert discovery.state_path_for(configuration=configuration, run_id="run-7") == (
+        configuration.path.parent / "runtime" / "run-7" / "fivee-sim-server.json"
     )
 
 
@@ -218,7 +329,7 @@ def test_the_client_refuses_an_unknown_global_run_before_starting_a_server(
     )
 
     assert result == EXIT_USAGE
-    assert "run 'adv-missing' does not exist" in capsys.readouterr().err
+    assert "run 'adv-missing' is not a safe run id" in capsys.readouterr().err
 
 
 def test_discovery_reports_run_identity_from_the_live_ping(

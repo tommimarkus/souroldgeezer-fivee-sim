@@ -147,7 +147,6 @@ def create(
             root = runs_dir / run_id
             staging = Path(tempfile.mkdtemp(prefix=f".{run_id}.stage-", dir=runs_dir))
             try:
-                workspace = staging
                 adventure_id = None
                 initialized: Any = None
                 if initializer is None:
@@ -155,7 +154,6 @@ def create(
                         (staging / name).mkdir()
                 else:
                     adventure_id, initialized = initializer(staging, run_id)
-                    workspace = staging / adventure_id
                 document: dict[str, Any] = {
                     "format": FORMAT,
                     "format_version": FORMAT_VERSION,
@@ -176,10 +174,8 @@ def create(
                     ),
                 }
                 text = _render(document)
-                durable.atomic_write(workspace / MANIFEST, text)
-                os.replace(workspace, root)
-                if workspace != staging:
-                    shutil.rmtree(staging, ignore_errors=True)
+                durable.atomic_write(staging / MANIFEST, text)
+                os.replace(staging, root)
                 durable.fsync_directory(runs_dir)
             except BaseException:
                 shutil.rmtree(staging, ignore_errors=True)

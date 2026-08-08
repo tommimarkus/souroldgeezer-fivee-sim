@@ -137,8 +137,8 @@ STATE_FILENAME = "fivee-sim-server.json"
 #: exception: the client imports nothing of the engine but this module's
 #: functions, and that boundary is worth more than the third copy costs.
 SOURCE_ID_ENV = "FIVEE_SIM_SOURCE_ID"
-_SAFE_ADVENTURE_RUN_ID = re.compile(r"^adv-[A-Za-z0-9_-]+$")
 _SAFE_MANIFEST_RUN_ID = re.compile(r"^run-[1-9][0-9]*$")
+_SAFE_ADVENTURE_ID = re.compile(r"^adv-[A-Za-z0-9_-]+$")
 
 
 class RunSelectionError(ValueError):
@@ -149,8 +149,8 @@ class RunSelectionError(ValueError):
 class StorageLayout:
     """All storage roots owned by one engine process.
 
-    ``run_id`` is a manifest-backed ``run-*`` workspace or transitional
-    ``adv-*`` workspace, ``legacy`` for the pre-run mutable roots, or ``None``
+    ``run_id`` is a manifest-backed ``run-*`` workspace, ``legacy`` for the
+    pre-run mutable roots, or ``None``
     for the read/control process. Shared maps, scenes and replays remain
     explicit inputs; a selected run writes only below its own :attr:`run_root`.
     """
@@ -411,8 +411,7 @@ def storage_layout(
         runtime_base = runs.parent / "runtime"
 
     if run_id is not None and run_id != "legacy":
-        is_manifest_run = _SAFE_MANIFEST_RUN_ID.fullmatch(run_id) is not None
-        if not is_manifest_run and _SAFE_ADVENTURE_RUN_ID.fullmatch(run_id) is None:
+        if _SAFE_MANIFEST_RUN_ID.fullmatch(run_id) is None:
             raise RunSelectionError(f"run {run_id!r} is not a safe run id")
         run = runs / run_id
         if run.is_symlink():
@@ -429,44 +428,53 @@ def storage_layout(
                 f"run {run_id!r} contains symbolic link: {', '.join(linked)}"
             )
         missing = sorted(name for name in required if not (run / name).is_dir())
-        if is_manifest_run:
-            document = run / "run.json"
-            if document.is_symlink():
-                raise RunSelectionError(f"run {run_id!r} manifest may not be a symbolic link")
-            if missing or not document.is_file():
-                detail = f"missing {', '.join(missing)}" if missing else "missing run manifest"
-                raise RunSelectionError(f"run {run_id!r} is incomplete: {detail}")
-            try:
-                manifest = json.loads(document.read_text(encoding="utf-8"))
-            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-                raise RunSelectionError(
-                    f"run {run_id!r} has an unreadable manifest: {error}"
-                ) from error
-            if (
-                not isinstance(manifest, dict)
-                or manifest.get("format") != "fivee-sim-run"
-                or manifest.get("format_version") != 1
-                or manifest.get("id") != run_id
-                or not isinstance(manifest.get("created_at"), str)
-                or (
-                    manifest.get("adventure_id") is not None
-                    and not isinstance(manifest.get("adventure_id"), str)
-                )
-            ):
-                raise RunSelectionError(f"run {run_id!r} has an invalid manifest")
-        else:
-            document = run / "adventures" / f"{run_id}.json"
-            if document.is_symlink():
+        document = run / "run.json"
+        if document.is_symlink():
+            raise RunSelectionError(f"run {run_id!r} manifest may not be a symbolic link")
+        if missing or not document.is_file():
+            detail = f"missing {', '.join(missing)}" if missing else "missing run manifest"
+            raise RunSelectionError(f"run {run_id!r} is incomplete: {detail}")
+        try:
+            manifest = json.loads(document.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise RunSelectionError(
+                f"run {run_id!r} has an unreadable manifest: {error}"
+            ) from error
+        adventure_id = manifest.get("adventure_id") if isinstance(manifest, dict) else None
+        if (
+            not isinstance(manifest, dict)
+            or manifest.get("format") != "fivee-sim-run"
+            or manifest.get("format_version") != 1
+            or manifest.get("id") != run_id
+            or not isinstance(manifest.get("created_at"), str)
+            or (adventure_id is not None and (
+                not isinstance(adventure_id, str)
+                or _SAFE_ADVENTURE_ID.fullmatch(adventure_id) is None
+            ))
+        ):
+            raise RunSelectionError(f"run {run_id!r} has an invalid manifest")
+        if adventure_id is not None:
+            adventure = run / "adventures" / f"{adventure_id}.json"
+            if adventure.is_symlink():
                 raise RunSelectionError(
                     f"run {run_id!r} adventure document may not be a symbolic link"
                 )
-            if missing or not document.is_file():
-                detail = (
-                    f"missing {', '.join(missing)}"
-                    if missing
-                    else "missing adventure document"
-                )
-                raise RunSelectionError(f"run {run_id!r} is incomplete: {detail}")
+            try:
+                payload = json.loads(adventure.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+                raise RunSelectionError(
+                    f"run {run_id!r} has an unreadable adventure document: {error}"
+                ) from error
+            members = payload.get("members") if isinstance(payload, dict) else None
+            if (
+                not isinstance(payload, dict)
+                or payload.get("id") != adventure_id
+                or not isinstance(members, list)
+                or not members
+                or not isinstance(members[0], dict)
+                or members[0].get("index") != 0
+            ):
+                raise RunSelectionError(f"run {run_id!r} has an invalid adventure document")
 
     selector = run_id if run_id is not None else "control"
     return StorageLayout(

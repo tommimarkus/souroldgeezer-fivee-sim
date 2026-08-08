@@ -1018,7 +1018,6 @@ ROUTES: tuple[Route, ...] = (
             _IF_NONE_MATCH,
         ),
         handler="adventure_brief",
-        errors=(409,),
     ),
     Route(
         "POST", f"{API_PREFIX}/adventures/{{id}}/encounters", "adventure.encounter",

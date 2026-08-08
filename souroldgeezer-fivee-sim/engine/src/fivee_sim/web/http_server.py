@@ -83,8 +83,8 @@ from ..service import catalog as catalog_service
 from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
 from ..service import replay as replay_service
-from ..service import runs as run_service
 from ..service import rulings as rulings_ops
+from ..service import runs as run_service
 from ..service import scenes as scene_service
 from ..service.common import slugify
 from ..service.errors import (
@@ -454,8 +454,6 @@ class _Handler(BaseHTTPRequestHandler):
                 )
             )
         except StaleWriteError as error:
-            self._send_problem(_Problem(HTTPStatus.CONFLICT, str(error)))
-        except adventure_service.NoCurrentChapterError as error:
             self._send_problem(_Problem(HTTPStatus.CONFLICT, str(error)))
         except MapEditError as error:
             self._send_problem(_Problem(HTTPStatus.BAD_REQUEST, str(error)))
