@@ -441,26 +441,33 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
     if not isinstance(scene_id, str) or not isinstance(party, list):
         raise RequestError("opening requires scene_id and party")
     identity = {"name": titled, "opening": deepcopy(dict(opening))}
+    staged_state: EngineState | None = None
 
     def initialize(stage: Path, _run_id: str) -> tuple[str, Any]:
+        nonlocal staged_state
         adventure_id = _next_free_id(state)
         for part in ("maps", "scenes", "replays", "encounters", "adventures", "blobs"):
             (stage / part).mkdir(parents=True, exist_ok=True)
-        prior = control_storage
-        state.storage = StorageLayout(
-            run_id=stage.name, runs_dir=stage.parent, runtime_dir=prior.runtime_dir,
-            shared_map_paths=prior.shared_map_paths, shared_replay_paths=prior.shared_replay_paths,
-            shared_scenes_dir=prior.shared_scenes_dir,
-            legacy_encounters_dir=prior.legacy_encounters_dir,
-            legacy_adventures_dir=prior.legacy_adventures_dir,
-            legacy_blobs_dir=prior.legacy_blobs_dir,
+        staged_state = EngineState(
+            content=state.content,
+            maps_dir=state.maps_dir,
+            configuration_path=state.configuration_path,
+            storage=StorageLayout(
+                run_id=stage.name, runs_dir=stage.parent, runtime_dir=control_storage.runtime_dir,
+                shared_map_paths=control_storage.shared_map_paths,
+                shared_replay_paths=control_storage.shared_replay_paths,
+                shared_scenes_dir=control_storage.shared_scenes_dir,
+                legacy_encounters_dir=control_storage.legacy_encounters_dir,
+                legacy_adventures_dir=control_storage.legacy_adventures_dir,
+                legacy_blobs_dir=control_storage.legacy_blobs_dir,
+            ),
         )
         created: dict[str, Any] | None = None
         try:
-            scene = scenes.load(scene_id, root=prior.shared_scenes_dir)["document"]
-            roster, map_spec, map_id = _opening_roster(state, scene, party)
+            scene = scenes.load(scene_id, root=control_storage.shared_scenes_dir)["document"]
+            roster, map_spec, map_id = _opening_roster(staged_state, scene, party)
             created = encounters.create(
-                state, roster, opening.get("seed", scene.get("seed")),
+                staged_state, roster, opening.get("seed", scene.get("seed")),
                 str(scene.get("movement_rule", "5-5-5")), map_spec, map_id, request_id,
                 mode=str(scene.get("mode", EncounterMode.COMBAT.value)),
             )
@@ -491,10 +498,8 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
             return adventure_id, {"adventure": document, "version": version, "encounter": created}
         except BaseException:
             if created is not None:
-                state.sessions.pop(str(created["encounter_id"]), None)
+                staged_state.sessions.pop(str(created["encounter_id"]), None)
             raise
-        finally:
-            state.storage = prior
 
     published = runs.create(request_id, identity, initialize, "adventure.start",
                             runs_dir=control_storage.runs_dir)
@@ -504,23 +509,31 @@ def start(name: str, opening: Mapping[str, Any], request_id: str | None = None,
         path = control_storage.runs_dir / str(published["id"]) / "adventures" / f"{bound}.json"
         text = path.read_text(encoding="utf-8")
         document = _parsed(text, path)
-        temporary = control_storage
-        state.storage = StorageLayout(
-            run_id=bound, runs_dir=path.parent.parent.parent, runtime_dir=temporary.runtime_dir,
-            shared_map_paths=temporary.shared_map_paths,
-            shared_replay_paths=temporary.shared_replay_paths,
-            shared_scenes_dir=temporary.shared_scenes_dir,
-            legacy_encounters_dir=temporary.legacy_encounters_dir,
-            legacy_adventures_dir=temporary.legacy_adventures_dir,
-            legacy_blobs_dir=temporary.legacy_blobs_dir,
+        recovery_state = EngineState(
+            content=state.content,
+            maps_dir=state.maps_dir,
+            configuration_path=state.configuration_path,
+            storage=StorageLayout(
+                run_id=str(published["id"]), runs_dir=path.parent.parent.parent,
+                runtime_dir=control_storage.runtime_dir,
+                shared_map_paths=control_storage.shared_map_paths,
+                shared_replay_paths=control_storage.shared_replay_paths,
+                shared_scenes_dir=control_storage.shared_scenes_dir,
+                legacy_encounters_dir=control_storage.legacy_encounters_dir,
+                legacy_adventures_dir=control_storage.legacy_adventures_dir,
+                legacy_blobs_dir=control_storage.legacy_blobs_dir,
+            ),
         )
-        try:
-            encounter_id = str(document["members"][0]["encounter_id"])
-            created = encounters.creation_response(
-                state, encounter_id, sessions.session_for(state, encounter_id))
-        finally:
-            state.storage = temporary
+        encounter_id = str(document["members"][0]["encounter_id"])
+        recovered_session = sessions.session_for(recovery_state, encounter_id)
+        created = encounters.creation_response(recovery_state, encounter_id, recovered_session)
+        state.sessions[encounter_id] = recovered_session
+        state.next_id = max(state.next_id, recovery_state.next_id)
         data = {"adventure": document, "version": sha256_of(text), "encounter": created}
+    elif staged_state is not None:
+        encounter_id = str(data["adventure"]["members"][0]["encounter_id"])
+        state.sessions[encounter_id] = staged_state.sessions[encounter_id]
+        state.next_id = max(state.next_id, staged_state.next_id)
     member = data["adventure"]["members"][0]
     return {"run_id": published["id"], "adventure_id": bound,
             "encounter_id": member["encounter_id"], "chapter_index": 0,

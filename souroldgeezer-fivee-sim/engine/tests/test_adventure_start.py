@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from fivee_sim.paths import StorageLayout
-from fivee_sim.service import adventures, maps, scenes, sessions
+from fivee_sim.service import adventures, durable, encounters, maps, scenes, sessions
 from fivee_sim.service.errors import IdempotencyConflictError, RequestError
 
 from . import api
@@ -130,6 +131,61 @@ def test_start_publishes_one_bound_run_and_exploration_opening(
         opened["encounter_id"],
     )
 
+    restarted = sessions.EngineState(storage=control)
+    recovered = adventures.start(
+        "The Drowned Mill",
+        {"scene_id": "opening", "party": _party(), "seed": 19},
+        request_id="open-mill",
+        state=restarted,
+    )
+    assert (recovered["run_id"], recovered["adventure_id"], recovered["encounter_id"]) == (
+        opened["run_id"],
+        opened["adventure_id"],
+        opened["encounter_id"],
+    )
+
+
+def test_concurrent_observer_never_sees_staging_state(tmp_path: Path, monkeypatch: Any) -> None:
+    control = _storage(tmp_path)
+    monkeypatch.setattr(api.STATE, "storage", control)
+    scenes.save("opening", _scene(), root=control.shared_scenes_dir)
+    original_create = encounters.create
+    entered = threading.Event()
+    release = threading.Event()
+
+    def observed_create(staged: sessions.EngineState, *args: Any, **kwargs: Any) -> Any:
+        assert staged is not api.STATE
+        entered.set()
+        assert release.wait(timeout=5)
+        return original_create(staged, *args, **kwargs)
+
+    monkeypatch.setattr(encounters, "create", observed_create)
+    opened: list[dict[str, Any]] = []
+    errors: list[BaseException] = []
+
+    def start() -> None:
+        try:
+            opened.append(adventures.start(
+                "Isolated", {"scene_id": "opening", "party": _party()}, state=api.STATE
+            ))
+        except BaseException as error:
+            errors.append(error)
+
+    worker = threading.Thread(target=start)
+    worker.start()
+    assert entered.wait(timeout=5)
+    try:
+        assert api.STATE.storage is control
+        assert api.STATE.sessions == {}
+    finally:
+        release.set()
+        worker.join(timeout=5)
+
+    assert not errors
+    assert not worker.is_alive()
+    assert api.STATE.storage is control
+    assert list(api.STATE.sessions) == [opened[0]["encounter_id"]]
+
 
 def test_start_skips_a_party_spawn_occupied_by_preserved_cast(
     tmp_path: Path, monkeypatch: Any
@@ -191,6 +247,29 @@ def test_start_rolls_back_encounter_when_adventure_write_fails(
         adventures.start("Rollback", {"scene_id": "opening", "party": _party()}, state=api.STATE)
 
     assert not list(control.runs_dir.glob("run-*"))
+    assert not api.STATE.sessions
+
+
+def test_start_rolls_back_session_when_manifest_publication_fails(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    control = _storage(tmp_path)
+    monkeypatch.setattr(api.STATE, "storage", control)
+    scenes.save("opening", _scene(), root=control.shared_scenes_dir)
+    original_write = durable.atomic_write
+
+    def fail_manifest(path: Path, text: str) -> None:
+        if path.name == "run.json":
+            raise RequestError("publish failed")
+        original_write(path, text)
+
+    monkeypatch.setattr(durable, "atomic_write", fail_manifest)
+
+    with pytest.raises(RequestError, match="publish failed"):
+        adventures.start("Rollback", {"scene_id": "opening", "party": _party()}, state=api.STATE)
+
+    assert not list(control.runs_dir.glob("run-*"))
+    assert not list(control.runs_dir.glob(".run-*.stage-*"))
     assert not api.STATE.sessions
 
 

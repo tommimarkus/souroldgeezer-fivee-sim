@@ -4222,6 +4222,52 @@ class TestAdventuresOverHttp:
             "index": 0, "encounter_id": "enc-1", "mode": "combat", "finalized": False,
         }
 
+    def test_start_idempotency_replays_and_conflicts_at_the_http_boundary(
+        self, editor: Editor
+    ) -> None:
+        scene_service.save(
+            "retry-opening",
+            opening_scene_payload(),
+            editor.server.storage.shared_scenes_dir,
+            expected_sha256="*",
+        )
+        headers = {"Idempotency-Key": "retry-opening"}
+        body = {
+            "name": "Retried opening",
+            "opening": {"scene_id": "retry-opening", "party": [HERO]},
+        }
+
+        created = editor.control_request(
+            "POST", "/api/v1/adventures", json_body=body, headers=headers
+        )
+        repeated = editor.control_request(
+            "POST", "/api/v1/adventures", json_body=body, headers=headers
+        )
+
+        assert created.status == repeated.status == 201
+        for key in ("run_id", "adventure_id", "encounter_id"):
+            assert repeated.json()[key] == created.json()[key]
+        listed = editor.control_request("GET", "/api/v1/runs")
+        assert listed.json()["runs"] == [
+            {"id": "run-1", "adventure_id": "adv-1"},
+            {"id": created.json()["run_id"], "adventure_id": created.json()["adventure_id"]},
+        ]
+
+        conflict = editor.control_request(
+            "POST",
+            "/api/v1/adventures",
+            json_body={**body, "name": "Changed opening"},
+            headers=headers,
+        )
+        assert conflict.status == 409
+        assert conflict.headers["Content-Type"].startswith(PROBLEM_TYPE)
+        problem = conflict.json()
+        assert problem["type"] == routes.problem_type("idempotency-conflict")
+        assert problem["status"] == 409
+        assert "different request" in problem["detail"]
+        assert problem["instance"] == "/api/v1/adventures"
+        assert editor.control_request("GET", "/api/v1/runs").json() == listed.json()
+
     def test_an_opening_enemy_at_a_scalar_position_reserves_its_spawn(
         self, editor: Editor
     ) -> None:
