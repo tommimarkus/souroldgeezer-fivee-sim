@@ -123,6 +123,49 @@ def test_an_empty_variable_is_unset_not_root() -> None:
     assert launcher.resolve_plugin_data({"PLUGIN_DATA": "", "CLAUDE_PLUGIN_DATA": ""}) is None
 
 
+def test_copilot_plugin_data_is_used_when_set() -> None:
+    """COPILOT_PLUGIN_DATA provides Copilot-specific durable storage."""
+    resolved = launcher.resolve_plugin_data({"COPILOT_PLUGIN_DATA": "/data/copilot"})
+    assert resolved == Path("/data/copilot")
+
+
+def test_generic_plugin_data_wins_over_copilot_variable() -> None:
+    """PLUGIN_DATA is generic and wins over Copilot-specific COPILOT_PLUGIN_DATA."""
+    resolved = launcher.resolve_plugin_data(
+        {"PLUGIN_DATA": "/data/generic", "COPILOT_PLUGIN_DATA": "/data/copilot"}
+    )
+    assert resolved == Path("/data/generic")
+
+
+def test_copilot_plugin_data_wins_over_claude_variable() -> None:
+    """COPILOT_PLUGIN_DATA wins over the Claude compatibility alias."""
+    resolved = launcher.resolve_plugin_data(
+        {"COPILOT_PLUGIN_DATA": "/data/copilot", "CLAUDE_PLUGIN_DATA": "/data/claude"}
+    )
+    assert resolved == Path("/data/copilot")
+
+
+def test_copilot_plugin_data_wins_over_codex_fallback() -> None:
+    """COPILOT_PLUGIN_DATA is higher precedence than CODEX_HOME."""
+    resolved = launcher.resolve_plugin_data(
+        {"COPILOT_PLUGIN_DATA": "/data/copilot", "CODEX_HOME": "/home/someone/.codex"}
+    )
+    assert resolved == Path("/data/copilot")
+
+
+def test_empty_copilot_plugin_data_is_unset() -> None:
+    """An empty COPILOT_PLUGIN_DATA is treated as unset."""
+    resolved = launcher.resolve_plugin_data(
+        {"COPILOT_PLUGIN_DATA": "", "CLAUDE_PLUGIN_DATA": "/data/claude"}
+    )
+    assert resolved == Path("/data/claude")
+
+
+def test_copilot_home_alone_is_not_plugin_data() -> None:
+    """COPILOT_HOME alone does not resolve to plugin-data storage (unlike CODEX_HOME)."""
+    assert launcher.resolve_plugin_data({"COPILOT_HOME": "/home/someone/.copilot"}) is None
+
+
 # -- source identity --------------------------------------------------------
 
 
@@ -583,7 +626,7 @@ def test_the_launcher_parses_on_the_oldest_interpreter_it_claims() -> None:
 
 
 @requires_host_python
-@pytest.mark.parametrize("variable", ["PLUGIN_DATA", "CLAUDE_PLUGIN_DATA"])
+@pytest.mark.parametrize("variable", ["PLUGIN_DATA", "COPILOT_PLUGIN_DATA", "CLAUDE_PLUGIN_DATA"])
 def test_a_host_managed_launch_runs_from_durable_storage(
     tmp_path: Path, variable: str
 ) -> None:
@@ -928,7 +971,7 @@ def test_a_spawned_server_inherits_the_source_identity(tmp_path: Path) -> None:
     environment.pop("PYTHONPATH", None)
     # A durable copy is beside the point here, and honouring a host variable this
     # session happens to carry would write one into the host's real plugin data.
-    for host_variable in ("PLUGIN_DATA", "CLAUDE_PLUGIN_DATA", "CODEX_HOME"):
+    for host_variable in ("PLUGIN_DATA", "COPILOT_PLUGIN_DATA", "CLAUDE_PLUGIN_DATA", "CODEX_HOME"):
         environment.pop(host_variable, None)
     environment["FIVEE_SIM_RELOAD"] = "1"
 
