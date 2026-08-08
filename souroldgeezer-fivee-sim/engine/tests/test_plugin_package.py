@@ -1802,7 +1802,8 @@ def test_manifest_versions_use_consistent_semver() -> None:
         codex_parts = codex_manifest["version"].split(".")
 
         assert len(copilot_parts) == 3, f"Copilot version must have 3 parts: {copilot_version}"
-        assert len(codex_parts) == 3, f"Codex version must have 3 parts: {codex_manifest['version']}"
+        codex_version = codex_manifest["version"]
+        assert len(codex_parts) == 3, f"Codex version must have 3 parts: {codex_version}"
 
         # Year and build must match exactly
         assert (
