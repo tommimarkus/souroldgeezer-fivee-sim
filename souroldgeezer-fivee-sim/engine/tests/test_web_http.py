@@ -39,6 +39,7 @@ from fivee_sim.service import encounter_journal as journal_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
 from fivee_sim.service import replay as replay_service
+from fivee_sim.service import scenes as scene_service
 from fivee_sim.service import views as views_service
 from fivee_sim.service.common import sha256_of
 from fivee_sim.service.sessions import EngineState
@@ -249,7 +250,8 @@ class Editor:
         return target
 
     def control_request(
-        self, method: str, path: str, *, json_body: Any = None
+        self, method: str, path: str, *, json_body: Any = None,
+        headers: Mapping[str, str] | None = None,
     ) -> Response:
         """Make one request through this project's unselected control server."""
         control = EngineServer(
@@ -268,7 +270,7 @@ class Editor:
                 maps_dir=control.maps_dir,
                 replays_dir=control.replays_dir,
                 log=self.log,
-            ).request(method, path, json_body=json_body)
+            ).request(method, path, json_body=json_body, headers=headers)
         finally:
             control.shutdown()
             control.close()
@@ -1630,6 +1632,27 @@ class TestDeclaredExamples:
         # A map for `map.edit` to edit, put there directly so the cases below
         # do not depend on each other's order.
         editor.put_map("saved-map", payload())
+        # ``adventure.create`` resolves its opening scene from the control
+        # server's shared inputs.  Saving this fixture directly establishes the
+        # declared input; the loop below still proves the declared HTTP example
+        # reaches the compound opening operation successfully.
+        scene_service.save(
+            "example-opening",
+            {
+                "name": "example opening",
+                "combatants": [GOBLIN],
+                "map": {
+                    "format": "fivee-sim-map", "format_version": 1,
+                    "name": "example ground",
+                    "grid": {"width": 5, "height": 4, "cell_feet": 5},
+                    "legend": {".": "floor"}, "tiles": ["....."] * 4,
+                    "features": [{"id": "example-spawn", "kind": "spawn", "at": [1, 1], "team": "party"}],
+                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"},
+                },
+            },
+            editor.server.storage.shared_scenes_dir,
+            expected_sha256="*",
+        )
         # The fixture's selected run is empty, so `adventure.encounter` can
         # start its first fight from the example's complete roster.
         subjects = {
@@ -1653,9 +1676,8 @@ class TestDeclaredExamples:
                 for param in route.params
                 if param.example is not None
             }
-            response = editor.request(
-                route.method, path, json_body=route.example, headers=headers
-            )
+            call = editor.control_request if route.operation == "adventure.create" else editor.request
+            response = call(route.method, path, json_body=route.example, headers=headers)
             assert response.status < 400, (
                 f"the example {route.operation} declares is refused by the "
                 f"operation that declares it: {response.status} "
@@ -2732,7 +2754,7 @@ MILL_DOCUMENT: dict[str, Any] = {
     "grid": {"width": 12, "height": 12, "cell_feet": 5},
     "legend": {".": "normal"},
     "tiles": ["." * 12 for _ in range(12)],
-    "features": [],
+    "features": [{"id": "kettle-arrival", "kind": "spawn", "at": [0, 0], "team": "party"}],
     "provenance": {
         "generator": "hand",
         "seed": 0,
@@ -4011,6 +4033,45 @@ class TestIdempotencyKey:
         assert "different request" in problem["detail"]
 
 
+class TestRunsOverHttp:
+    """Control-state workspace allocation is a small, durable resource API."""
+
+    def test_runs_create_list_and_state_are_idempotent_and_versioned(
+        self, editor: Editor
+    ) -> None:
+        empty = editor.control_request("GET", "/api/v1/runs")
+        assert empty.status == 200
+        assert empty.json() == {"runs": []}
+
+        headers = {"Idempotency-Key": "scratch-run"}
+        created = editor.control_request(
+            "POST", "/api/v1/runs", json_body={}, headers=headers
+        )
+        assert created.status == 201, created.body
+        body = created.json()
+        assert body["id"] == "run-1"
+        assert body["adventure_id"] is None
+        assert "version" not in body
+        assert created.headers["Location"] == "/api/v1/runs/run-1"
+        assert created.headers["ETag"]
+
+        repeated = editor.control_request(
+            "POST", "/api/v1/runs", json_body={}, headers=headers
+        )
+        assert repeated.status == 201
+        assert repeated.json() == body
+        assert repeated.headers["ETag"] == created.headers["ETag"]
+
+        listed = editor.control_request("GET", "/api/v1/runs")
+        assert listed.status == 200
+        assert listed.json() == {"runs": [{"id": "run-1", "adventure_id": None}]}
+
+        read = editor.control_request("GET", "/api/v1/runs/run-1")
+        assert read.status == 200
+        assert read.json() == body
+        assert read.headers["ETag"] == created.headers["ETag"]
+
+
 class TestAdventuresOverHttp:
     """The adventure is a guarded document, so its adapter is map.put's, not act's.
 
@@ -4024,18 +4085,103 @@ class TestAdventuresOverHttp:
         del name
         return editor.request("GET", "/api/v1/adventures/adv-1")
 
-    def test_starting_one_answers_201_with_where_to_find_it(self, editor: Editor) -> None:
+    def test_starting_one_answers_the_opening_chapter_and_where_to_find_it(
+        self, editor: Editor
+    ) -> None:
+        scene_service.save(
+            "opening-scene",
+            {
+                "name": "opening scene",
+                "combatants": [GOBLIN],
+                "seed": 5,
+                "map": {
+                    "format": "fivee-sim-map",
+                    "format_version": 1,
+                    "name": "opening ground",
+                    "grid": {"width": 5, "height": 4, "cell_feet": 5},
+                    "legend": {".": "floor"},
+                    "tiles": ["....."] * 4,
+                    "features": [{"id": "party-arrival", "kind": "spawn", "at": [1, 1], "team": "party"}],
+                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"},
+                },
+            },
+            editor.server.storage.shared_scenes_dir,
+            expected_sha256="*",
+        )
         response = editor.control_request(
-            "POST", "/api/v1/adventures", json_body={"name": "A Second Run"}
+            "POST",
+            "/api/v1/adventures",
+            json_body={
+                "name": "A Second Run",
+                "opening": {"scene_id": "opening-scene", "party": [HERO]},
+            },
         )
 
         assert response.status == 201, response.body
         body = response.json()
-        assert body["id"] == "adv-2"
-        assert body["status"] == "active"
-        assert body["members"] == []
-        assert response.headers["Location"] == "/api/v1/adventures/adv-2"
+        assert body["run_id"] == "run-1"
+        assert body["adventure_id"] == "adv-2"
+        assert body["chapter_index"] == 0
+        assert body["encounter_id"] == "enc-1"
+        assert body["run"]["id"] == "run-1"
+        assert body["adventure"]["members"][0]["encounter_id"] == "enc-1"
+        assert body["encounter"]["encounter_id"] == "enc-1"
+        assert response.headers["Location"] == "/api/v1/runs/run-1"
         assert response.headers["ETag"] == f'"{body["version"]}"'
+
+        selected = EngineServer(
+            maps_dir=editor.server.storage.shared_map_paths[0],
+            replays_dir=editor.server.storage.shared_replay_paths[0],
+            run_id=body["run_id"],
+            log=editor.log,
+        )
+        thread = threading.Thread(
+            target=lambda: selected.serve_forever(poll_interval=0.01), daemon=True
+        )
+        thread.start()
+        try:
+            live = Editor(selected, thread, selected.maps_dir, selected.replays_dir, editor.log).request(
+                "GET", "/api/v1/adventures/adv-2/brief?as=Thora"
+            )
+        finally:
+            selected.shutdown()
+            selected.close()
+            thread.join(timeout=5)
+        assert live.status == 200, live.body
+        assert live.json()["chapter"] == {
+            "index": 0, "encounter_id": "enc-1", "mode": "combat", "finalized": False,
+        }
+
+    def test_an_opening_enemy_at_a_scalar_position_reserves_its_spawn(
+        self, editor: Editor
+    ) -> None:
+        scene_service.save(
+            "occupied-opening",
+            {
+                "name": "occupied opening",
+                "combatants": [{**GOBLIN, "position": 5}],
+                "map": {
+                    "format": "fivee-sim-map", "format_version": 1,
+                    "name": "occupied ground",
+                    "grid": {"width": 5, "height": 4, "cell_feet": 5},
+                    "legend": {".": "floor"}, "tiles": ["....."] * 4,
+                    "features": [{"id": "occupied-spawn", "kind": "spawn", "at": [1, 0], "team": "party"}],
+                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "test"},
+                },
+            },
+            editor.server.storage.shared_scenes_dir,
+            expected_sha256="*",
+        )
+
+        response = editor.control_request(
+            "POST", "/api/v1/adventures",
+            json_body={
+                "name": "No room to arrive",
+                "opening": {"scene_id": "occupied-opening", "party": [HERO]},
+            },
+        )
+
+        assert_problem(response, 400, "opening map has insufficient free party spawn positions")
 
     def test_reading_one_carries_its_version_as_an_etag(self, editor: Editor) -> None:
         created = self.start(editor)
@@ -4422,9 +4568,6 @@ class TestLinkingAnInterludeOverHttp:
             headers={"If-Match": "*"},
         )
         assert saved.status == 201, saved.body
-        editor.request(
-            "POST", "/api/v1/adventures", json_body={"name": "The Drowned Mill"}
-        )
 
     def link(self, editor: Editor, **body: Any) -> Response:
         return editor.request(
@@ -4478,7 +4621,6 @@ class TestLinkingAnInterludeOverHttp:
         self.link(
             editor, combatants=[dict(SCOUT)], seed=5, map_id="mill", mode="exploration"
         )
-
         linked = self.link(editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True)
 
         assert linked.status == 201, linked.body
@@ -4491,7 +4633,6 @@ class TestLinkingAnInterludeOverHttp:
         self.link(
             editor, combatants=[dict(SCOUT)], seed=5, map_id="mill", mode="exploration"
         )
-
         assert_problem(
             self.link(
                 editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True,

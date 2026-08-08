@@ -940,6 +940,25 @@ ROUTES: tuple[Route, ...] = (
         },
         handler="encounter_replay",
     ),
+    # --- runs: durable workspaces, allocated before an adventure fills one ---
+    Route(
+        "GET", f"{API_PREFIX}/runs", "run.list",
+        "Published run workspaces, without their mutable contents.",
+        handler="run_list",
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/runs", "run.create",
+        "Allocate one empty scratch run workspace.",
+        params=(_IDEMPOTENCY,),
+        body_schema={"type": "object", "properties": {}},
+        handler="run_create", success=201,
+    ),
+    Route(
+        "GET", f"{API_PREFIX}/runs/{{id}}", "run.state",
+        "One published run manifest, with its durable version as an ETag.",
+        params=(_ID,),
+        handler="run_state",
+    ),
     # --- adventures: ordered runs of encounters, carrying the party ---------
     Route(
         "GET", f"{API_PREFIX}/adventures", "adventure.list",
@@ -954,12 +973,30 @@ ROUTES: tuple[Route, ...] = (
     ),
     Route(
         "POST", f"{API_PREFIX}/adventures", "adventure.create",
-        "Start an adventure: an ordered run of encounters sharing a party.",
+        "Start an adventure and its chapter-zero encounter from a saved opening scene.",
         params=(_IDEMPOTENCY,),
         body_schema={
             "type": "object",
-            "properties": {"name": {"type": "string"}},
-            "required": ["name"],
+            "properties": {
+                "name": {"type": "string"},
+                "opening": {
+                    "type": "object",
+                    "properties": {
+                        "scene_id": {"type": "string"},
+                        "party": {"type": "array", "items": {"type": "object"}},
+                        "seed": _SEED,
+                    },
+                    "required": ["scene_id", "party"],
+                },
+            },
+            "required": ["name", "opening"],
+        },
+        example={
+            "name": "Example opening",
+            "opening": {
+                "scene_id": "example-opening",
+                "party": [{"monster": "Wolf", "label": "Example party", "team": "party"}],
+            },
         },
         handler="adventure_create", success=201,
     ),

@@ -220,8 +220,8 @@ def shared(module_root: Path) -> Iterator[discovery.Server]:
         created = http.request(
             control,
             "POST",
-            "/api/v1/adventures",
-            body={"name": "CLI contract"},
+            "/api/v1/runs",
+            body={},
         )
         _SHARED_RUN_ID = str(created.body["id"])
         discovery.stop(discovery.state_path_for())
@@ -723,10 +723,19 @@ class TestHelp:
         rendered = capsys.readouterr().out
         missing = sorted(name for name in served if f"  {name} " not in rendered)
         assert not missing, f"the operations index lists these and help does not: {missing}"
-        assert len(served) == 55, (
-            f"the contract now has {len(served)} operations, not 55; this number is "
+        assert len(served) == 58, (
+            f"the contract now has {len(served)} operations, not 58; this number is "
             f"here so a route silently disappearing is a failure, not a shorter list"
         )
+
+    def test_help_derives_the_control_run_operations_from_the_contract(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run("help", "run.create") == cli.EXIT_OK
+        rendered = capsys.readouterr().out
+        assert "POST /api/v1/runs" in rendered
+        assert "--idempotency-key" in rendered
+        assert "fivee run.create" in rendered
 
     def test_help_for_one_operation_separates_required_from_optional(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]

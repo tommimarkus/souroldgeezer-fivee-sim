@@ -65,7 +65,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import __version__
-from ..kernel.grid import square_center
+from ..kernel.grid import as_point, square_center
 from ..model.encounter import EncounterMode
 from ..paths import StorageLayout, adventures_root
 from . import durable, encounters, runs, scenes, sessions
@@ -237,12 +237,17 @@ def adventure_path(adventure_id: str, state: EngineState | None = None) -> Path:
     """
     if _SAFE_ID.fullmatch(adventure_id) is None:
         raise NotFoundError(f"no adventure {adventure_id!r}")
-    if (
-        state is not None
-        and state.storage is not None
-        and state.storage.run_id not in (None, "legacy", adventure_id)
-    ):
-        raise NotFoundError(f"no adventure {adventure_id!r} in run {state.storage.run_id!r}")
+    if state is not None and state.storage is not None:
+        selected = state.storage.run_id
+        if selected is not None and selected != "legacy":
+            if selected.startswith("run-"):
+                manifest = runs.state_of(selected, runs_dir=state.storage.runs_dir)
+                if manifest["adventure_id"] != adventure_id:
+                    raise NotFoundError(
+                        f"no adventure {adventure_id!r} in run {selected!r}"
+                    )
+            elif selected != adventure_id:
+                raise NotFoundError(f"no adventure {adventure_id!r} in run {selected!r}")
     if state is not None and state.storage is not None and state.storage.run_id is None:
         return (
             state.storage.runs_dir
@@ -597,8 +602,12 @@ def _opening_roster(state: EngineState, scene: Mapping[str, Any], party: list[An
                 hints.append(hint)
     cast = [deepcopy(dict(entry)) for entry in scene.get("combatants", [])
             if isinstance(entry, Mapping) and entry.get("team") != "party"]
-    occupied = {(tuple(entry["position"]), int(entry.get("level", 0))) for entry in cast
-                if isinstance(entry.get("position"), list)}
+    occupied = {
+        (as_point(entry["position"] if isinstance(entry["position"], int)
+                  else tuple(entry["position"])), int(entry.get("level", 0)))
+        for entry in cast
+        if isinstance(entry.get("position"), (int, list))
+    }
     free = [hint for hint in hints if (tuple(square_center(hint[0])), hint[1]) not in occupied]
     if len(free) < len(checked):
         raise RequestError("opening map has insufficient free party spawn positions")

@@ -161,6 +161,7 @@ COMPARABLE_HASHES = ("map", "initial", "actions", "latest_state", "content")
 #: and ``enc-2`` the ids this run is allocated.
 ADVENTURE_NAME = "The Smoke Test Run"
 ADVENTURE_SEEDS = (20260806, 20260807)
+ADVENTURE_OPENING_SCENE_ID = "smoke-opening"
 #: Two wolves against two goblins, and then whatever the survivors meet next.
 #: Both fights are run to a conclusion rather than scripted to a fixed number of
 #: swings, because what the second one starts from is what the first one *ended*
@@ -220,6 +221,10 @@ MILL_MAP: dict[str, Any] = {
     "grid": {"width": 8, "height": 8, "cell_feet": 5},
     "legend": {".": "normal"},
     "tiles": ["." * 8 for _ in range(8)],
+    "features": [
+        {"id": "fang-arrival", "kind": "spawn", "at": [1, 1], "team": "party"},
+        {"id": "scar-arrival", "kind": "spawn", "at": [1, 3], "team": "party"},
+    ],
     "provenance": {
         "generator": "hand",
         "seed": 1,
@@ -401,6 +406,7 @@ class Engine:
         self.port: int | None = None
         self.token: str | None = None
         self.stopped = False
+        self.run_id: str | None = None
 
     # -- the launcher, which is the only way anything here is started --------
     def launcher(
@@ -433,7 +439,15 @@ class Engine:
 
     @property
     def state_file(self) -> Path:
-        return self.root / ".fivee-sim" / "fivee-sim-server.json"
+        if self.run_id is None:
+            return self.root / ".fivee-sim" / "fivee-sim-server.json"
+        return self.root / ".fivee-sim" / "runtime" / self.run_id / "fivee-sim-server.json"
+
+    def select_run(self, run_id: str) -> None:
+        """Switch this smoke client to the manifest-backed workspace it created."""
+        self.run_id = run_id
+        self.fivee("--run", run_id, "serve")
+        self.adopt()
 
     def adopt(self) -> None:
         """Read the port and token of whatever server now serves this root.
@@ -822,7 +836,7 @@ def apply_delta(held: Mapping[str, Any], delta: Mapping[str, Any]) -> dict[str, 
 
 
 def adventure_over_http(engine: Engine) -> dict[str, Any]:
-    """A whole run: start it, link a fight, finish it, link the next, compose, close.
+    """A whole run: open chapter zero, finish it, link the next, compose, close.
 
     Every write carries the ``ETag`` the previous one answered with, which is
     what a client holding a version does: ``If-Match`` is *required* on an
@@ -830,10 +844,46 @@ def adventure_over_http(engine: Engine) -> dict[str, Any]:
     two callers each told they linked would leave one fight in a run that
     acknowledged it.
     """
-    status, created, headers = engine.call("POST", "/adventures", {"name": ADVENTURE_NAME})
+    # Opening scenes are configured shared inputs, not control-server writes.
+    # The smoke root owns this one, so materialising its small fixture is the
+    # setup equivalent of a campaign's checked-in scene document.
+    scenes_dir = engine.root / ".fivee-sim" / "scenes"
+    scenes_dir.mkdir(parents=True, exist_ok=True)
+    (scenes_dir / f"{ADVENTURE_OPENING_SCENE_ID}.json").write_text(
+        json.dumps(
+            {
+                "name": "smoke opening",
+                "combatants": [
+                    {**ADVENTURE_ROSTER[2], "position": [15, 0]},
+                    {**ADVENTURE_ROSTER[3], "position": [20, 0]},
+                ],
+                "seed": ADVENTURE_SEEDS[0],
+                "map": {
+                    "format": "fivee-sim-map", "format_version": 1,
+                    "name": "smoke opening ground",
+                    "grid": {"width": 8, "height": 4, "cell_feet": 5},
+                    "legend": {".": "floor"}, "tiles": ["........"] * 4,
+                    "features": [
+                        {"id": "arrival-1", "kind": "spawn", "at": [0, 0], "team": "party"},
+                        {"id": "arrival-2", "kind": "spawn", "at": [1, 0], "team": "party"},
+                    ],
+                    "provenance": {"generator": "hand", "seed": 1, "params": {}, "edited": False, "source": "smoke fixture"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    status, created, headers = engine.call(
+        "POST", "/adventures",
+        {
+            "name": ADVENTURE_NAME,
+            "opening": {"scene_id": ADVENTURE_OPENING_SCENE_ID, "party": ADVENTURE_ROSTER[:2]},
+        },
+    )
     if status != 201:
         raise SmokeError(f"adventure.create answered {status}: {json.dumps(created)[:300]}")
-    adventure_id = str(created["id"])
+    adventure_id = str(created["adventure_id"])
+    engine.select_run(str(created["run_id"]))
     base = f"/adventures/{adventure_id}"
     run: dict[str, Any] = {
         "created": created,
@@ -842,17 +892,10 @@ def adventure_over_http(engine: Engine) -> dict[str, Any]:
     }
 
     version = headers.get("ETag", "")
-    first_body = {"combatants": ADVENTURE_ROSTER, "seed": ADVENTURE_SEEDS[0]}
-    # The same link, sent with no version at all. Refused by the adapter before
-    # the service is reached, so it starts no fight — and if it ever stopped
-    # being refused, the run below would find the ids it expects already taken.
-    run["unguarded"] = engine.call("POST", f"{base}/encounters", first_body)[:2]
-
-    status, first, headers = engine.call(
-        "POST", f"{base}/encounters", first_body, headers={"If-Match": version}
-    )
-    if status != 201:
-        raise SmokeError(f"the first link answered {status}: {json.dumps(first)[:300]}")
+    first = {
+        "index": created["chapter_index"], "encounter_id": created["encounter_id"],
+        "carried": [], "encounter": created["encounter"],
+    }
     first_id = str(first["encounter_id"])
     run["first_link"], run["first_link_status"] = first, status
     run["first_opening"] = first["encounter"]["state"]
@@ -870,6 +913,11 @@ def adventure_over_http(engine: Engine) -> dict[str, Any]:
     ]
     run["standing"] = standing
     version = headers.get("ETag", "")
+    # Chapter zero already consumed the first link; the unguarded refusal now
+    # protects the next chapter instead.
+    run["unguarded"] = engine.call(
+        "POST", f"{base}/encounters", {"combatants": ADVENTURE_NEWCOMER}
+    )[:2]
     status, second, headers = engine.call(
         "POST",
         f"{base}/encounters",
@@ -924,30 +972,37 @@ def interlude_run(engine: Engine) -> dict[str, Any]:
     if status != 201:
         raise SmokeError(f"map.put answered {status}: {json.dumps(stored_map)[:300]}")
 
+    scenes_dir = engine.root / ".fivee-sim" / "scenes"
+    scenes_dir.mkdir(parents=True, exist_ok=True)
+    opening_scene_id = "smoke-mill-opening"
+    (scenes_dir / f"{opening_scene_id}.json").write_text(
+        json.dumps(
+            {
+                "name": "smoke mill opening", "combatants": [],
+                "seed": INTERLUDE_SEEDS[0], "mode": "exploration", "map_id": MILL_MAP_ID,
+            }
+        ),
+        encoding="utf-8",
+    )
     status, created, headers = engine.call(
-        "POST", "/adventures", {"name": INTERLUDE_ADVENTURE_NAME}
+        "POST", "/adventures",
+        {
+            "name": INTERLUDE_ADVENTURE_NAME,
+            "opening": {"scene_id": opening_scene_id, "party": INTERLUDE_PARTY},
+        },
     )
     if status != 201:
         raise SmokeError(f"adventure.create answered {status}: {json.dumps(created)[:300]}")
-    adventure_id = str(created["id"])
+    adventure_id = str(created["adventure_id"])
+    engine.select_run(str(created["run_id"]))
     base = f"/adventures/{adventure_id}"
     run["adventure_id"] = adventure_id
 
-    # -- chapter one: the walk ---------------------------------------------
-    version = headers.get("ETag", "")
-    status, opening, headers = engine.call(
-        "POST",
-        f"{base}/encounters",
-        {
-            "combatants": INTERLUDE_PARTY,
-            "seed": INTERLUDE_SEEDS[0],
-            "mode": "exploration",
-            "map_id": MILL_MAP_ID,
-        },
-        headers={"If-Match": version},
-    )
-    if status != 201:
-        raise SmokeError(f"the opening interlude answered {status}: {json.dumps(opening)[:300]}")
+    # -- chapter zero: the walk ---------------------------------------------
+    opening = {
+        "index": created["chapter_index"], "encounter_id": created["encounter_id"],
+        "carried": [], "encounter": created["encounter"],
+    }
     walk_id = str(opening["encounter_id"])
     run["opening"], run["opening_status"] = opening, status
     run["opening_state"] = opening["encounter"]["state"]
@@ -1665,14 +1720,15 @@ def main() -> int:
         opened = run["created"]
         report(
             run["created_status"] == 201
-            and opened["id"] == EXPECTED_ADVENTURE_ID
-            and opened["format"] == "fivee-sim-adventure"
-            and opened["name"] == ADVENTURE_NAME
-            and opened["status"] == "active"
-            and opened["members"] == []
+            and opened["adventure_id"] == EXPECTED_ADVENTURE_ID
+            and opened["chapter_index"] == 0
+            and opened["encounter_id"] == EXPECTED_CHAPTER_IDS[0]
+            and opened["adventure"]["name"] == ADVENTURE_NAME
+            and opened["adventure"]["status"] == "active"
+            and len(opened["adventure"]["members"]) == 1
             and bool(opened["version"]),
-            "adventure.create starts an empty, active run in the scratch root",
-            json.dumps({key: opened.get(key) for key in ("id", "name", "status", "members")}),
+            "adventure.create starts an active run with automatic chapter zero",
+            json.dumps({key: opened.get(key) for key in ("run_id", "adventure_id", "encounter_id", "chapter_index")}),
         )
         refused_status, refused_body = run["unguarded"]
         report(

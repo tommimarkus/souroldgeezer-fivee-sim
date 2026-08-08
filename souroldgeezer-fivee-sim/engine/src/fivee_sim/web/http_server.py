@@ -83,6 +83,7 @@ from ..service import catalog as catalog_service
 from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
 from ..service import replay as replay_service
+from ..service import runs as run_service
 from ..service import rulings as rulings_ops
 from ..service import scenes as scene_service
 from ..service.common import slugify
@@ -1199,16 +1200,43 @@ class _Handler(BaseHTTPRequestHandler):
             adventure_service.list_adventures(request.query["status"], state=self.state),
         )
 
-    def _h_adventure_create(self, request: _Request) -> None:
-        result = adventure_service.create(
-            request.body["name"], self._idempotency_key(), state=self.state
+    # -- runs: control-state allocation and inspection ----------------------
+    def _h_run_list(self, request: _Request) -> None:
+        self._send_json(
+            HTTPStatus.OK, run_service.list_runs(runs_dir=self.state.storage.runs_dir)
         )
-        adventure_id = str(result["id"])
+
+    def _h_run_create(self, request: _Request) -> None:
+        result = run_service.create(
+            self._idempotency_key(), {}, runs_dir=self.state.storage.runs_dir
+        )
+        version = str(result["version"])
+        payload = {key: value for key, value in result.items() if key != "version"}
+        self._send_json(
+            HTTPStatus.CREATED,
+            payload,
+            headers={
+                "Location": f"{API_PREFIX}/runs/{quote(str(result['id']), safe='')}",
+                "ETag": _etag_of(version),
+            },
+        )
+
+    def _h_run_state(self, request: _Request) -> None:
+        result = run_service.state_of(request.id, runs_dir=self.state.storage.runs_dir)
+        version = str(result["version"])
+        payload = {key: value for key, value in result.items() if key != "version"}
+        self._send_json(HTTPStatus.OK, payload, headers={"ETag": _etag_of(version)})
+
+    def _h_adventure_create(self, request: _Request) -> None:
+        result = adventure_service.start(
+            request.body["name"], request.body["opening"], self._idempotency_key(), state=self.state
+        )
+        run_id = str(result["run_id"])
         self._send_json(
             HTTPStatus.CREATED,
             result,
             headers={
-                "Location": f"{API_PREFIX}/adventures/{quote(adventure_id, safe='')}",
+                "Location": f"{API_PREFIX}/runs/{quote(run_id, safe='')}",
                 "ETag": _etag_of(str(result["version"])),
             },
         )
@@ -1532,6 +1560,9 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "encounter_resume": _Handler._h_encounter_resume,
     "encounter_finalize": _Handler._h_encounter_finalize,
     "encounter_replay": _Handler._h_encounter_replay,
+    "run_list": _Handler._h_run_list,
+    "run_create": _Handler._h_run_create,
+    "run_state": _Handler._h_run_state,
     "adventure_list": _Handler._h_adventure_list,
     "adventure_create": _Handler._h_adventure_create,
     "adventure_state": _Handler._h_adventure_state,
